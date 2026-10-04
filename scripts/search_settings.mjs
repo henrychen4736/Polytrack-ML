@@ -17,9 +17,11 @@
 //
 // The loop is the same shape as the timeline search:
 //   1. Start from settings that finish (the defaults do on summer1).
-//   2. Make one slightly altered copy of the settings per process.
-//   3. Drive a full lap with each, in parallel, cut off at the best time so far.
-//   4. Adopt the fastest finisher if it beats or ties the current best.
+//   2. Make one altered copy of the settings per process.
+//   3. Drive a full lap with each, in parallel, cut off once it can no longer
+//      be useful.
+//   4. Move to the fastest finisher if it beats or ties the lap we are
+//      standing on (or, when annealing, sometimes even if it is slower).
 //   5. Repeat until the time budget runs out.
 //
 // At the end the best lap is driven once more in this process to record its
@@ -33,6 +35,21 @@
 //   workers=8    parallel simulator processes
 //   rngSeed=1    random seed; same seed and settings give the same run
 //   resume=1     start from runs/tuned_<track>.json instead of the defaults
+//
+//   Escaping a plateau. With the defaults below the search only ever takes a
+//   small step to a faster lap, so it stops at the first settings where no
+//   single small change helps. These loosen that:
+//   stepScale=1       multiplies the size of every nudge
+//   bigMoveChance=0   chance that a candidate uses nudges 3x larger still
+//   extraChance=0.5   chance of adding another change to a candidate (and
+//                     another, ...). Higher = more settings changed together.
+//   temperature=0     in ms. Above 0, the search will sometimes move to a
+//                     SLOWER lap ("simulated annealing"): a lap d ms slower is
+//                     adopted with probability exp(-d / temperature). The
+//                     temperature falls steadily to 0 over the run, so the
+//                     search roams at first and settles at the end. The best
+//                     lap ever seen is kept separately and is what gets saved.
+//
 // Writes runs/tuned_<track>.json (settings on every improvement, plus the key
 // presses at the end).
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -68,6 +85,10 @@ const opt = Object.fromEntries(args.filter((a) => a.includes('=')).map((a) => a.
 const seconds = Number(opt.seconds ?? 120);
 const workers = Number(opt.workers ?? 8);
 const rng = createRng(Number(opt.rngSeed ?? 1));
+const stepScale = Number(opt.stepScale ?? 1);
+const bigMoveChance = Number(opt.bigMoveChance ?? 0);
+const extraChance = Number(opt.extraChance ?? 0.5);
+const startTemperature = Number(opt.temperature ?? 0);
 
 const runsDir = new URL('../runs/', import.meta.url);
 mkdirSync(runsDir, { recursive: true });
@@ -81,39 +102,48 @@ function gaussian() {
 const clamp = (v, { min, max }) => Math.min(max, Math.max(min, v));
 
 /**
- * A slightly altered copy of `settings`. Changes one thing, then another with
- * 50% probability, and so on. Few changes at a time for the same reason as in
- * the timeline search: the more is changed at once, the less likely the lap
- * still finishes, and the harder it is to tell which change helped.
+ * An altered copy of `settings`. Changes one thing, then another with
+ * probability `extraChance`, and so on. By default that means few changes at
+ * a time, for the same reason as in the timeline search: the more is changed
+ * at once, the less likely the lap still finishes. Raising extraChance,
+ * stepScale or bigMoveChance trades that safety for reach.
  */
 function mutateSettings(settings) {
   const out = { ...settings, speedFactors: [...settings.speedFactors] };
   const globalNames = Object.keys(GLOBALS);
+  // One size multiplier for the whole candidate: normally stepScale, now and
+  // then three times that, to jump clear of the current neighbourhood.
+  const scale = stepScale * (rng() < bigMoveChance ? 3 : 1);
   do {
     // Half the changes go to a section multiplier, half to a global number.
     // Sections are where the lap time is; globals shape how the car steers.
     if (rng() < 0.5) {
       const k = Math.floor(rng() * SECTIONS);
-      out.speedFactors[k] = clamp(out.speedFactors[k] + gaussian() * SECTION_FACTOR.step, SECTION_FACTOR);
+      out.speedFactors[k] = clamp(out.speedFactors[k] + gaussian() * SECTION_FACTOR.step * scale, SECTION_FACTOR);
     } else {
       const key = globalNames[Math.floor(rng() * globalNames.length)];
-      out[key] = clamp(out[key] + gaussian() * GLOBALS[key].step, GLOBALS[key]);
+      out[key] = clamp(out[key] + gaussian() * GLOBALS[key].step * scale, GLOBALS[key]);
     }
-  } while (rng() < 0.5);
+  } while (rng() < extraChance);
   return out;
 }
 
 // --- starting point ------------------------------------------------------------
-let best = { ...Object.fromEntries(Object.keys(GLOBALS).map((k) => [k, DEFAULTS[k]])), speedFactors: new Array(SECTIONS).fill(1) };
+// Two sets of settings are tracked:
+//   current  where the search is standing; candidates are copies of this.
+//   best     the fastest lap seen so far; this is what gets saved.
+// Without annealing (temperature=0) they are always the same.
+let current = { ...Object.fromEntries(Object.keys(GLOBALS).map((k) => [k, DEFAULTS[k]])), speedFactors: new Array(SECTIONS).fill(1) };
 if (opt.resume) {
-  try { best = JSON.parse(readFileSync(outFile, 'utf8')).options; } catch { console.error(`resume=1 but runs/tuned_${name}.json could not be read.`); process.exit(1); }
+  try { current = JSON.parse(readFileSync(outFile, 'utf8')).options; } catch { console.error(`resume=1 but runs/tuned_${name}.json could not be read.`); process.exit(1); }
 }
 
 const pool = await createPool(name, workers, 'drive_child.mjs');
 // Drive the starting settings once to get the time to beat.
-const [first] = await pool.runAll([{ options: best, maxTicks: 90000 }]);
+const [first] = await pool.runAll([{ options: current, maxTicks: 90000 }]);
 if (!first.finished) { console.error(`The starting settings do not finish ${name} (reached ${(100 * first.fraction).toFixed(1)}%).`); pool.close(); process.exit(1); }
-let bestFrames = first.finishFrames;
+let currentFrames = first.finishFrames;
+let best = current, bestFrames = currentFrames;
 const startFrames = bestFrames;
 console.log(`${name}: starting at ${(bestFrames / 1000).toFixed(3)} s; searching for ${seconds} s with ${workers} processes...`);
 
@@ -122,40 +152,54 @@ const save = (extra = {}) => writeFileSync(outFile, JSON.stringify({ track: name
 // --- search loop -----------------------------------------------------------------
 const t0 = performance.now();
 const elapsed = () => (performance.now() - t0) / 1000;
-let tried = 0, finishedCount = 0, improvements = 0;
+let tried = 0, finishedCount = 0, improvements = 0, slowerAdopted = 0;
 let lastStatus = 0;
 while (elapsed() < seconds) {
-  const candidates = Array.from({ length: pool.size }, () => mutateSettings(best));
-  // maxTicks = the best time so far: a lap still running at that point cannot
-  // be an improvement, so the child stops driving it.
-  const results = await pool.runAll(candidates.map((options) => ({ options, maxTicks: bestFrames })));
+  // Temperature falls in a straight line from its starting value to 0.
+  const temperature = startTemperature * Math.max(0, 1 - elapsed() / seconds);
+  const candidates = Array.from({ length: pool.size }, () => mutateSettings(current));
+  // Cut-off: a lap still running this many ticks in is of no use. That is the
+  // current lap's time, plus (when annealing) the margin by which a slower lap
+  // could still plausibly be adopted: 3 temperatures is a 5% chance.
+  const maxTicks = currentFrames + Math.ceil(3 * temperature);
+  const results = await pool.runAll(candidates.map((options) => ({ options, maxTicks })));
   tried += results.length;
 
+  // Fastest finisher of the batch, if any.
   let winner = -1;
   results.forEach((r, k) => {
     if (!r.finished) return;
     finishedCount++;
     if (winner === -1 || r.finishFrames < results[winner].finishFrames) winner = k;
   });
-  if (winner !== -1 && results[winner].finishFrames <= bestFrames) {
+  if (winner !== -1) {
     const frames = results[winner].finishFrames;
-    best = candidates[winner];
-    if (frames < bestFrames) {
-      improvements++;
-      console.log(`  ${elapsed().toFixed(0).padStart(4)} s  ${(frames / 1000).toFixed(3)} s  (-${bestFrames - frames} ms, after ${tried} laps)`);
-      bestFrames = frames;
-      save();
+    const slower = frames - currentFrames; // negative = faster
+    // Faster or equal: always move there. Slower: only by the annealing rule.
+    const adopt = slower <= 0 || (temperature > 0 && rng() < Math.exp(-slower / temperature));
+    if (adopt) {
+      if (slower > 0) slowerAdopted++;
+      current = candidates[winner];
+      currentFrames = frames;
+      if (frames < bestFrames) {
+        improvements++;
+        console.log(`  ${elapsed().toFixed(0).padStart(4)} s  ${(frames / 1000).toFixed(3)} s  (-${bestFrames - frames} ms, after ${tried} laps)`);
+        best = current;
+        bestFrames = frames;
+        save();
+      }
     }
   }
   if (elapsed() - lastStatus >= 30) {
     lastStatus = elapsed();
-    console.log(`  ${elapsed().toFixed(0).padStart(4)} s  ... ${tried} laps tried, best ${(bestFrames / 1000).toFixed(3)} s`);
+    const annealing = startTemperature ? `, standing on ${(currentFrames / 1000).toFixed(3)} s, temperature ${temperature.toFixed(0)} ms` : '';
+    console.log(`  ${elapsed().toFixed(0).padStart(4)} s  ... ${tried} laps tried, best ${(bestFrames / 1000).toFixed(3)} s${annealing}`);
   }
 }
 pool.close();
 
 // --- result ------------------------------------------------------------------------
-console.log(`\ntried ${tried} laps in ${elapsed().toFixed(0)} s (${(tried / elapsed()).toFixed(1)} per second); ${finishedCount} finished in time, ${improvements} improvements`);
+console.log(`\ntried ${tried} laps in ${elapsed().toFixed(0)} s (${(tried / elapsed()).toFixed(1)} per second); ${finishedCount} finished in time, ${improvements} improvements, ${slowerAdopted} slower laps adopted`);
 console.log(`${(startFrames / 1000).toFixed(3)} s -> ${(bestFrames / 1000).toFixed(3)} s (${startFrames - bestFrames} ms faster)`);
 
 // Drive the best settings once more here, this time recording the keys. The
