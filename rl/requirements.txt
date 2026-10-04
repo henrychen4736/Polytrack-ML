@@ -1,0 +1,12 @@
+# Python packages for rl/. Python 3.10+.
+#
+# Required:
+numpy>=1.26
+# Required for train_ppo.py and for evaluate.py with a trained policy.
+# The CPU build is enough; the networks are small.
+torch>=2.2
+#
+# Optional. If installed, PolytrackEnv becomes a real gymnasium.Env with
+# observation_space/action_space, so other libraries (e.g. Stable-Baselines3)
+# can use it. Nothing in rl/ needs it.
+# gymnasium>=0.29
