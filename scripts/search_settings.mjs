@@ -37,6 +37,9 @@
 //   resume=1     start from runs/tuned_<track>.json instead of the defaults
 //   airBrake=1   hold brake while airborne (lands the car flat). An on/off
 //                choice, so it is fixed for the run and not tuned.
+//   <setting>=<value>   starting value for any tuned global setting, e.g.
+//                crossTrackGain=2. Needed where the defaults do not finish
+//                (winter1): the search must start from a lap that does.
 //
 //   Escaping a plateau. With the defaults below the search only ever takes a
 //   small step to a faster lap, so it stops at the first settings where no
@@ -144,6 +147,8 @@ if (opt.resume) {
 }
 // On/off settings given on the command line are fixed for the whole run.
 if (opt.airBrake != null) current.airBrake = Number(opt.airBrake);
+// Starting values for tuned settings; the search then moves them as usual.
+for (const key of Object.keys(GLOBALS)) if (opt[key] != null) current[key] = Number(opt[key]);
 
 const pool = await createPool(name, workers, 'drive_child.mjs');
 // Drive the starting settings once to get the time to beat.

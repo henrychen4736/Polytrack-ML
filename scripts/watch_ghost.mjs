@@ -90,9 +90,23 @@ await page.evaluate(([k, v]) => localStorage.setItem(k, v), [recordKey, recordVa
 await page.reload({ waitUntil: 'load' });
 console.log(`Planted a ${(lap.frames / 1000).toFixed(3)} s lap on ${name} in the temporary profile.`);
 
+// A brand-new profile always opens on Summer 1 (the game's tutorial track).
+// For any other track, leave it and open that track's page from the list:
+// "Exit" goes to the track list, and clicking the track's name opens a page
+// with its own Watch and Play buttons.
+await page.getByText('Watch', { exact: true }).first().waitFor({ timeout: 120000 });
+if (name !== 'summer1') {
+  // File names are like "winter1"; the game shows "Winter 1".
+  const shownName = name.replace(/^([a-z])([a-z]*)(\d+)$/, (_, a, rest, n) => `${a.toUpperCase()}${rest} ${n}`);
+  await page.waitForTimeout(2000); // let the track finish loading before leaving it
+  await page.getByText('Exit', { exact: true }).first().click();
+  await page.getByText(shownName, { exact: true }).first().click();
+  console.log(`Opened the ${shownName} page.`);
+}
+
 if (checkOnly) {
-  // Automated check: the first-run client drops straight into Summer 1, shows
-  // the stored time, and enables Watch. Screenshot before and during the replay.
+  // Automated check: the client shows the stored time and enables Watch.
+  // Screenshot before and during the replay.
   const dir = fileURLToPath(new URL('../capture/', import.meta.url));
   mkdirSync(dir, { recursive: true });
   const watch = page.getByText('Watch', { exact: true }).first();
@@ -105,7 +119,7 @@ if (checkOnly) {
   console.log(`Saved capture/ghost_1_loaded.png and capture/ghost_2_replay.png. Blocked ${blocked} API requests.`);
   await browser.close();
 } else {
-  console.log(`The game window is open. Click "Watch" (top left) to replay the lap, or drive to race its ghost.`);
+  console.log(`The game window is open. Click "Watch" to replay the lap (top left on Summer 1, lower right on other tracks), or "Play" to race its ghost.`);
   console.log(`Close the window when you are done; the temporary profile is deleted with it.`);
   // Keep this script alive until the window is closed.
   await new Promise((resolve) => { page.on('close', resolve); browser.on('disconnected', resolve); });
