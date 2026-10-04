@@ -18,8 +18,10 @@
 // For the same reason, never paste a bot recording into localStorage in your
 // normal browser: the game would submit it the next time it syncs.
 //
-// Usage: node scripts/watch_ghost.mjs [track] [--check]
-//   track     summer1 (default); needs runs/baseline_<track>.recording.json
+// Usage: node scripts/watch_ghost.mjs [track] [run] [--check]
+//   track     summer1 (default)
+//   run       which saved lap: baseline (default) or search; reads
+//             runs/<run>_<track>.recording.json
 //   --check   run without a visible window, save screenshots to capture/, exit
 import { chromium } from 'playwright-core';
 import { readFileSync, mkdirSync } from 'node:fs';
@@ -34,14 +36,14 @@ const KEY_PREFIX = 'polytrack_v5_prod_';
 
 const args = process.argv.slice(2);
 const checkOnly = args.includes('--check');
-const name = args.find((a) => !a.startsWith('--')) ?? 'summer1';
+const [name = 'summer1', run = 'baseline'] = args.filter((a) => !a.startsWith('--'));
 const sha256 = (data) => createHash('sha256').update(data).digest('hex');
 
 let lap;
 try {
-  lap = JSON.parse(readFileSync(new URL(`../runs/baseline_${name}.recording.json`, import.meta.url), 'utf8'));
+  lap = JSON.parse(readFileSync(new URL(`../runs/${run}_${name}.recording.json`, import.meta.url), 'utf8'));
 } catch {
-  console.error(`No recording for ${name}. Run drive_baseline.mjs and export_recording.mjs first.`);
+  console.error(`No runs/${run}_${name}.recording.json. Create it with drive_baseline.mjs + export_recording.mjs, or search_timeline.mjs.`);
   process.exit(1);
 }
 

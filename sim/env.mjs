@@ -82,5 +82,31 @@ export class Env {
     });
   }
 
+  /**
+   * Score a recording: play it from the start line and report only the result.
+   * Same simulation as replay(), but it keeps just the latest state instead of
+   * all of them, which matters when a search calls this thousands of times.
+   *
+   * Stops at the finish, or at `maxFrames` if the car has not finished by then.
+   * Returns { finished, finishFrames, checkpoints } where `checkpoints` is how
+   * many checkpoints the car had collected when the run stopped.
+   */
+  evaluate(track, recording, maxFrames) {
+    this._newCar(track, recording);
+    return new Promise((resolve) => {
+      this._onState = (u8) => {
+        const finished = stateFinished(u8);
+        if (finished || stateFrames(u8) >= maxFrames) {
+          this._onState = null;
+          this.worker.send({ messageType: Ki.DeleteCar, carId: this.carId });
+          this.hasCar = false;
+          const s = decodeState(u8);
+          resolve({ finished, finishFrames: s.finishFrames, checkpoints: s.nextCheckpointIndex });
+        }
+      };
+      this.worker.send({ messageType: Ki.StartCar, carId: this.carId, targetSimulationTimeFrames: maxFrames });
+    });
+  }
+
   close() { return this.worker.terminate(); }
 }

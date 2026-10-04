@@ -43,7 +43,12 @@ Needs Node 20+. `npm run capture` additionally needs Microsoft Edge.
 node scripts/drive_baseline.mjs summer1     # pure-pursuit lap, saves runs/baseline_summer1.json
 node scripts/export_recording.mjs summer1   # encodes it as a recording and runs the game's Verify
 node scripts/watch_ghost.mjs summer1        # opens the real client with the lap loaded; click Watch
+node scripts/search_timeline.mjs summer1 seconds=120   # mutate key timings, saves runs/search_summer1.recording.json
+node scripts/watch_ghost.mjs summer1 search # watch the searched lap
 ```
+
+The search scores laps in separate processes (`sim/pool.mjs`): simulator
+threads inside one Node process do not scale past about two.
 
 `watch_ghost.mjs` uses a temporary Edge profile with `vps.kodub.com` blocked.
 Never put a bot recording into localStorage in a normal browser: the client
