@@ -18,22 +18,24 @@
 // This is for local ghosts only. Nothing here contacts Kodub's servers, and
 // bot laps must not be submitted to the leaderboards.
 //
-// Usage: node scripts/export_recording.mjs [track]     (default: summer1)
-//   reads   runs/baseline_<track>.json            (from drive_baseline.mjs)
-//   writes  runs/baseline_<track>.recording.json
+// Usage: node scripts/export_recording.mjs [track] [run]
+//   track   summer1 (default)
+//   run     baseline (default, from drive_baseline.mjs) or tuned (from search_settings.mjs)
+//   reads   runs/<run>_<track>.json
+//   writes  runs/<run>_<track>.recording.json
 import { readFileSync, writeFileSync } from 'node:fs';
 import { bootWorker } from '../sim/host.mjs';
 import { loadTrack } from '../sim/env.mjs';
 import { CHANNELS, fromDense, toDense, encodeRecording, decodeRecording } from '../sim/recording.mjs';
 
-const name = process.argv[2] ?? 'summer1';
+const [name = 'summer1', run = 'baseline'] = process.argv.slice(2);
 const runsDir = new URL('../runs/', import.meta.url);
 
 let saved;
 try {
-  saved = JSON.parse(readFileSync(new URL(`baseline_${name}.json`, runsDir), 'utf8'));
+  saved = JSON.parse(readFileSync(new URL(`${run}_${name}.json`, runsDir), 'utf8'));
 } catch {
-  console.error(`No saved lap for ${name}. Run: node scripts/drive_baseline.mjs ${name}`);
+  console.error(`No runs/${run}_${name}.json. Create it with drive_baseline.mjs (baseline) or search_settings.mjs (tuned).`);
   process.exit(1);
 }
 // controlsPerTick[k] is the set of keys held while the physics computed tick k.
@@ -70,7 +72,7 @@ await worker.terminate();
 
 const ok = roundTripOk && verified && !offByOne;
 if (ok) {
-  writeFileSync(new URL(`baseline_${name}.recording.json`, runsDir), JSON.stringify({ track: name, frames: finishFrames, recording: recordingString }, null, 2));
-  console.log(`saved runs/baseline_${name}.recording.json`);
+  writeFileSync(new URL(`${run}_${name}.recording.json`, runsDir), JSON.stringify({ track: name, frames: finishFrames, recording: recordingString }, null, 2));
+  console.log(`saved runs/${run}_${name}.recording.json`);
 }
 process.exit(ok ? 0 : 1);

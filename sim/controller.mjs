@@ -10,8 +10,8 @@
 //      arc. That is the classic pure-pursuit rule. Then press left or right to
 //      move the wheels toward that angle.
 //   3. SPEED: compare our speed with the human's at the same place on the
-//      line. Hold throttle if we are slower, brake if we are faster. The effect
-//      is that the car brakes where the human braked and nowhere else.
+//      line. Hold throttle if we are slower, coast or brake if we are faster.
+//      The effect is that the car slows where the human slowed and nowhere else.
 //
 // Facts about the car this relies on (measured in the simulator, see the
 // README's notes):
@@ -53,6 +53,17 @@ export const DEFAULTS = {
   // climbs on the line need the human's full entry speed; at 0.9 the car lands
   // short on summer1's first jump.
   speedFactor: 1,
+  // Optional per-section multipliers on top of speedFactor. The lap is cut
+  // into speedFactors.length equal stretches of the line and each stretch uses
+  // its own entry, so the car can be told "carry more speed here, less there".
+  // null = no per-section adjustment. This is what scripts/search_settings.mjs
+  // tunes.
+  speedFactors: null,
+  // How far above the target speed the car must be before it brakes. Between
+  // the target and target + margin it coasts (no throttle, no brake) instead.
+  // At 0 the car is always either on the throttle or on the brake, which
+  // wastes time: a brake dab scrubs far more speed than was needed.
+  brakeMarginKmh: 0,
   // Never aim below this, so the car cannot talk itself into stopping.
   minTargetKmh: 40,
 };
@@ -107,13 +118,23 @@ export function createController(line, options = {}) {
     for (let k = progress; k <= brakeIndex; k++) {
       if (line.grounded[k]) humanKmh = Math.min(humanKmh, line.speedKmh[k]);
     }
-    const targetKmh = Math.max(cfg.minTargetKmh, humanKmh * cfg.speedFactor);
-    // Braking only works with wheels on the road, so never brake in the air.
+    // Which section of the lap are we in, and what is its multiplier?
+    let factor = cfg.speedFactor;
+    if (cfg.speedFactors) {
+      const section = Math.min(cfg.speedFactors.length - 1, Math.floor((progress / line.points.length) * cfg.speedFactors.length));
+      factor *= cfg.speedFactors[section];
+    }
+    const targetKmh = Math.max(cfg.minTargetKmh, humanKmh * factor);
+    // Three cases: below target -> throttle; a little above -> coast;
+    // well above -> brake. Braking only works with wheels on the road, so in
+    // the air the car just keeps the throttle down.
     const airborne = !state.wheelContact.some(Boolean);
-    const tooFast = !airborne && state.speedKmh > targetKmh;
+    const over = state.speedKmh - targetKmh;
+    const brake = !airborne && over > cfg.brakeMarginKmh;
+    const throttle = airborne || over <= 0;
 
     return {
-      controls: { up: !tooFast, down: tooFast, left: pressLeft, right: pressRight, reset: false },
+      controls: { up: throttle, down: brake, left: pressLeft, right: pressRight, reset: false },
       progress,              // index into line.points
       offLine: near.distance, // how far the car is from the line, for diagnostics
     };

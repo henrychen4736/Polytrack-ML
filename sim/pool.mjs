@@ -13,9 +13,15 @@
 import { fork } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-const CHILD = fileURLToPath(new URL('./eval_child.mjs', import.meta.url));
-
-export async function createPool(trackName, size) {
+/**
+ * `childFile` picks what the children do with a request:
+ *   eval_child.mjs   (default) replay a recording and score it
+ *   drive_child.mjs  drive a lap with the controller under given settings
+ * Both follow the same protocol: a { track } message to set up, then numbered
+ * requests answered by numbered replies.
+ */
+export async function createPool(trackName, size, childFile = 'eval_child.mjs') {
+  const CHILD = fileURLToPath(new URL(`./${childFile}`, import.meta.url));
   // Start the children and wait until each has booted its simulator.
   const children = await Promise.all(Array.from({ length: size }, () => new Promise((resolve, reject) => {
     // stdio 'ignore' for stderr hides the harmless "wasm streaming compile
@@ -42,10 +48,17 @@ export async function createPool(trackName, size) {
      * { finished, finishFrames, checkpoints } (see Env.evaluate).
      */
     evaluateAll(recordings, maxFrames) {
-      return Promise.all(recordings.map((recording, k) => new Promise((resolve) => {
+      return this.runAll(recordings.map((recording) => ({ recording, maxFrames })));
+    },
+    /**
+     * General form: send request k to child k, all at once, and resolve with
+     * the replies in the same order. `requests` may be shorter than the pool.
+     */
+    runAll(requests) {
+      return Promise.all(requests.map((request, k) => new Promise((resolve) => {
         const id = nextId++;
         waiting.set(id, resolve);
-        children[k].send({ id, recording, maxFrames });
+        children[k].send({ id, ...request });
       })));
     },
     close() { for (const child of children) child.kill(); },

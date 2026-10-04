@@ -45,7 +45,12 @@ node scripts/export_recording.mjs summer1   # encodes it as a recording and runs
 node scripts/watch_ghost.mjs summer1        # opens the real client with the lap loaded; click Watch
 node scripts/search_timeline.mjs summer1 seconds=120   # mutate key timings, saves runs/search_summer1.recording.json
 node scripts/watch_ghost.mjs summer1 search # watch the searched lap
+node scripts/search_settings.mjs summer1 seconds=120   # tune the controller's settings, saves runs/tuned_summer1.json
+node scripts/export_recording.mjs summer1 tuned        # encode + Verify the tuned lap
+node scripts/watch_ghost.mjs summer1 tuned             # watch it
 ```
+
+summer1 so far: human 22.279 s, baseline 23.835 s, tuned controller 23.319 s.
 
 The search scores laps in separate processes (`sim/pool.mjs`): simulator
 threads inside one Node process do not scale past about two.
