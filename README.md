@@ -37,6 +37,18 @@ Needs Node 20+. `npm run capture` additionally needs Microsoft Edge.
    two separate processes, and the same stream whether fed as a recording or
    stepped live through `Env.step`.
 
+## Driving and watching a lap
+
+```bash
+node scripts/drive_baseline.mjs summer1     # pure-pursuit lap, saves runs/baseline_summer1.json
+node scripts/export_recording.mjs summer1   # encodes it as a recording and runs the game's Verify
+node scripts/watch_ghost.mjs summer1        # opens the real client with the lap loaded; click Watch
+```
+
+`watch_ghost.mjs` uses a temporary Edge profile with `vps.kodub.com` blocked.
+Never put a bot recording into localStorage in a normal browser: the client
+uploads any stored lap that beats the server's copy.
+
 ## Things that were not obvious
 
 - polyrl's `physics_assets.json` is off by one float32 ULP on 164 of 186 parts
