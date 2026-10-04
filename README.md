@@ -1,0 +1,54 @@
+# Polytrack-ML
+
+Local ML and search for fast PolyTrack 0.6.3 laps, run against the game's own
+physics headlessly in Node. Nothing here talks to Kodub's leaderboard server:
+bot runs are for local ghosts only and must not be submitted.
+
+## Setup
+
+```bash
+npm install
+npm run setup     # clones polyrl at a pinned commit into vendor/, checks game file hashes
+npm test          # both acceptance tests below
+```
+
+Needs Node 20+. `npm run capture` additionally needs Microsoft Edge.
+
+## Layout
+
+- `sim/host.mjs`: boots the unmodified simulation worker (via polyrl's
+  `worker_threads` host) with the `Init` payload captured from the real client.
+- `sim/worker_entry.mjs`: worker thread entry; polyrl's entry plus an eager pump.
+- `sim/env.mjs`: `Env` with `reset`, `step(controls, nFrames)` and
+  `replay(track, recording, maxFrames)`; one 227-byte state per 1 ms tick.
+- `sim/state.mjs`: decoder for the car state.
+- `sim/recording.mjs`: recording string codec (toggle frames per channel).
+- `data/init_0.6.3.json`, `data/createcar_summer1.json`: messages the real
+  client posted to its worker. Kodub's geometry; do not redistribute.
+- `scripts/capture_init.mjs`: regenerates those captures in headless Edge with
+  `vps.kodub.com` blocked.
+- `scripts/diff_capture.mjs`: diffs the capture against polyrl's rebuilt assets.
+
+## Acceptance tests
+
+1. `npm run test:verify`: 27 real leaderboard recordings (5 on summer1, 22 on
+   winter1) pass the worker's own `Verify` on their exact claimed frame.
+2. `npm run test:determinism`: one summer1 run gives the same state stream in
+   two separate processes, and the same stream whether fed as a recording or
+   stepped live through `Env.step`.
+
+## Things that were not obvious
+
+- polyrl's `physics_assets.json` is off by one float32 ULP on 164 of 186 parts
+  and on the car hull. With it, only 2 of the 27 recordings verify. Always boot
+  from the captured `Init`.
+- On Windows, git's `autocrlf` rewrites the vendored worker bundle. `npm run
+  setup` clones with it off.
+- The state buffer is variable-length and reused, so bytes past
+  `stateLength()` are stale. Compare or hash only the written prefix.
+- The stock non-realtime loop polls on a timer, which cost about 9 ms per
+  `step` call on Windows. `sim/worker_entry.mjs` runs the same loop eagerly:
+  about 52,000 frames/s at 10 frames per call (`node scripts/bench_step.mjs`).
+- Mountains made no difference on summer1 or winter1. Tracks without a capture
+  in `data/` run with none, which is only safe if the car cannot reach the
+  backdrop terrain.

@@ -1,0 +1,15 @@
+{
+  "name": "polytrack-ml",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "test:verify": "node scripts/verify_fixtures.mjs",
+    "test:determinism": "node scripts/determinism_test.mjs",
+    "test": "npm run test:verify && npm run test:determinism",
+    "capture": "node scripts/capture_init.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.63.0"
+  }
+}
