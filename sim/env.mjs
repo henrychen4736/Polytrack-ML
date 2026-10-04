@@ -108,5 +108,47 @@ export class Env {
     });
   }
 
+  // --- save states (experimental) -------------------------------------------
+  // See sim/worker_entry.mjs for what a snapshot is and its limits. In short:
+  // saveState() copies the whole physics memory, loadState() writes it back.
+  // Use them only between step() calls, on a car made by reset(), and never
+  // across a reset()/replay()/evaluate() (those replace the car).
+
+  /** Send one of our control messages to the worker and wait for its reply. */
+  _control(kind, slot) {
+    return new Promise((resolve) => {
+      const onMessage = (msg) => {
+        if (msg?.__pt === kind && msg.slot === slot) { this.worker.worker.off('message', onMessage); resolve(msg); }
+      };
+      this.worker.worker.on('message', onMessage);
+      this.worker.worker.postMessage({ __pt: kind, slot });
+    });
+  }
+
+  /**
+   * Snapshot the physics now. Returns a handle to pass to loadState().
+   * The handle remembers which car it belongs to.
+   */
+  async saveState() {
+    const slot = (this._nextSlot = (this._nextSlot ?? 0) + 1);
+    const { bytes } = await this._control('snapshot', slot);
+    return { slot, carId: this.carId, bytes };
+  }
+
+  /**
+   * Put the physics back to a snapshot. The car is then exactly where it was,
+   * and step() continues from there. Env.frames is deliberately not rewound:
+   * it mirrors the game's own tick counter, which a snapshot does not cover.
+   */
+  async loadState(handle) {
+    if (handle.carId !== this.carId || !this.hasCar) throw new Error('loadState: that snapshot belongs to a car that no longer exists');
+    await this._control('restore', handle.slot);
+  }
+
+  /** Free a snapshot's memory in the worker. */
+  dropState(handle) {
+    this.worker.worker.postMessage({ __pt: 'drop', slot: handle.slot });
+  }
+
   close() { return this.worker.terminate(); }
 }

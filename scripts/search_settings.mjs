@@ -10,8 +10,8 @@
 // ahead to look.
 //
 // What is tuned (all in sim/controller.mjs):
-//   - six global numbers: lookahead, wheelbase, steering deadband, brake
-//     lead time and the coasting margin;
+//   - seven global numbers: lookahead, wheelbase, steering deadband,
+//     cross-track gain, brake lead time and the coasting margin;
 //   - one speed multiplier per section of the lap (SECTIONS equal stretches).
 //     1.0 means "match the human's speed here"; 1.1 means "allow 10% more".
 //
@@ -35,6 +35,8 @@
 //   workers=8    parallel simulator processes
 //   rngSeed=1    random seed; same seed and settings give the same run
 //   resume=1     start from runs/tuned_<track>.json instead of the defaults
+//   airBrake=1   hold brake while airborne (lands the car flat). An on/off
+//                choice, so it is fixed for the run and not tuned.
 //
 //   Escaping a plateau. With the defaults below the search only ever takes a
 //   small step to a faster lap, so it stops at the first settings where no
@@ -73,6 +75,7 @@ const GLOBALS = {
   lookaheadPerKmh:       { step: 0.008, min: 0.02, max: 0.2 },
   wheelbase:             { step: 0.2,   min: 1.5,  max: 6 },
   steerDeadband:         { step: 0.001, min: 0,    max: 0.02 },
+  crossTrackGain:        { step: 0.3,   min: 0,    max: 8 },
   brakeLookaheadSeconds: { step: 0.02,  min: 0,    max: 0.3 },
   brakeMarginKmh:        { step: 2,     min: 0,    max: 30 },
 };
@@ -135,8 +138,12 @@ function mutateSettings(settings) {
 // Without annealing (temperature=0) they are always the same.
 let current = { ...Object.fromEntries(Object.keys(GLOBALS).map((k) => [k, DEFAULTS[k]])), speedFactors: new Array(SECTIONS).fill(1) };
 if (opt.resume) {
-  try { current = JSON.parse(readFileSync(outFile, 'utf8')).options; } catch { console.error(`resume=1 but runs/tuned_${name}.json could not be read.`); process.exit(1); }
+  // Saved settings are laid over the defaults, so a file written before a
+  // setting existed still loads (the new setting starts at its default).
+  try { current = { ...current, ...JSON.parse(readFileSync(outFile, 'utf8')).options }; } catch { console.error(`resume=1 but runs/tuned_${name}.json could not be read.`); process.exit(1); }
 }
+// On/off settings given on the command line are fixed for the whole run.
+if (opt.airBrake != null) current.airBrake = Number(opt.airBrake);
 
 const pool = await createPool(name, workers, 'drive_child.mjs');
 // Drive the starting settings once to get the time to beat.

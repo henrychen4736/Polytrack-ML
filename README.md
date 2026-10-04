@@ -50,7 +50,7 @@ node scripts/export_recording.mjs summer1 tuned        # encode + Verify the tun
 node scripts/watch_ghost.mjs summer1 tuned             # watch it
 ```
 
-summer1 so far: human 22.279 s, baseline 23.835 s, tuned controller 23.063 s.
+summer1 so far: human 22.279 s, baseline 23.835 s, tuned controller 22.403 s (holding brake in the air).
 
 The search scores laps in separate processes (`sim/pool.mjs`): simulator
 threads inside one Node process do not scale past about two.

@@ -12,6 +12,7 @@
 //   3. SPEED: compare our speed with the human's at the same place on the
 //      line. Hold throttle if we are slower, coast or brake if we are faster.
 //      The effect is that the car slows where the human slowed and nowhere else.
+//      Optionally hold brake in the air to land flat (airBrake).
 //
 // Facts about the car this relies on (measured in the simulator, see the
 // README's notes):
@@ -40,6 +41,10 @@ export const DEFAULTS = {
   // Don't press a steering key if the wheels are already within this many
   // radians of the angle we want. Stops left/right chatter on straights.
   steerDeadband: 0.004,
+  // Strength of the cross-track correction (see the steering code below):
+  // how hard to steer back toward the line for each unit of sideways error.
+  // 0 switches it off, which is plain pure pursuit.
+  crossTrackGain: 0,
 
   // --- speed ---
   // The speed target is the human's slowest speed between here and this far
@@ -64,6 +69,9 @@ export const DEFAULTS = {
   // At 0 the car is always either on the throttle or on the brake, which
   // wastes time: a brake dab scrubs far more speed than was needed.
   brakeMarginKmh: 0,
+  // Hold the brake key while airborne (1 = yes, 0 = no). Players do this on
+  // jumps: it makes the car land flat instead of on its nose.
+  airBrake: 0,
   // Never aim below this, so the car cannot talk itself into stopping.
   minTargetKmh: 40,
 };
@@ -101,7 +109,21 @@ export function createController(line, options = {}) {
     // Pure pursuit: the arc through a point `reach` away and `left` to the
     // side has curvature 2*left/reach^2, and a car with wheelbase W follows an
     // arc of curvature k when its front wheels are turned by atan(W * k).
-    const wantedAngle = Math.atan(cfg.wheelbase * (2 * left) / (reach * reach));
+    let wantedAngle = Math.atan(cfg.wheelbase * (2 * left) / (reach * reach));
+    // Cross-track correction. Pure pursuit alone barely reacts to being a
+    // little to one side of the line: at 300 km/h the lookahead is about 33
+    // units, and a 1-unit sideways error at that distance asks for only 0.005
+    // rad of steering, about the size of the deadband. So the car drifts along
+    // roughly 1 unit beside the line, which is enough to clip the edge of a
+    // ramp (summer1) or hit an obstacle beside a narrow gap (winter1).
+    // This term steers toward the line in proportion to the sideways error
+    // right now, divided by speed so it does not over-react when fast (the
+    // "Stanley" rule). The +5 keeps it finite at a standstill.
+    if (cfg.crossTrackGain) {
+      const here = toCarFrame(line.points[progress].map((v, k) => v - state.position[k]), state.quaternion);
+      const sideways = here[0]; // positive: the line is to our left
+      wantedAngle += Math.atan((cfg.crossTrackGain * sideways) / (state.speedKmh / 3.6 + 5));
+    }
     const steerError = wantedAngle - state.steering; // positive: need more left
     const pressLeft = steerError > cfg.steerDeadband;
     const pressRight = steerError < -cfg.steerDeadband;
@@ -130,8 +152,12 @@ export function createController(line, options = {}) {
     // the air the car just keeps the throttle down.
     const airborne = !state.wheelContact.some(Boolean);
     const over = state.speedKmh - targetKmh;
-    const brake = !airborne && over > cfg.brakeMarginKmh;
-    const throttle = airborne || over <= 0;
+    let brake = !airborne && over > cfg.brakeMarginKmh;
+    let throttle = airborne || over <= 0;
+    // In the air the brake key does not slow the car; it changes how the car
+    // rotates, so that it lands flatter instead of nose first (a technique
+    // players use on jumps). With airBrake on, hold brake for the whole flight.
+    if (airborne && cfg.airBrake) { brake = true; throttle = false; }
 
     return {
       controls: { up: throttle, down: brake, left: pressLeft, right: pressRight, reset: false },
