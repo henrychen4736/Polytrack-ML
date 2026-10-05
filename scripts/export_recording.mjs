@@ -42,6 +42,10 @@ try {
 // finishFrames is the tick count at which the game registered the finish; this
 // is the lap time in milliseconds.
 const { controlsPerTick, finishFrames } = saved;
+// rl/evaluate.py also saves attempts that crashed, marked finished: false, so
+// they can be watched. There is no finish to verify on those; finishFrames is
+// then simply the tick the attempt ended on.
+const unfinished = saved.finished === false;
 
 // 1. Per-tick keys -> toggle lists -> recording string.
 const recording = fromDense(controlsPerTick);
@@ -59,6 +63,14 @@ console.log(`${roundTripOk ? 'PASS' : 'FAIL'} round trip: decoded string ${round
 
 // 3. The game's own check. Verify steps a fresh car with the recording until
 // it finishes or reaches targetFrames, and passes only if both happen at once.
+if (unfinished) {
+  if (roundTripOk) {
+    writeFileSync(new URL(`${run}_${name}.recording.json`, runsDir), JSON.stringify({ track: name, frames: finishFrames, finished: false, recording: recordingString }, null, 2));
+    console.log(`NOTE this attempt did not finish the lap, so Verify is skipped. It ends at ${(finishFrames / 1000).toFixed(3)} s.`);
+    console.log(`saved runs/${run}_${name}.recording.json (for watching only)`);
+  }
+  process.exit(roundTripOk ? 0 : 1);
+}
 const worker = await bootWorker();
 const track = loadTrack(name);
 const verify = (targetFrames) => worker.verify({ ...track, carRecording: recordingString, targetFrames });

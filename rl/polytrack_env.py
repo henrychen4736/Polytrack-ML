@@ -173,10 +173,12 @@ class PolytrackEnv(gym.Env if gym else object):
         reply = self.server.request(cmd="step", action=int(action))
         return _obs(reply), float(reply["reward"]), reply["terminated"], reply["truncated"], reply["info"]
 
-    def save_lap(self, run: str = "rl") -> dict:
+    def save_lap(self, run: str = "rl", unfinished: bool = False) -> dict:
         """After a finished lap: write runs/<run>_<track>.json for
-        scripts/export_recording.mjs. Returns {"saved": path, "finishFrames": n}."""
-        return self.server.request(cmd="save", run=run)
+        scripts/export_recording.mjs. Returns {"saved": path, "finishFrames": n}.
+        With unfinished=True an attempt that crashed is saved as well, so it
+        can be watched in the game."""
+        return self.server.request(cmd="save", run=run, unfinished=unfinished)
 
     def close(self):
         self.server.close()

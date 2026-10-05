@@ -209,7 +209,7 @@ async function handle(msg) {
       return { obs: round(r.obs), reward: r.reward, terminated: r.terminated, truncated: r.truncated, info: r.info };
     }
     case 'save':
-      return { saved: renv.save(msg.run ?? 'rl'), finishFrames: renv.state.finishFrames };
+      return { saved: renv.save(msg.run ?? 'rl', { unfinished: !!msg.unfinished }), finishFrames: renv.state.finishFrames };
     default:
       throw new Error(`unknown cmd "${msg.cmd}"`);
   }

@@ -104,6 +104,16 @@ if (name !== 'summer1') {
   console.log(`Opened the ${shownName} page.`);
 }
 
+// An attempt that did not finish the lap (saved by rl/evaluate.py for
+// watching) is not a valid record, and the game says so in a dialog when it
+// tries to load it as a ghost. Dismiss the dialog; the lap can still be opened
+// with Watch.
+if (lap.finished === false) {
+  const ok = page.getByText('Ok', { exact: true }).first();
+  await ok.waitFor({ timeout: 8000 }).then(() => ok.click()).catch(() => {});
+  console.log('This attempt did not finish the lap; the game flags it as an invalid replay, which is expected.');
+}
+
 if (checkOnly) {
   // Automated check: the client shows the stored time and enables Watch.
   // Screenshot before and during the replay.

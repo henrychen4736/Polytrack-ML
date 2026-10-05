@@ -100,6 +100,11 @@ def main() -> None:
         print(f"DID NOT FINISH ({info['reason']}) at {info['frames'] / 1000:.2f} s: reached "
               f"{100 * info['fraction']:.1f}% of the line, {info['speedKmh']:.0f} km/h, "
               f"{info['offLine']:.1f} off the line, total reward {total:.2f}")
+        # Save the failed attempt too: watching it is the quickest way to see
+        # what went wrong. It is marked as unfinished in the file.
+        saved_lap = env.save_lap(args.run, unfinished=True)
+        print(f"saved {saved_lap['saved']} (unfinished attempt, for watching)")
+        print(f"next: node scripts/export_recording.mjs {args.track} {args.run}")
     env.close()
     raise SystemExit(0 if info["reason"] == "finished" else 1)
 

@@ -574,9 +574,14 @@ export class RacingEnv {
    * scripts/export_recording.mjs reads: { track, finishFrames, controlsPerTick }.
    * Only a lap that crossed the finish line can be saved. Returns the path.
    */
-  save(run = 'rl') {
-    const finishFrames = this.state?.finishFrames;
-    if (finishFrames == null) throw new Error('nothing to save: the last episode did not finish');
+  save(run = 'rl', { unfinished = false } = {}) {
+    // Normally only a finished lap is saved. With `unfinished`, an attempt
+    // that crashed is saved too, up to the tick it ended on, so that it can be
+    // watched in the game to see where and how it went wrong. Such a file is
+    // marked finished: false, and the exporter does not run Verify on it.
+    const finished = this.state?.finishFrames != null;
+    if (!finished && !unfinished) throw new Error('nothing to save: the last episode did not finish');
+    const finishFrames = finished ? this.state.finishFrames : this.state.frames;
     if (!/^[A-Za-z0-9_-]+$/.test(run)) throw new Error('run name may only contain letters, digits, "_" and "-"');
     const dir = new URL('../runs/', import.meta.url);
     mkdirSync(dir, { recursive: true });
@@ -584,6 +589,7 @@ export class RacingEnv {
     writeFileSync(new URL(file, dir), JSON.stringify({
       track: this.cfg.track,
       finishFrames,
+      finished,
       // The finish can land mid-decision; keep only the ticks up to it.
       controlsPerTick: this.controlsPerTick.slice(0, finishFrames),
     }));
