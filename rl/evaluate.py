@@ -80,11 +80,15 @@ def main() -> None:
     # One episode from the start line (start_fraction 0 = never part-way round).
     obs, info = env.reset(options={"start_fraction": 0})
     total, steps, done = 0.0, 0, False
+    # Decisions during which the car's body touched something. Observation
+    # entry 103 is the environment's "contact during the last step" flag.
+    contact_steps = 0
     next_report = 0.1
     while not done:
         obs, reward, terminated, truncated, info = env.step(choose(obs))
         total += reward
         steps += 1
+        contact_steps += int(len(obs) > 103 and obs[103] > 0)
         done = terminated or truncated
         if info["fraction"] >= next_report:  # one line per 10% of the lap
             print(f"  {round(100 * next_report)}% at {info['frames'] / 1000:.2f} s, "
@@ -92,6 +96,7 @@ def main() -> None:
             next_report += 0.1
 
     human = env.spec_info["humanFrames"]
+    print(f"body contact on {contact_steps} of {steps} decisions")
     if info["reason"] == "finished":
         frames = info["finishFrames"]
         print(f"FINISHED in {frames / 1000:.3f} s (human {human / 1000:.3f} s, {frames / human:.2f}x), "
