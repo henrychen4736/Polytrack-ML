@@ -29,7 +29,10 @@
 //   then the agent is asked again.
 //
 // ---------------------------------------------------------------------------
-// OBSERVATION: OBS_SIZE = 101 numbers, all scaled to be roughly within -1..1
+// OBSERVATION: OBS_SIZE = 144 numbers, all scaled to be roughly within -1..1
+// (The first 101 are unchanged from the first version of this file; the road
+// edge numbers were added after them, so a network trained on the first 101
+// can still be run by cutting the observation short.)
 //
 // "Car frame" below means the car's own axes (measured, see sim/controller.mjs):
 //   x = to the car's LEFT, y = up through the roof, z = FORWARD.
@@ -56,6 +59,19 @@
 //   21     60     20 line points ahead, 3 numbers each         see below
 //                 (left, up, fwd) in the car frame
 //   81     20     the human's speed at each of those points    km/h / 300
+//   101    2      room to the road's edge right now: on the    units / 10
+//                 car's left, then right. 0 = the car's centre
+//                 is on the edge; a scrape starts at about 1 unit
+//                 (half the car's width). 2 = 20 units or more.
+//   103    1      did the body touch anything during the       0 or 1
+//                 previous decision
+//   104    40     for each of the 20 points ahead: room from   units / 10
+//                 the LINE to the edge on its left, then right
+//
+// "Edge" is a wall, a barrier, or the end of the road surface, whichever is
+// nearer (sim/trackmesh.mjs). The edge numbers at 101 are measured from the
+// car; those at 104 from the line, so together with where the line points are
+// they tell the agent how wide the road ahead is and which side has room.
 //
 // The 20 points ahead are spaced `gap` apart along the line, where
 //   gap = max(2 units, 0.15 s x current speed)
@@ -69,6 +85,17 @@
 // REWARD
 //
 //   every step:  0.1 x (distance gained along the reference line, in units)
+//                  x pace, where pace = our speed / the human's speed at
+//                  this point of the line, limited to 0..1.5 (paceReward).
+//                  A unit of road covered at the human's speed is worth
+//                  0.1; covered at half that speed, 0.05. This pays for
+//                  carrying speed everywhere, not only for getting there.
+//                minus a penalty while the car's body is touching anything:
+//                  0.1 x (share of this step's ticks in contact)
+//                  + 0.05 x log10(1 + how hard the contacts pushed)
+//                  A full second of scraping costs about 10, twice what a
+//                  second of driving at 200 km/h earns. Top human laps have
+//                  no body contact at all, so this never punishes good driving.
 //   on finish:   the rest of the line's length x 0.1 (so every finished lap
 //                has collected exactly the same progress reward), plus
 //                5 + 2 x (seconds left before the tick limit)
@@ -91,6 +118,9 @@
 //     'stalled'     less than 1 unit of progress in `stallTicks` (2 s):
 //                   crashed, flipped, stuck or driving the wrong way
 //     'off line'    more than `maxOffLine` (20) units from the reference line
+//     'off track'   more than `edgeMargin` (2) units beyond the road's edge
+//                   while over a stretch where the human was on the ground:
+//                   over an open edge, or outside the barriers
 //     'time limit'  `maxTicks` reached (default: twice the human's lap time)
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { Env, loadTrack } from '../sim/env.mjs';
@@ -98,6 +128,7 @@ import { decodeState } from '../sim/state.mjs';
 import { loadHumanLap } from '../sim/drive.mjs';
 import { buildLine, nearestIndex, SPACING } from '../sim/line.mjs';
 import { rotate } from '../sim/track.mjs';
+import { buildTrackMesh, clearanceProfile, MAX_CLEARANCE } from '../sim/trackmesh.mjs';
 import { decodeRecording, toDense } from '../sim/recording.mjs';
 
 // ---- actions ---------------------------------------------------------------
@@ -124,7 +155,11 @@ export function controlsToAction(c) {
 /** How many reference-line points ahead the agent sees. */
 export const LOOKAHEAD_POINTS = 20;
 /** Length of the observation vector: 21 car numbers + 3 per point + 1 speed per point. */
-export const OBS_SIZE = 21 + 4 * LOOKAHEAD_POINTS;
+export const OBS_SIZE = 21 + 4 * LOOKAHEAD_POINTS + 3 + 2 * LOOKAHEAD_POINTS;
+/** Decisions between the save states an episode leaves behind for ownStart. */
+const OWN_SNAPSHOT_EVERY = 100;
+/** How many of those are kept (the last 8 seconds of driving). */
+const OWN_SNAPSHOTS_KEPT = 8;
 
 // Divisors that bring each quantity to roughly -1..1. Neural networks learn
 // badly when one input is around 200 and another around 0.01.
@@ -134,6 +169,7 @@ const SPIN_SCALE = 5;          // rad/s
 const STEER_SCALE = 0.45;      // rad; the wheels' limit at low speed is about 0.41
 const NEAR_SCALE = 10;         // world units
 const CLIP = 3;                // nothing in the observation may exceed +-3
+const EDGE_SCALE = 10;         // world units; road-edge distances are divided by this
 
 /** Ticks between the save states kept along the human's lap (see _buildLadder).
  *  250 ms: a reset then replays at most a quarter of a second of driving. */
@@ -152,8 +188,14 @@ export const DEFAULTS = {
   maxTicks: null,
   stallTicks: 2000,
   maxOffLine: 20,
+  // An episode also ends when the car's centre is this far beyond the road's
+  // edge on a stretch where the human was on the ground ('off track').
+  edgeMargin: 2,
   // Reward weights (see REWARD above).
   progressReward: 0.1,     // per world unit gained along the line
+  paceReward: 1,           // 1: scale progress by our speed / the human's; 0: plain progress
+  contactPenalty: 0.1,     // per step, times the share of its ticks with body contact
+  impulsePenalty: 0.05,    // per step, times log10(1 + summed contact impulse)
   finishBonus: 5,          // for finishing at all
   timeBonusPerSecond: 2,   // per second left before maxTicks at the finish
   // Lookahead spacing: gap between seen line points = max(minGap, speed x gapSeconds).
@@ -173,6 +215,15 @@ export const DEFAULTS = {
   // failure point puts the practice where it is needed, and lets the agent
   // arrive at the trouble spot under its own control.
   failureStart: 0,
+  // After an episode that ended in a crash, the probability that the next
+  // one starts from the agent's OWN state a few seconds before that crash,
+  // instead of from the start line or from the human's lap. 0 = never.
+  // Why: starts taken from the human's lap hand the agent the human's speed
+  // and position, which makes every trouble spot easier than it is in a real
+  // lap (the human arrives at a jump fast enough; the agent, having scraped a
+  // wall on the way, does not). Restarting from its own earlier state makes
+  // it solve the situation it actually got itself into.
+  ownStart: 0,
   // Whether observation [20] carries the fraction of the lap completed
   // (1) or is always 0 (0). On a single track it helps: the agent can learn
   // "at 40% of the lap, do this". For an agent meant to drive tracks it has
@@ -245,6 +296,10 @@ export class RacingEnv {
       if (t % 20 === 0) index = nearestIndex(renv.line, decodeState(run.states[t]).position, index).index;
       renv.humanIndexAtTick[t] = index;
     }
+    // How much room there is beside each line point (see sim/trackmesh.mjs),
+    // and which way "left" is at each point, both worked out once here.
+    renv.clearance = clearanceProfile(buildTrackMesh(renv.track.trackData), renv.line);
+    renv.lineLeft = renv.line.quaternions.map((q) => rotate([1, 0, 0], q));
     // The human's keys on every tick: humanControls[t] is held while tick t is computed.
     renv.humanControls = toDense(decodeRecording(human.recording), human.frames);
 
@@ -264,6 +319,17 @@ export class RacingEnv {
     const states = await this.env.step(controls, n);
     for (let k = 0; k < n; k++) this.controlsPerTick.push(controls);
     const newest = decodeState(states[n - 1]);
+    // Body contact during these ticks: on how many of them, and how hard in
+    // total. A sliding scrape often reports contacts with zero impulse, which
+    // is why the tick count is kept as well as the impulse sum.
+    this.contactTicks = 0;
+    this.contactImpulse = 0;
+    for (let k = 0; k < n; k++) {
+      const impulses = k === n - 1 ? newest.collisionImpulses : decodeState(states[k]).collisionImpulses;
+      if (!impulses.length) continue;
+      this.contactTicks++;
+      for (const impulse of impulses) this.contactImpulse += Math.abs(impulse);
+    }
     // Compare with the state 4 ticks back when this call produced that many
     // (a longer gap averages out float32 rounding in the positions);
     // otherwise with the newest state of the previous call.
@@ -293,6 +359,38 @@ export class RacingEnv {
     // Line indices where recent episodes of this environment ended without
     // finishing (see step()). Created on first use.
     this.failures ??= [];
+    this.ownStates ??= [];
+    this.ownRestarts ??= 0;   // own-state restarts in a row since the last fresh start
+    this.decisions = 0;
+
+    // ownStart: straight after a crash, sometimes go back to the agent's own
+    // state a few seconds earlier instead of starting somewhere fresh.
+    // Not more than 3 times in a row from one crash site: an own state can be
+    // a lost cause (too slow for the jump ahead whatever is done next), and
+    // then the practice has to come from an earlier point or a different start.
+    const crashTick = this.lastCrashTick;
+    this.lastCrashTick = null;
+    if (startFraction == null && crashTick != null && this.ownStates.length && this.ownRestarts < 3 && this.rng() < this.cfg.ownStart) {
+      // Aim 2 to 6 seconds before the crash; take the latest kept state at or
+      // before that, or the oldest one if the episode was shorter than that.
+      const aim = crashTick - (2000 + 4000 * this.rng());
+      let pick = 0;
+      for (let k = 0; k < this.ownStates.length; k++) if (this.ownStates[k].tick <= aim) pick = k;
+      const own = this.ownStates[pick];
+      // States after the chosen one belong to a future that is being abandoned.
+      for (const later of this.ownStates.splice(pick + 1)) this.env.dropState(later.handle);
+      await this.env.loadState(own.handle);
+      this.state = own.state;
+      this.older = own.older;
+      this.controlsPerTick.length = own.controlsLength; // the keys up to that moment are still the same lap
+      this.previousAction = own.previousAction;
+      this.progressIndex = Math.max(0, own.progressIndex - 5);
+      this.ownRestarts++;
+      return this._beginEpisode();
+    }
+    // Any other start begins a new lap: forget the old lap's own states.
+    for (const old of this.ownStates.splice(0)) this.env.dropState(old.handle);
+    this.ownRestarts = 0;
     let startTick;
     if (startFraction != null) {
       startTick = Math.floor(Math.max(0, Math.min(0.95, startFraction)) * this.human.frames);
@@ -333,6 +431,14 @@ export class RacingEnv {
       this.progressIndex = Math.max(0, this.humanIndexAtTick[Math.max(0, startTick - 1)] - 5);
     }
 
+    return this._beginEpisode();
+  }
+
+  /** Common end of every kind of start: reset the per-episode counters and
+   *  return the first observation. */
+  _beginEpisode() {
+    this.contactTicks = 0;
+    this.contactImpulse = 0;
     this._locate();
     this.startTick = this.state.frames;
     this.startProgress = this.progress;
@@ -341,6 +447,24 @@ export class RacingEnv {
     this.episodeReward = 0;
     this.done = false;
     return { obs: this._observe(), info: this._info(null) };
+  }
+
+  /**
+   * Leave a save state of the current moment behind (for ownStart), together
+   * with the bookkeeping that goes with it. Stored as a difference from the
+   * ladder's full copy, like the ladder's own rungs, and for the same car.
+   */
+  async _rememberOwnState() {
+    this.ownStates.push({
+      handle: await this.env.saveState(this.ladder.base),
+      tick: this.state.frames,
+      state: this.state,
+      older: this.older,
+      controlsLength: this.controlsPerTick.length,
+      previousAction: this.previousAction,
+      progressIndex: this.progressIndex,
+    });
+    if (this.ownStates.length > OWN_SNAPSHOTS_KEPT) this.env.dropState(this.ownStates.shift().handle);
   }
 
   /**
@@ -386,6 +510,7 @@ export class RacingEnv {
    */
   async _buildLadder() {
     this.env.reset(this.track); // a new car; snapshots of the previous car are now useless
+    this.ownStates = [];        // including the agent's own (their memory goes with the old car's base)
     this.controlsPerTick = [];
     this.state = this.older = null;
     const base = await this.env.saveState();
@@ -442,6 +567,14 @@ export class RacingEnv {
     const length = Math.hypot(...along) || 1;
     const offset = dot(sub(state.position, line.points[near.index]), along) / length;
     this.progress = near.index * SPACING + Math.max(-0.5 * SPACING, Math.min(0.5 * SPACING, offset));
+
+    // Room to the road's edge on each side of the CAR. The clearance table
+    // says how far the edges are from the line point; shifting by how far the
+    // car is to the left of that point gives the distances from the car.
+    // Negative = the car's centre is beyond that edge.
+    const lateral = dot(sub(state.position, line.points[near.index]), this.lineLeft[near.index]);
+    this.edgeLeft = this.clearance.left[near.index] - lateral;
+    this.edgeRight = this.clearance.right[near.index] + lateral;
   }
 
   /** Build the observation vector described at the top of this file. */
@@ -492,12 +625,23 @@ export class RacingEnv {
     // Past the end of the line the last point is repeated.
     const gap = Math.max(cfg.minGap, (state.speedKmh / 3.6) * cfg.gapSeconds);
     const speeds = o + 3 * LOOKAHEAD_POINTS;
+    // Where the road-edge numbers go (see the table at the top of the file).
+    const EDGE_NOW = 21 + 4 * LOOKAHEAD_POINTS, EDGE_AHEAD = EDGE_NOW + 3;
     for (let k = 1; k <= LOOKAHEAD_POINTS; k++) {
       const index = Math.min(last, this.progressIndex + Math.round((k * gap) / SPACING));
       const local = toCarFrame(sub(line.points[index], state.position), q);
       for (const v of local) obs[o++] = clip(v / (k * gap));
       obs[speeds + k - 1] = line.speedKmh[index] / SPEED_KMH_SCALE;
+      // [104..143] room beside the line at this point, left then right.
+      obs[EDGE_AHEAD + 2 * (k - 1)] = this.clearance.left[index] / EDGE_SCALE;
+      obs[EDGE_AHEAD + 2 * (k - 1) + 1] = this.clearance.right[index] / EDGE_SCALE;
     }
+    // [101..102] room to the edge from the car, limited to the range the
+    // clearance table itself uses; [103] body contact during the last step.
+    const room = (d) => Math.max(-CLIP, Math.min(MAX_CLEARANCE, d) / EDGE_SCALE);
+    obs[EDGE_NOW] = room(this.edgeLeft);
+    obs[EDGE_NOW + 1] = room(this.edgeRight);
+    obs[EDGE_NOW + 2] = this.contactTicks > 0 ? 1 : 0;
     return obs;
   }
 
@@ -533,8 +677,16 @@ export class RacingEnv {
     this._locate();
     const s = this.state;
 
-    // Reward for the ground gained this step (negative if the car slid back).
-    let reward = cfg.progressReward * (this.progress - before);
+    // Reward for the ground gained this step (negative if the car slid back),
+    // scaled by pace: our speed against the human's at this point of the line.
+    // The human's speed is floored at 30 km/h so the first metres off the
+    // start line, where the human was nearly stationary, do not blow up.
+    const pace = cfg.paceReward ? Math.max(0, Math.min(1.5, s.speedKmh / Math.max(30, this.line.speedKmh[this.progressIndex]))) : 1;
+    let reward = cfg.progressReward * (this.progress - before) * pace;
+    // Penalty for touching anything with the body during this step.
+    if (this.contactTicks > 0) {
+      reward -= cfg.contactPenalty * (this.contactTicks / cfg.ticks) + cfg.impulsePenalty * Math.log10(1 + this.contactImpulse);
+    }
 
     // Stall clock: restart it whenever the car has gained a full unit.
     if (this.progress >= this.stallProgress + 1) { this.stallProgress = this.progress; this.stallTick = s.frames; }
@@ -547,6 +699,9 @@ export class RacingEnv {
       reward += cfg.progressReward * (this.line.length - this.progress);
       reward += cfg.finishBonus + cfg.timeBonusPerSecond * Math.max(0, cfg.maxTicks - s.finishFrames) / 1000;
     } else if (this.offLine > cfg.maxOffLine) reason = 'off line';
+    // Beyond the road's edge. Only judged where the human was on the ground:
+    // in the air there is no road to be beside.
+    else if (this.line.grounded[this.progressIndex] && Math.min(this.edgeLeft, this.edgeRight) < -cfg.edgeMargin) reason = 'off track';
     else if (s.frames - this.stallTick > cfg.stallTicks) reason = 'stalled';
     else if (s.frames >= cfg.maxTicks) reason = 'time limit';
 
@@ -555,11 +710,17 @@ export class RacingEnv {
     // Remember where the car came to grief, for failureStart (see reset()).
     // Running out of time is not a crash, so it is not recorded. Keep the
     // last 40, so the list follows the agent as it gets past old trouble spots.
-    if (reason === 'off line' || reason === 'stalled') {
+    const crashed = reason === 'off line' || reason === 'stalled' || reason === 'off track';
+    if (crashed) {
       this.failures ??= [];
       this.failures.push(this.progressIndex);
       if (this.failures.length > 40) this.failures.shift();
     }
+    // For ownStart: note how the episode ended, and while it runs leave a
+    // save state behind every OWN_SNAPSHOT_EVERY decisions.
+    this.lastCrashTick = crashed ? s.frames : null;
+    this.decisions++;
+    if (cfg.ownStart > 0 && !this.done && this.decisions % OWN_SNAPSHOT_EVERY === 0) await this._rememberOwnState();
     return {
       obs: this._observe(),
       reward,

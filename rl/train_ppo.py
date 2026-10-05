@@ -115,6 +115,14 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--track", default="summer1",
                    help="one track, or several separated by commas for a multi-track (generalist) agent; "
                         "use as many --envs as tracks so each track has its own environment")
+    p.add_argument("--own-start", type=float, default=0.0,
+                   help="after a crash, probability that the next episode restarts from the agent's own "
+                        "state a few seconds earlier (see ownStart in rl/racing_env.mjs)")
+    p.add_argument("--critic-warmup", type=int, default=0,
+                   help="for this many updates at the start, train only the critic and leave the policy "
+                        "alone. Use it when resuming under a changed reward or discount: the critic's "
+                        "estimates are then wrong at first, and a policy pushed around by wrong "
+                        "estimates can unlearn what it knew")
     p.add_argument("--failure-start", type=float, default=0.0,
                    help="share of the part-way starts that begin shortly before a recent crash site "
                         "(see failureStart in rl/racing_env.mjs)")
@@ -133,7 +141,9 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--lr", type=float, default=3e-4, help="learning rate; shrinks linearly to 0 over the run")
     p.add_argument("--gamma", type=float, default=0.995,
                    help="discount per decision. 0.995 at 10 ms per decision means reward about "
-                        "2 seconds ahead still counts for a third; enough to brake for a corner")
+                        "2 seconds ahead still counts for a third; enough to brake for a corner. "
+                        "0.999 stretches that to about 10 seconds, so that losing speed well before "
+                        "a jump is still felt when the jump is missed")
     p.add_argument("--gae-lambda", type=float, default=0.95, help="GAE smoothing, see compute_advantages")
     p.add_argument("--epochs", type=int, default=4, help="passes over each batch of collected data")
     p.add_argument("--minibatches", type=int, default=4, help="pieces each pass is split into")
@@ -197,7 +207,7 @@ def main() -> None:
 
     envs = PolytrackVecEnv(args.envs, track=tracks, ticks=args.ticks, seed=args.seed,
                            randomStart=args.random_start, lapFraction=lap_fraction,
-                           failureStart=args.failure_start)
+                           failureStart=args.failure_start, ownStart=args.own_start)
     N, T = args.envs, args.rollout
     batch_size = N * T                                  # decisions collected per update
     num_updates = max(1, args.total_steps // batch_size)
@@ -328,7 +338,11 @@ def main() -> None:
                     policy_loss = -torch.min(ratio * adv, ratio.clamp(1 - args.clip, 1 + args.clip) * adv).mean()
                     # Critic: squared error against the returns actually seen.
                     value_loss = 0.5 * (new_value - b_returns[pick]).pow(2).mean()
-                    loss = policy_loss + args.value_weight * value_loss - args.entropy * entropy.mean()
+                    if update <= args.critic_warmup:
+                        # Critic only (see --critic-warmup).
+                        loss = args.value_weight * value_loss
+                    else:
+                        loss = policy_loss + args.value_weight * value_loss - args.entropy * entropy.mean()
 
                     optimizer.zero_grad()
                     loss.backward()

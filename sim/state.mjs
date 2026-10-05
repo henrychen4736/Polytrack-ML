@@ -29,7 +29,14 @@ export function decodeState(u8) {
   const nextCheckpointIndex = dv.getUint16(o, true); o += 2;
   const position = [0, 4, 8].map((d) => dv.getFloat32(o + d, true)); o += 12;
   const quaternion = [0, 4, 8, 12].map((d) => dv.getFloat32(o + d, true)); o += 16;
-  const nImp = u8[o]; o += 1 + 4 * nImp;
+  // Collision impulses: one number per contact between the car's BODY and the
+  // world on this tick (how hard that contact pushed, in the physics engine's
+  // units). The wheels are not solid bodies in this engine (they are rays), so
+  // ordinary driving and soft landings produce none; walls, obstacles and
+  // bottoming out do.
+  const nImp = u8[o]; o += 1;
+  const collisionImpulses = [];
+  for (let k = 0; k < nImp; k++) { collisionImpulses.push(dv.getFloat32(o, true)); o += 4; }
   o += 24 * wheelContact.filter(Boolean).length;
   o += 64;
   const steering = dv.getFloat32(o, true); o += 4;
@@ -42,6 +49,7 @@ export function decodeState(u8) {
     finishFrames,
     hasCheckpointRespawn: (flags & 4) !== 0,
     wheelContact,
+    collisionImpulses,
     nextCheckpointIndex,
     position,
     quaternion,

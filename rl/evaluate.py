@@ -70,7 +70,10 @@ def main() -> None:
 
         def choose(obs: np.ndarray) -> int:
             with torch.no_grad():
-                batch = torch.as_tensor(obs).unsqueeze(0)  # the network expects a batch; make one of size 1
+                # A checkpoint from before the road-edge inputs were added
+                # expects only the first 101 numbers; those are unchanged, so
+                # cut the observation to the size the network was built for.
+                batch = torch.as_tensor(obs[:saved["obs_size"]]).unsqueeze(0)  # a batch of size 1
                 action = agent.greedy(batch) if args.policy == "greedy" else agent.act(batch)[0]
             return int(action)
 

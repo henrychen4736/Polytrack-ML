@@ -141,7 +141,7 @@ export function parseTrack(bytes, partConfigs = loadPartConfigs()) {
 // or stood on a side (used for wall rides and ceilings). Copied verbatim so our
 // geometry matches the game's exactly.
 const H = Math.SQRT1_2; // 0.7071..., sin and cos of 45 degrees
-const ROTATIONS = [
+export const ROTATIONS = [
   [[0, 0, 0, 1], [0, H, 0, H], [0, 1, 0, 0], [0, H, 0, -H]],                    // 0: Y positive
   [[0, 0, 1, 0], [H, 0, H, 0], [1, 0, 0, 0], [H, 0, -H, 0]],                    // 1: Y negative
   [[0, 0, -H, H], [0.5, 0.5, -0.5, 0.5], [H, H, 0, 0], [0.5, 0.5, 0.5, -0.5]],  // 2: X positive

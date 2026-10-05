@@ -21,6 +21,8 @@ const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
  *   points    [[x,y,z], ...]  one every SPACING units along the lap
  *   speedKmh  [number, ...]   the lap's speed at each point
  *   grounded  [boolean, ...]  whether any wheel was touching the road there
+ *   quaternions [[x,y,z,w], ...] how the human's car was oriented there (used
+ *             by sim/trackmesh.mjs to know which way is sideways and up)
  *   length    total length of the line
  * Because points are evenly spaced, point k is k * SPACING along the line.
  */
@@ -29,6 +31,7 @@ export function buildLine(states) {
   const points = [first.position];
   const speedKmh = [first.speedKmh];
   const grounded = [first.wheelContact.some(Boolean)];
+  const quaternions = [first.quaternion];
   for (const u8 of states) {
     const s = decodeState(u8);
     // Keep this frame only once the car has travelled SPACING since the last
@@ -38,9 +41,10 @@ export function buildLine(states) {
       points.push(s.position);
       speedKmh.push(s.speedKmh);
       grounded.push(s.wheelContact.some(Boolean));
+      quaternions.push(s.quaternion);
     }
   }
-  return { points, speedKmh, grounded, length: (points.length - 1) * SPACING };
+  return { points, speedKmh, grounded, quaternions, length: (points.length - 1) * SPACING };
 }
 
 /**
