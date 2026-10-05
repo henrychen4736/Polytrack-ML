@@ -223,6 +223,7 @@ def main() -> None:
 
     def save_checkpoint() -> None:
         checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = checkpoint_path.with_suffix(".pt.tmp")
         torch.save({
             "model": agent.state_dict(),
             "optimizer": optimizer.state_dict(),
@@ -231,7 +232,11 @@ def main() -> None:
             # What evaluate.py needs to rebuild the same network and environment.
             "obs_size": envs.obs_size, "num_actions": envs.num_actions, "hidden": args.hidden,
             "track": args.track, "ticks": args.ticks, "lap_fraction": lap_fraction,
-        }, checkpoint_path)
+        }, temporary)
+        # Written under a temporary name and then renamed: if the run is killed
+        # in the middle of a save, the previous checkpoint is still intact.
+        # (A kill during a direct save once left a truncated, unreadable file.)
+        temporary.replace(checkpoint_path)
 
     # Results of the last 100 episodes that ended, for the progress line.
     recent = deque(maxlen=100)  # (total reward, lap fraction reached, reason)

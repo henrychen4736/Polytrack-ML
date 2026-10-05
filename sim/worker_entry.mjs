@@ -9,6 +9,7 @@
 //
 // 2. Save states (see the block further down).
 import { parentPort } from 'node:worker_threads';
+import { Buffer } from 'node:buffer';
 
 let pump = null;
 const realSetInterval = globalThis.setInterval;
@@ -83,18 +84,57 @@ function run() {
 //   - only snapshot/restore while the simulation is idle (no step in flight);
 //   - restore only while the same car that was alive at the snapshot still
 //     exists, because the game's JavaScript must still know that car.
-const snapshots = new Map(); // slot number -> Uint8Array copy of the memory
+//
+// Two kinds of snapshot:
+//   full   a copy of all the memory (about 24 MB on summer1).
+//   delta  only the 4 KB pages that differ from a named full snapshot (the
+//          "base"). Nearly all of the memory is the track's collision mesh,
+//          which never changes, so a delta is a small fraction of a full
+//          copy. That is what makes it affordable to keep hundreds of
+//          snapshots along a lap (see rl/racing_env.mjs).
+// Restoring a delta = write the base back, then write the delta's pages.
+const PAGE = 4096;
+// slot number -> { full: Uint8Array } or { base: slot, pages: [[offset, Uint8Array], ...] }
+const snapshots = new Map();
+
+function takeSnapshot(baseSlot) {
+  const now = physicsBytes();
+  if (baseSlot == null) return { full: now.slice() };
+  const base = snapshots.get(baseSlot).full;
+  // Buffer views share the memory (no copying) and give us a fast native
+  // comparison of two byte ranges.
+  const a = Buffer.from(now.buffer, now.byteOffset, now.length);
+  const b = Buffer.from(base.buffer, base.byteOffset, base.length);
+  const pages = [];
+  for (let from = 0; from < now.length; from += PAGE) {
+    const to = Math.min(from + PAGE, now.length);
+    // A page past the end of the base (the memory grew since) always counts
+    // as different.
+    if (to > base.length || a.compare(b, from, to, from, to) !== 0) pages.push([from, now.slice(from, to)]);
+  }
+  return { base: baseSlot, pages };
+}
+
+function restoreSnapshot(saved) {
+  const memory = physicsBytes();
+  // The memory can grow but never shrinks. If it grew since a snapshot was
+  // taken, the saved copy is shorter; writing it over the front is still
+  // right, because everything the saved world refers to lies inside that
+  // front part.
+  if (saved.full) { memory.set(saved.full); return; }
+  memory.set(snapshots.get(saved.base).full);
+  for (const [offset, bytes] of saved.pages) memory.set(bytes, offset);
+}
 
 function handleControl(data) {
   if (data.__pt === 'snapshot') {
-    snapshots.set(data.slot, physicsBytes().slice());
-    post({ __pt: 'snapshot', slot: data.slot, bytes: physicsBytes().length });
+    const saved = takeSnapshot(data.base ?? null);
+    snapshots.set(data.slot, saved);
+    // `bytes` = how much this snapshot itself stores.
+    const bytes = saved.full ? saved.full.length : saved.pages.reduce((n, [, page]) => n + page.length, 0);
+    post({ __pt: 'snapshot', slot: data.slot, bytes });
   } else if (data.__pt === 'restore') {
-    const saved = snapshots.get(data.slot);
-    // The memory can grow but never shrinks. If it grew since the snapshot,
-    // the saved copy is shorter; writing it over the front is still right,
-    // because everything the saved world refers to lies inside that front part.
-    physicsBytes().set(saved);
+    restoreSnapshot(snapshots.get(data.slot));
     post({ __pt: 'restore', slot: data.slot });
   } else if (data.__pt === 'drop') {
     snapshots.delete(data.slot);

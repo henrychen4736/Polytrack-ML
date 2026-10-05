@@ -115,23 +115,30 @@ export class Env {
   // across a reset()/replay()/evaluate() (those replace the car).
 
   /** Send one of our control messages to the worker and wait for its reply. */
-  _control(kind, slot) {
+  _control(kind, slot, extra = {}) {
     return new Promise((resolve) => {
       const onMessage = (msg) => {
         if (msg?.__pt === kind && msg.slot === slot) { this.worker.worker.off('message', onMessage); resolve(msg); }
       };
       this.worker.worker.on('message', onMessage);
-      this.worker.worker.postMessage({ __pt: kind, slot });
+      this.worker.worker.postMessage({ __pt: kind, slot, ...extra });
     });
   }
 
   /**
    * Snapshot the physics now. Returns a handle to pass to loadState().
    * The handle remembers which car it belongs to.
+   *
+   * With no argument the snapshot is a full copy of the memory (about 24 MB).
+   * Pass the handle of an earlier FULL snapshot of the same car as `base` to
+   * store only what differs from it, which is far smaller; keep the base for
+   * as long as any snapshot built on it is in use. handle.bytes says how much
+   * the snapshot stores.
    */
-  async saveState() {
+  async saveState(base = null) {
+    if (base && base.carId !== this.carId) throw new Error('saveState: the base snapshot belongs to another car');
     const slot = (this._nextSlot = (this._nextSlot ?? 0) + 1);
-    const { bytes } = await this._control('snapshot', slot);
+    const { bytes } = await this._control('snapshot', slot, { base: base?.slot ?? null });
     return { slot, carId: this.carId, bytes };
   }
 

@@ -135,6 +135,14 @@ const STEER_SCALE = 0.45;      // rad; the wheels' limit at low speed is about 0
 const NEAR_SCALE = 10;         // world units
 const CLIP = 3;                // nothing in the observation may exceed +-3
 
+/** Ticks between the save states kept along the human's lap (see _buildLadder).
+ *  250 ms: a reset then replays at most a quarter of a second of driving. */
+const LADDER_STEP = 250;
+/** Make a fresh car once the current one has been stepped this many ticks in
+ *  total. The game refuses to step a car past 5,999,999 ticks of its own
+ *  counter, which keeps counting across save-state restores. */
+const CAR_TICK_BUDGET = 5_000_000;
+
 /** Defaults for everything that can be set per environment. */
 export const DEFAULTS = {
   track: 'summer1',
@@ -303,28 +311,26 @@ export class RacingEnv {
       startTick = Math.floor(0.9 * this.rng() * this.human.frames); // anywhere in the first 90%
     }
 
-    this.env.reset(this.track);
-    this.controlsPerTick = [];
-    this.state = this.older = null;
+    // Put the car at the chosen start by restoring a save state (see
+    // _buildLadder). The game stops stepping a car after about 6 million
+    // ticks of its own counter, which save states do not rewind, so well
+    // before that we make a fresh car and rebuild the ladder for it.
+    if (!this.ladder || this.env.frames > CAR_TICK_BUDGET) await this._buildLadder();
     this.previousAction = 3; // coast straight: no keys held before the first decision
 
     if (startTick === 0) {
-      // A decision needs a state, and a state only exists after a tick, so
-      // take one tick with no keys pressed (same as sim/drive.mjs).
-      await this._advance({}, 1);
+      await this._restore(this.ladder.startLine);
       this.progressIndex = 0;
     } else {
-      // Replay the human's keys for ticks 0..startTick-1, one step() call per
-      // run of ticks with the same keys held.
-      for (let t = 0; t < startTick;) {
-        let n = 1;
-        while (t + n < startTick && controlsKey(this.humanControls[t + n]) === controlsKey(this.humanControls[t])) n++;
-        await this._advance(this.humanControls[t], n);
-        t += n;
-      }
+      // The latest rung at or before the chosen tick ...
+      const rung = this.ladder.rungs[Math.min(this.ladder.rungs.length - 1, Math.floor(startTick / LADDER_STEP))];
+      await this._restore(rung);
+      // ... then the human's keys for the few ticks left (under LADDER_STEP),
+      // so the start lands exactly on the chosen tick.
+      await this._replayHuman(rung.tick, startTick);
       // We know which line point the human had reached by this tick. Start
       // the search a little before it; nearestIndex only looks forward.
-      this.progressIndex = Math.max(0, this.humanIndexAtTick[startTick - 1] - 5);
+      this.progressIndex = Math.max(0, this.humanIndexAtTick[Math.max(0, startTick - 1)] - 5);
     }
 
     this._locate();
@@ -335,6 +341,85 @@ export class RacingEnv {
     this.episodeReward = 0;
     this.done = false;
     return { obs: this._observe(), info: this._info(null) };
+  }
+
+  /**
+   * Replay the human's keys for ticks [from, to), one step() call per run of
+   * ticks with the same keys held.
+   */
+  async _replayHuman(from, to) {
+    for (let t = from; t < to;) {
+      let n = 1;
+      while (t + n < to && controlsKey(this.humanControls[t + n]) === controlsKey(this.humanControls[t])) n++;
+      await this._advance(this.humanControls[t], n);
+      t += n;
+    }
+  }
+
+  /**
+   * Build the "ladder": save states along the human's lap, so that reset()
+   * can put the car anywhere on it almost for free.
+   *
+   * Before this existed, starting an episode part-way round meant creating a
+   * new car and replaying the human's keys from the start line up to the
+   * chosen tick, every single time: up to several hundred milliseconds of
+   * simulation per episode, and the main cost of training with many part-way
+   * starts. Now the human's lap is replayed ONCE, pausing every LADDER_STEP
+   * ticks to take a save state (a "rung"). A reset restores the nearest rung
+   * (about 1 to 2 ms) and replays at most LADDER_STEP ticks.
+   *
+   * A save state only works for the car it was taken from (see
+   * sim/worker_entry.mjs), so one car is kept for the whole ladder and reused
+   * for every episode. Rungs are stored as differences from one full copy of
+   * the memory, which keeps hundreds of them small.
+   *
+   * this.ladder = {
+   *   base       full snapshot of the new car before any tick (kept because
+   *              every other snapshot is stored relative to it)
+   *   startLine  the car after one tick with no keys: where an episode from
+   *              the start line begins (same first tick as sim/drive.mjs)
+   *   rungs      rungs[k] = the car after the human's first k * LADDER_STEP
+   *              ticks; rungs[0] is the untouched new car
+   * }
+   * Each entry also keeps the bookkeeping that goes with that moment
+   * (`state`, `older`, the keys so far), which _restore puts back.
+   */
+  async _buildLadder() {
+    this.env.reset(this.track); // a new car; snapshots of the previous car are now useless
+    this.controlsPerTick = [];
+    this.state = this.older = null;
+    const base = await this.env.saveState();
+    const remember = async (tick) => ({
+      tick,
+      handle: tick === 0 && this.controlsPerTick.length === 0 ? base : await this.env.saveState(base),
+      state: this.state,
+      older: this.older,
+      controls: this.controlsPerTick.slice(),
+    });
+
+    // Rung 0 is the untouched car; then the start-line state, one empty tick in.
+    const rungs = [await remember(0)];
+    await this._advance({}, 1);
+    const startLine = await remember(1);
+
+    // Back to the untouched car, then the human's lap with a rung every
+    // LADDER_STEP ticks. Starts are never placed in the last 5% of the lap.
+    await this._restore(rungs[0]);
+    const lastTick = Math.floor(0.95 * this.human.frames);
+    for (let tick = LADDER_STEP; tick <= lastTick; tick += LADDER_STEP) {
+      await this._replayHuman(tick - LADDER_STEP, tick);
+      rungs.push(await remember(tick));
+    }
+    this.ladder = { base, startLine, rungs };
+    this.ladderBytes = base.bytes + startLine.handle.bytes + rungs.reduce((n, r) => n + (r.handle === base ? 0 : r.handle.bytes), 0);
+  }
+
+  /** Put the simulator and our own bookkeeping back to a ladder entry. */
+  async _restore(entry) {
+    await this.env.loadState(entry.handle);
+    this.state = entry.state;
+    this.older = entry.older;
+    this.controlsPerTick = entry.controls.slice();
   }
 
   /**
