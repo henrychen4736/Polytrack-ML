@@ -45,6 +45,36 @@ node scripts/watch_ghost.mjs summer1 rl        # watch it
 `python rl/train_ppo.py --help` lists every setting. The checkpoint goes to
 `rl/checkpoints/ppo_<track>.pt` (git-ignored).
 
+## Multi-track ("generalist") training
+
+```bash
+node scripts/fetch_laps.mjs            # once: human laps for every official track (read-only)
+python rl/train_ppo.py --track desert1,summer1,winter1 --envs 3 --no-lap-fraction     --random-start 0.7 --failure-start 0.5
+```
+
+- `--track a,b,c` gives each environment process one of the tracks; use as many
+  `--envs` as tracks. The checkpoint is `rl/checkpoints/ppo_general.pt`, and the
+  log prints a per-track line every 50 updates.
+- `--no-lap-fraction` hides the "how far round the lap am I" input, so the
+  agent cannot memorise a track by position.
+- `--failure-start` starts some episodes 1.5 to 4 s before a place where a
+  recent episode of that environment crashed.
+- Collection uses the server's `rollout` command: each process runs the policy
+  itself for a whole batch and reports back once. The trainer writes the
+  policy's weights to `<checkpoint>.actor.bin` before every batch.
+- `rl/widen_checkpoint.py` makes a trained network wider without changing its
+  outputs, so training can continue with more units.
+
+Measured on an 8-core laptop (Ryzen 9 7940HS), 14 tracks:
+
+- Collection alone runs at about 5,700 decisions/s with 256-wide layers and
+  about 3,500 with 512-wide ones: in the wider network the policy's own
+  arithmetic, done in JavaScript in each process, costs more than the physics.
+- 14 processes are only about 2.7 times faster than one, and 28 are slower
+  than 14. Each process keeps two threads busy, so 8 cores are oversubscribed.
+- Whole training runs at about 2,800 decisions/s with `--random-start 0.7`,
+  because every part-way start replays the human lap up to the start point.
+
 ## Design in brief
 
 - **Actions**: 9 key combinations, {throttle, coast, brake} x {straight, left,

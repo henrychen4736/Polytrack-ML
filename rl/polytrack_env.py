@@ -30,7 +30,10 @@ Run this file directly for a quick check with random actions:
 """
 from __future__ import annotations
 
+import base64
 import json
+import queue
+import threading
 import shutil
 import subprocess
 import sys
@@ -215,12 +218,41 @@ class PolytrackVecEnv:
         self.spec_info = self.servers[0].spec
         self.obs_size = self.spec_info["obsSize"]
         self.num_actions = self.spec_info["numActions"]
+        # One reader thread per server. Reading a reply means waiting on a
+        # pipe, and doing that for one server after another made every step
+        # cost a fixed amount per environment (about 0.14 ms each, measured),
+        # however many CPU cores were idle. A thread blocked on a pipe does not
+        # hold Python's lock, so with a thread per server the waits overlap.
+        # Each thread puts the replies of its server, in order, on that
+        # server's own queue; _read(k) takes the next one.
+        self._replies = [queue.SimpleQueue() for _ in self.servers]
+        for k, server in enumerate(self.servers):
+            threading.Thread(target=self._reader, args=(server, self._replies[k]), daemon=True).start()
+
+    @staticmethod
+    def _reader(server: "EnvServer", out: "queue.SimpleQueue") -> None:
+        """Thread body: forward every reply of one server to its queue. An
+        error (the server died, or reported one) is forwarded as the exception
+        itself, so it is raised in the main thread by _read."""
+        while True:
+            try:
+                out.put(server._read())
+            except Exception as error:  # noqa: BLE001 - passed on, not swallowed
+                out.put(error)
+                return
+
+    def _read(self, k: int) -> dict:
+        """Next reply from server k (waits for it)."""
+        reply = self._replies[k].get()
+        if isinstance(reply, Exception):
+            raise reply
+        return reply
 
     def reset(self) -> np.ndarray:
         """Reset every environment. Returns observations, shape (N, obs_size)."""
         for server in self.servers:
             server.send(cmd="reset")
-        return np.stack([_obs(server._read()) for server in self.servers])
+        return np.stack([_obs(self._read(k)) for k in range(self.num_envs)])
 
     def step(self, actions):
         """Step every environment with its own action.
@@ -235,7 +267,7 @@ class PolytrackVecEnv:
         """
         for server, action in zip(self.servers, actions):
             server.send(cmd="step", action=int(action))
-        replies = [server._read() for server in self.servers]
+        replies = [self._read(k) for k in range(self.num_envs)]
 
         # Reset the ones that ended, again all at once.
         ended = [k for k, reply in enumerate(replies) if reply["terminated"] or reply["truncated"]]
@@ -245,7 +277,7 @@ class PolytrackVecEnv:
         infos = [reply["info"] for reply in replies]
         for k in ended:
             infos[k]["final_obs"] = obs[k]
-            obs[k] = _obs(self.servers[k]._read())
+            obs[k] = _obs(self._read(k))
 
         return (
             np.stack(obs),
@@ -254,6 +286,48 @@ class PolytrackVecEnv:
             np.array([reply["truncated"] for reply in replies], dtype=bool),
             infos,
         )
+
+    def rollout(self, steps: int, weights_file: str, hidden: int) -> dict:
+        """Have every server play `steps` decisions on its own with the policy
+        network stored in `weights_file` (see "rollout" in rl/env_server.mjs),
+        all at the same time, and return the lot.
+
+        This replaces `steps` calls of step(): one round trip per server
+        instead of one per decision, which is where most of the time went.
+
+        Returns a dict of arrays indexed [step, environment]:
+          obs       float32 (steps, N, obs_size)  what each decision was made from
+          actions   int64   (steps, N)            the action picked
+          rewards   float32 (steps, N)
+          dones     float32 (steps, N)            1 where that decision ended an episode
+          last_obs  float32 (N, obs_size)         the observation after the last decision
+          episodes  list of (environment index, info dict) for episodes that ended
+          time_limits  list of (step, environment index, final observation) for
+                       episodes cut off by the time limit
+        """
+        for server in self.servers:
+            server.send(cmd="rollout", steps=steps, weights=weights_file, hidden=hidden)
+        replies = [self._read(k) for k in range(self.num_envs)]
+
+        def decode(text: str, dtype) -> np.ndarray:
+            return np.frombuffer(base64.b64decode(text), dtype=dtype)
+
+        episodes, time_limits = [], []
+        for k, reply in enumerate(replies):
+            for episode in reply["episodes"]:
+                episodes.append((k, episode["info"]))
+                if episode["finalObs"] is not None:
+                    time_limits.append((episode["t"], k, decode(episode["finalObs"], np.float32)))
+        # Each server's arrays are [step, ...]; stacking on axis 1 gives [step, environment, ...].
+        return {
+            "obs": np.stack([decode(r["obs"], np.float32).reshape(steps, self.obs_size) for r in replies], axis=1),
+            "actions": np.stack([decode(r["actions"], np.uint8) for r in replies], axis=1).astype(np.int64),
+            "rewards": np.stack([decode(r["rewards"], np.float32) for r in replies], axis=1),
+            "dones": np.stack([decode(r["dones"], np.uint8) for r in replies], axis=1).astype(np.float32),
+            "last_obs": np.stack([decode(r["lastObs"], np.float32) for r in replies]),
+            "episodes": episodes,
+            "time_limits": time_limits,
+        }
 
     def close(self):
         for server in self.servers:

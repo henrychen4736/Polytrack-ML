@@ -115,6 +115,9 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--track", default="summer1",
                    help="one track, or several separated by commas for a multi-track (generalist) agent; "
                         "use as many --envs as tracks so each track has its own environment")
+    p.add_argument("--failure-start", type=float, default=0.0,
+                   help="share of the part-way starts that begin shortly before a recent crash site "
+                        "(see failureStart in rl/racing_env.mjs)")
     p.add_argument("--no-lap-fraction", action="store_true",
                    help="hide the 'how far round the lap am I' input, so the agent cannot memorise a track by position")
     p.add_argument("--envs", type=int, default=8, help="simulator processes to run in parallel")
@@ -193,7 +196,8 @@ def main() -> None:
     lap_fraction = 0 if args.no_lap_fraction else 1
 
     envs = PolytrackVecEnv(args.envs, track=tracks, ticks=args.ticks, seed=args.seed,
-                           randomStart=args.random_start, lapFraction=lap_fraction)
+                           randomStart=args.random_start, lapFraction=lap_fraction,
+                           failureStart=args.failure_start)
     N, T = args.envs, args.rollout
     batch_size = N * T                                  # decisions collected per update
     num_updates = max(1, args.total_steps // batch_size)
@@ -210,7 +214,10 @@ def main() -> None:
     if args.resume:
         saved = torch.load(checkpoint_path, map_location=device, weights_only=True)
         agent.load_state_dict(saved["model"])
-        optimizer.load_state_dict(saved["optimizer"])
+        # A checkpoint made by rl/widen_checkpoint.py has no optimizer state
+        # (the old one does not fit the larger network); start it fresh.
+        if saved["optimizer"] is not None:
+            optimizer.load_state_dict(saved["optimizer"])
         steps_done, best_finish = saved["steps"], saved["best_finish"]
         print(f"resumed {checkpoint_path} at {steps_done} steps")
 
@@ -226,18 +233,25 @@ def main() -> None:
             "track": args.track, "ticks": args.ticks, "lap_fraction": lap_fraction,
         }, checkpoint_path)
 
-    # Storage for one update's worth of experience, indexed [step, environment].
-    obs_buf = torch.zeros((T, N, envs.obs_size), device=device)
-    action_buf = torch.zeros((T, N), dtype=torch.long, device=device)
-    logprob_buf = torch.zeros((T, N), device=device)
-    reward_buf = torch.zeros((T, N), device=device)
-    done_buf = torch.zeros((T, N), device=device)
-    value_buf = torch.zeros((T, N), device=device)
-
     # Results of the last 100 episodes that ended, for the progress line.
     recent = deque(maxlen=100)  # (total reward, lap fraction reached, reason)
 
-    obs = torch.as_tensor(envs.reset(), device=device)
+    # The servers read the policy's weights from this file at the start of
+    # every rollout (see "rollout" in rl/env_server.mjs for the layout).
+    weights_file = checkpoint_path.with_suffix(".actor.bin")
+    weights_file.parent.mkdir(parents=True, exist_ok=True)
+
+    def write_actor_weights() -> None:
+        """Actor layers in order, each as weights (one row per unit) then
+        biases, as raw float32. Written to a temporary name first and then
+        renamed, so a server can never read a half-written file."""
+        parts = []
+        for layer in (agent.actor[0], agent.actor[2], agent.actor[4]):
+            parts += [layer.weight.detach().cpu().numpy().ravel(), layer.bias.detach().cpu().numpy().ravel()]
+        temporary = weights_file.with_suffix(".tmp")
+        np.concatenate(parts).astype(np.float32).tofile(temporary)
+        temporary.replace(weights_file)
+
     start_time = time.perf_counter()
     try:
         for update in range(1, num_updates + 1):
@@ -245,43 +259,42 @@ def main() -> None:
             optimizer.param_groups[0]["lr"] = args.lr * (1.0 - (update - 1) / num_updates)
 
             # ---- 1. COLLECT ------------------------------------------------
-            for t in range(T):
-                obs_buf[t] = obs
+            # Every server plays T decisions on its own with the current
+            # policy and reports back once. Buffers are indexed [step, environment].
+            write_actor_weights()
+            data = envs.rollout(T, str(weights_file), args.hidden)
+            obs_buf = torch.as_tensor(data["obs"], device=device)
+            action_buf = torch.as_tensor(data["actions"], device=device)
+            reward_buf = torch.as_tensor(data["rewards"], device=device).clone()
+            done_buf = torch.as_tensor(data["dones"], device=device)
+            last_obs = torch.as_tensor(data["last_obs"], device=device)
+
+            for k, info in data["episodes"]:
+                recent.append((info["episodeReward"], info["fraction"], info["reason"]))
+                per_track[envs.tracks[k]].append((info["reason"] == "finished", info["fraction"]))
+                if info["reason"] == "finished" and info["startTick"] <= 1:
+                    # Only laps driven from the start line count as lap times.
+                    if best_finish is None or info["finishFrames"] < best_finish:
+                        best_finish = info["finishFrames"]
+            for t, k, final_obs in data["time_limits"]:
+                # Running out of time is not the car's fault and the road
+                # ahead was still worth something, so stand in the critic's
+                # estimate of that for the reward the episode would have gone
+                # on to collect. The other endings are real: after a finish
+                # there is nothing more to earn, and a crashed, stuck or lost
+                # car was not going to earn anything either.
                 with torch.no_grad():
-                    action, logprob, _, value = agent.act(obs)
-                next_obs, reward, terminated, truncated, infos = envs.step(action.cpu().numpy())
-                reward = torch.as_tensor(reward, device=device)
-
-                for k in np.flatnonzero(terminated | truncated):
-                    info = infos[k]
-                    recent.append((info["episodeReward"], info["fraction"], info["reason"]))
-                    per_track[envs.tracks[k]].append((info["reason"] == "finished", info["fraction"]))
-                    if info["reason"] == "finished" and info["startTick"] <= 1:
-                        # Only laps driven from the start line count as lap times.
-                        if best_finish is None or info["finishFrames"] < best_finish:
-                            best_finish = info["finishFrames"]
-                    if info["reason"] == "time limit":
-                        # Running out of time is not the car's fault and the
-                        # road ahead was still worth something, so stand in
-                        # the critic's estimate of that for the reward the
-                        # episode would have gone on to collect. The other
-                        # endings are real: after a finish there is nothing
-                        # more to earn, and a crashed, stuck or lost car was
-                        # not going to earn anything either.
-                        final_obs = torch.as_tensor(info["final_obs"], device=device)
-                        with torch.no_grad():
-                            reward[k] += args.gamma * agent.value(final_obs.unsqueeze(0))[0]
-
-                action_buf[t], logprob_buf[t], value_buf[t], reward_buf[t] = action, logprob, value, reward
-                done_buf[t] = torch.as_tensor(terminated | truncated, dtype=torch.float32, device=device)
-                # Environments that ended have already been reset: `next_obs`
-                # is the first observation of their new episode.
-                obs = torch.as_tensor(next_obs, device=device)
+                    reward_buf[t, k] += args.gamma * agent.value(torch.as_tensor(final_obs.copy(), device=device).unsqueeze(0))[0]
             steps_done += batch_size
 
             # ---- 2. SCORE --------------------------------------------------
+            # The servers only picked actions. Work out here, in one batch,
+            # how likely each picked action was and what the critic thought
+            # each situation was worth, with the same weights the servers used.
             with torch.no_grad():
-                last_value = agent.value(obs)
+                _, flat_logprob, _, flat_value = agent.act(obs_buf.reshape(batch_size, -1), action_buf.reshape(-1))
+                logprob_buf, value_buf = flat_logprob.reshape(T, N), flat_value.reshape(T, N)
+                last_value = agent.value(last_obs)
             advantages, returns = compute_advantages(reward_buf, value_buf, done_buf, last_value, args.gamma, args.gae_lambda)
 
             # ---- 3. LEARN --------------------------------------------------

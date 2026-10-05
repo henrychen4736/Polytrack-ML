@@ -156,6 +156,15 @@ export const DEFAULTS = {
   randomStart: 0,
   // Seed for the random start choice, so runs can be repeated exactly.
   seed: 0,
+  // Of the episodes that start part-way round (randomStart), the share that
+  // start shortly BEFORE a place where a recent episode of this environment
+  // crashed, instead of at a uniformly random place. 0 = never.
+  // Why: a trained agent tends to fail at a few specific spots on each track
+  // (the same obstacle or jump every time). Uniform starts spend most practice
+  // on road it already drives well. Starting 1.5 to 4 seconds before a known
+  // failure point puts the practice where it is needed, and lets the agent
+  // arrive at the trouble spot under its own control.
+  failureStart: 0,
   // Whether observation [20] carries the fraction of the lap completed
   // (1) or is always 0 (0). On a single track it helps: the agent can learn
   // "at 40% of the lap, do this". For an agent meant to drive tracks it has
@@ -273,8 +282,26 @@ export class RacingEnv {
    */
   async reset({ seed = null, startFraction = null } = {}) {
     if (seed != null) this.rng = makeRng(seed);
-    if (startFraction == null) startFraction = this.rng() < this.cfg.randomStart ? 0.9 * this.rng() : 0;
-    const startTick = Math.floor(Math.max(0, Math.min(0.95, startFraction)) * this.human.frames);
+    // Line indices where recent episodes of this environment ended without
+    // finishing (see step()). Created on first use.
+    this.failures ??= [];
+    let startTick;
+    if (startFraction != null) {
+      startTick = Math.floor(Math.max(0, Math.min(0.95, startFraction)) * this.human.frames);
+    } else if (this.rng() >= this.cfg.randomStart) {
+      startTick = 0; // the start line
+    } else if (this.failures.length && this.rng() < this.cfg.failureStart) {
+      // Start shortly before a recent failure point. The failure is stored as
+      // a line index; find the first tick at which the human had reached it
+      // (humanIndexAtTick only ever increases, so a binary search works) ...
+      const failIndex = this.failures[Math.floor(this.rng() * this.failures.length)];
+      let lo = 0, hi = this.humanIndexAtTick.length - 1;
+      while (lo < hi) { const mid = (lo + hi) >> 1; if (this.humanIndexAtTick[mid] < failIndex) lo = mid + 1; else hi = mid; }
+      // ... then back off by 1.5 to 4 seconds of the human's driving.
+      startTick = Math.max(0, lo - Math.floor(1500 + 2500 * this.rng()));
+    } else {
+      startTick = Math.floor(0.9 * this.rng() * this.human.frames); // anywhere in the first 90%
+    }
 
     this.env.reset(this.track);
     this.controlsPerTick = [];
@@ -440,6 +467,14 @@ export class RacingEnv {
 
     this.done = reason != null;
     this.episodeReward += reward;
+    // Remember where the car came to grief, for failureStart (see reset()).
+    // Running out of time is not a crash, so it is not recorded. Keep the
+    // last 40, so the list follows the agent as it gets past old trouble spots.
+    if (reason === 'off line' || reason === 'stalled') {
+      this.failures ??= [];
+      this.failures.push(this.progressIndex);
+      if (this.failures.length > 40) this.failures.shift();
+    }
     return {
       obs: this._observe(),
       reward,
