@@ -14,8 +14,8 @@ Three classes, from low level to high level:
     PolytrackVecEnv   N environments stepped together, each in its own
                       process, with automatic reset when an episode ends
 
-Observation: 101 float32 numbers, roughly within -1..1 (layout in
-rl/racing_env.mjs). Action: an integer 0..8 (pedal x steer key combinations).
+Observation: 146 float32 numbers, roughly within -1..1 (layout in
+rl/racing_env.mjs). Action: an integer 0..11 = steer + 3 * W + 6 * S.
 
 Only numpy is required. If the `gymnasium` package is installed, PolytrackEnv
 is a real `gymnasium.Env` with `observation_space` and `action_space`, so
@@ -163,7 +163,7 @@ class PolytrackEnv(gym.Env if gym else object):
         return _obs(reply), reply["info"]
 
     def step(self, action):
-        """Hold the keys for `action` (0..8) for `ticks` ticks.
+        """Hold the keys for `action` (0..11) for `ticks` ticks.
 
         Returns (observation, reward, terminated, truncated, info):
           terminated  the car finished the lap

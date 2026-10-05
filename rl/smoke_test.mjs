@@ -69,7 +69,7 @@ console.log(`${trackName}: line ${line.length} units, human lap ${human.frames} 
   check(info.offLine < 1 && info.frames === Math.floor(0.5 * human.frames), 'the car is on the line at the requested tick');
   // From there, full throttle straight for one second must gain ground.
   let gained = 0;
-  for (let k = 0; k < 1000 / cfg.ticks && !renv.done; k++) gained += (await renv.step(0)).reward;
+  for (let k = 0; k < 1000 / cfg.ticks && !renv.done; k++) gained += (await renv.step(3)).reward; // 3 = W, straight
   check(gained > 0, `one second of throttle from there earns progress reward (${gained.toFixed(2)})`);
 }
 
@@ -77,8 +77,8 @@ console.log(`${trackName}: line ${line.length} units, human lap ${human.frames} 
 // A second environment at the controller's own decision interval. Only one
 // simulator is alive at a time, so close the first before booting it.
 await renv.close();
-const cenv = await RacingEnv.create({ track: trackName, ticks: 5 });
-/** Drive one lap with the controller, picking the nearest of the 9 actions. */
+const cenv = await RacingEnv.create({ track: trackName, ticks: 5, pedalEvery: 1 }); // the controller picks W and S afresh every time
+/** Drive one lap with the controller, through the environment's actions. */
 async function controllerLap(options) {
   let { info } = await cenv.reset({ startFraction: 0 });
   const decide = createController(cenv.line, options);
@@ -103,7 +103,7 @@ for (const options of [{}, { brakeMarginKmh: 5 }, { minTargetKmh: 60 }]) {
 // The controller is only known to get round summer1 (sim/drive.mjs has the
 // same result there), so a lap that does not finish is a failure of this
 // environment only on that track.
-if (laps.length > 0 || trackName === 'summer1') check(laps.length > 0, 'the controller finishes a lap through the 9 discrete actions');
+if (laps.length > 0 || trackName === 'summer1') check(laps.length > 0, 'the controller finishes a lap through the discrete actions');
 else console.log(`SKIP controller lap: the pure-pursuit controller does not get round ${trackName}, so there is no lap to compare with`);
 if (laps.length >= 2) {
   laps.sort((a, b) => a.finishFrames - b.finishFrames);

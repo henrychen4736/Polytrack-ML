@@ -77,9 +77,16 @@ Measured on an 8-core laptop (Ryzen 9 7940HS), 14 tracks:
 
 ## Design in brief
 
-- **Actions**: 9 key combinations, {throttle, coast, brake} x {straight, left,
-  right}, held for 10 ticks (10 ms) per decision.
-- **Observation**: 101 numbers scaled to about -1..1. 21 describe the car
+- **Actions**: 12 key combinations, W x S x {straight, left, right}, so W and S
+  can be held together (humans do that over every jump). Steering is chosen
+  every 10 ticks (10 ms). W and S are chosen every 50 ms and held in between,
+  and every key press or release costs a little reward, so that keys are held
+  rather than tapped. The network makes the three choices separately.
+- **Imitation first**: `rl/pretrain_bc.py` trains a new network to press what
+  the top human laps pressed, before PPO starts. See the top of that file.
+- **Observation**: 146 numbers scaled to about -1..1 (the table at the top of
+  `racing_env.mjs` is the reference; the summary below covers the first 101,
+  the rest are road-edge distances and key state). 21 describe the car
   (speed, velocity in the car's frame, which way is up, rotation rate, wheel
   contacts, steering angle, previous keys, offset from the line, lap fraction).
   60 are the next 20 reference-line points in the car's frame, spaced
@@ -109,7 +116,7 @@ numpy 2.1.2):
 
 - `node rl/smoke_test.mjs summer1` passes: observations finite and in range;
   a start at 50% of the human lap lands 0.5 units from the line; the
-  pure-pursuit controller driven through the 9 actions at 5 ticks per decision
+  pure-pursuit controller driven through the actions at 5 ticks per decision
   finishes in 23835 ticks, the same as `scripts/drive_baseline.mjs`; a faster
   finished lap earned more reward than a slower one.
 - The lap saved by that test, and the same lap replayed and saved through the

@@ -10,9 +10,10 @@ What it does, in a loop ("update"):
 
   1. COLLECT. Run the current policy in N simulators at once for `--rollout`
      decisions each. The policy is a small neural network that looks at the
-     observation (101 numbers, see rl/racing_env.mjs) and gives a probability
-     for each of the 9 key combinations; an action is drawn from those
-     probabilities, so the car tries slightly different things every time.
+     observation (146 numbers, see rl/racing_env.mjs) and gives probabilities
+     for three separate choices: W down or up, S down or up, and steering
+     straight, left or right. Each is drawn from its probabilities, so the
+     car tries slightly different things every time.
      A second network, the "critic", guesses how much reward is still to
      come from each situation.
 
@@ -56,37 +57,62 @@ def _layer(inputs: int, outputs: int, gain: float) -> nn.Linear:
     return layer
 
 
+# Observation entry that says whether W and S are read at this decision
+# (OBS_PEDAL_OPEN in rl/racing_env.mjs).
+PEDAL_OPEN = 145
+
+
 class Agent(nn.Module):
     """The policy ("actor") and the value estimate ("critic").
 
     Two separate networks of the same shape:
-        observation (101) -> 256 -> 256 -> 9 action scores   (actor)
-        observation (101) -> 256 -> 256 -> 1 value           (critic)
-    The action scores ("logits") become probabilities through a softmax.
+        observation (146) -> 256 -> 256 -> 7 action scores   (actor)
+        observation (146) -> 256 -> 256 -> 1 value           (critic)
+
+    The 7 scores ("logits") are three independent choices, each turned into
+    probabilities by its own softmax:
+        scores 0-1   W: up, down
+        scores 2-3   S: up, down
+        scores 4-6   steering: straight, left, right
+    and the environment's action number is steer + 3 * W + 6 * S.
+
+    Why three choices instead of one choice among 12 combinations: W and S are
+    only read on every 5th decision (see HOLDING KEYS in rl/racing_env.mjs).
+    On the other decisions the W and S choices have no effect, and with
+    separate choices they can simply be left out of the learning signal there
+    (`pedal_open` below). With one 12-way choice that is not possible.
+
+    Checkpoints from before this change have num_actions = 9: one choice
+    among nine pedal/steer combinations. They are still loadable (`factored`
+    is False for them) so that the old agents can be evaluated.
     """
 
     def __init__(self, obs_size: int, num_actions: int, hidden: int = 256):
         super().__init__()
+        self.factored = num_actions == 12
         self.actor = nn.Sequential(
             _layer(obs_size, hidden, 2 ** 0.5), nn.Tanh(),
             _layer(hidden, hidden, 2 ** 0.5), nn.Tanh(),
             # Tiny final weights: the starting policy barely depends on the
             # observation, so its starting behaviour is set by the bias below.
-            _layer(hidden, num_actions, 0.01),
+            _layer(hidden, 7 if self.factored else num_actions, 0.01),
         )
         self.critic = nn.Sequential(
             _layer(obs_size, hidden, 2 ** 0.5), nn.Tanh(),
             _layer(hidden, hidden, 2 ** 0.5), nn.Tanh(),
             _layer(hidden, 1, 1.0),
         )
-        # Start with a preference for the throttle. Actions 0, 1, 2 are
-        # throttle + straight/left/right (see racing_env.mjs). With all nine
+        # Start with a preference for W down and S up. With everything
         # equally likely, throttle and brake cancel out, the car hardly leaves
         # the start line and every early episode ends as "stalled" having
-        # seen nothing. +1.5 makes throttle about 4.5 times as likely as each
-        # other pedal choice at the start; training is free to change it.
+        # seen nothing. +2 makes W down (and S up) about 7 times as likely as
+        # the opposite at the start; training is free to change it.
         with torch.no_grad():
-            self.actor[-1].bias[:3] = 1.5
+            if self.factored:
+                self.actor[-1].bias[1] = 2.0  # W down
+                self.actor[-1].bias[2] = 2.0  # S up
+            else:
+                self.actor[-1].bias[:3] = 1.5  # old layout: the three throttle actions
 
     def value(self, obs: torch.Tensor) -> torch.Tensor:
         """Critic only: expected future reward for each observation, shape (batch,)."""
@@ -99,14 +125,36 @@ class Agent(nn.Module):
         Entropy measures how spread out the probabilities are; rewarding it a
         little during training stops the policy becoming certain too early.
         """
-        distribution = torch.distributions.Categorical(logits=self.actor(obs))
+        logits = self.actor(obs)
+        if not self.factored:  # old checkpoints: one choice among 9
+            distribution = torch.distributions.Categorical(logits=logits)
+            if action is None:
+                action = distribution.sample()
+            return action, distribution.log_prob(action), distribution.entropy(), self.value(obs)
+
+        Categorical = torch.distributions.Categorical
+        w, s, steer = Categorical(logits=logits[:, 0:2]), Categorical(logits=logits[:, 2:4]), Categorical(logits=logits[:, 4:7])
         if action is None:
-            action = distribution.sample()
-        return action, distribution.log_prob(action), distribution.entropy(), self.value(obs)
+            w_pick, s_pick, steer_pick = w.sample(), s.sample(), steer.sample()
+            action = steer_pick + 3 * w_pick + 6 * s_pick
+        else:
+            steer_pick, w_pick, s_pick = action % 3, (action // 3) % 2, action // 6
+        # 1 where W and S are read at this decision, 0 where the environment
+        # keeps them as they are. In the second case the W and S choices did
+        # nothing, so they must not count towards how likely the action was
+        # (or the policy would be pushed around for choices with no effect),
+        # nor towards the entropy bonus.
+        pedal_open = (obs[:, PEDAL_OPEN] > 0.5).float()
+        logprob = steer.log_prob(steer_pick) + pedal_open * (w.log_prob(w_pick) + s.log_prob(s_pick))
+        entropy = steer.entropy() + pedal_open * (w.entropy() + s.entropy())
+        return action, logprob, entropy, self.value(obs)
 
     def greedy(self, obs: torch.Tensor) -> torch.Tensor:
         """The single most likely action for each observation (used when evaluating)."""
-        return self.actor(obs).argmax(dim=-1)
+        logits = self.actor(obs)
+        if not self.factored:
+            return logits.argmax(dim=-1)
+        return logits[:, 4:7].argmax(dim=-1) + 3 * logits[:, 0:2].argmax(dim=-1) + 6 * logits[:, 2:4].argmax(dim=-1)
 
 
 def parse_args() -> argparse.Namespace:
@@ -128,6 +176,9 @@ def parse_args() -> argparse.Namespace:
                         "(see failureStart in rl/racing_env.mjs)")
     p.add_argument("--no-lap-fraction", action="store_true",
                    help="hide the 'how far round the lap am I' input, so the agent cannot memorise a track by position")
+    p.add_argument("--pedal-every", type=int, default=5,
+                   help="W and S are read on every this-many-th decision and held in between "
+                        "(see HOLDING KEYS in rl/racing_env.mjs)")
     p.add_argument("--envs", type=int, default=8, help="simulator processes to run in parallel")
     p.add_argument("--ticks", type=int, default=10, help="physics ticks (ms) per decision")
     p.add_argument("--random-start", type=float, default=0.5,
@@ -207,7 +258,8 @@ def main() -> None:
 
     envs = PolytrackVecEnv(args.envs, track=tracks, ticks=args.ticks, seed=args.seed,
                            randomStart=args.random_start, lapFraction=lap_fraction,
-                           failureStart=args.failure_start, ownStart=args.own_start)
+                           failureStart=args.failure_start, ownStart=args.own_start,
+                           pedalEvery=args.pedal_every)
     N, T = args.envs, args.rollout
     batch_size = N * T                                  # decisions collected per update
     num_updates = max(1, args.total_steps // batch_size)
@@ -242,6 +294,7 @@ def main() -> None:
             # What evaluate.py needs to rebuild the same network and environment.
             "obs_size": envs.obs_size, "num_actions": envs.num_actions, "hidden": args.hidden,
             "track": args.track, "ticks": args.ticks, "lap_fraction": lap_fraction,
+            "pedal_every": args.pedal_every,
         }, temporary)
         # Written under a temporary name and then renamed: if the run is killed
         # in the middle of a save, the previous checkpoint is still intact.

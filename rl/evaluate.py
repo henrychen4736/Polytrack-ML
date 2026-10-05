@@ -39,6 +39,8 @@ def parse_args() -> argparse.Namespace:
                    help="greedy: most likely action (default). sample: draw from the policy's "
                         "probabilities, as in training. random: uniform random keys, no checkpoint")
     p.add_argument("--seed", type=int, default=0, help="for --policy sample and random")
+    p.add_argument("--max-off-line", type=float, default=None,
+                   help="override the distance from the line at which an attempt is cut off (default 20 units)")
     return p.parse_args()
 
 
@@ -65,7 +67,16 @@ def main() -> None:
         # Same decision interval as in training: the policy learned what its
         # keys do over that many ticks.
         # .get: checkpoints saved before the lap-fraction switch existed had it on.
-        env = PolytrackEnv(track=args.track, ticks=saved["ticks"], lapFraction=saved.get("lap_fraction", 1))
+        # pedalEvery: agents from before keys were held chose all keys afresh
+        # at every decision, which is pedalEvery 1.
+        env = PolytrackEnv(track=args.track, ticks=saved["ticks"], lapFraction=saved.get("lap_fraction", 1),
+                           pedalEvery=saved.get("pedal_every", 1),
+                           **({} if args.max_off_line is None else {"maxOffLine": args.max_off_line}))
+        # Those older agents also pick one of 9 actions, 3 * pedal + steer with
+        # pedal 0 = throttle, 1 = coast, 2 = brake. Translate to today's
+        # numbering, steer + 3 * W + 6 * S.
+        old_layout = saved["num_actions"] == 9
+        from_old = lambda a: a % 3 + (3 if a // 3 == 0 else 6 if a // 3 == 2 else 0)
         torch.manual_seed(args.seed)
 
         def choose(obs: np.ndarray) -> int:
@@ -73,9 +84,11 @@ def main() -> None:
                 # A checkpoint from before the road-edge inputs were added
                 # expects only the first 101 numbers; those are unchanged, so
                 # cut the observation to the size the network was built for.
+                # A newer network needs the whole observation (it reads the
+                # last entry to know whether W and S are open).
                 batch = torch.as_tensor(obs[:saved["obs_size"]]).unsqueeze(0)  # a batch of size 1
-                action = agent.greedy(batch) if args.policy == "greedy" else agent.act(batch)[0]
-            return int(action)
+                action = int(agent.greedy(batch) if args.policy == "greedy" else agent.act(batch)[0])
+            return from_old(action) if old_layout else action
 
     # One episode from the start line (start_fraction 0 = never part-way round).
     obs, info = env.reset(options={"start_fraction": 0})

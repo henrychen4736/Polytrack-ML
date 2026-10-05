@@ -17,16 +17,35 @@
 //   let { obs, reward, terminated, truncated, info } = await renv.step(0);
 //
 // ---------------------------------------------------------------------------
-// ACTIONS: 9 key combinations, numbered 0..8
+// ACTIONS: 12 key combinations, numbered 0..11
 //
-//   action = 3 * pedal + steer
-//     pedal  0 = throttle (up key)   1 = coast (neither)   2 = brake (down key)
-//     steer  0 = straight            1 = left              2 = right
+//   action = steer + 3 * W + 6 * S
+//     steer  0 = straight   1 = left (A)   2 = right (D)
+//     W      0 or 1: the up key (throttle)
+//     S      0 or 1: the down key (brake)
 //
-//   So 0 = throttle straight, 1 = throttle + left, 2 = throttle + right,
-//      3 = coast straight, ... 8 = brake + right.
+//   So 0 = no keys, 3 = W, 4 = W + left, 6 = S, 9 = W + S, 11 = W + S + right.
+//   W and S are separate keys and can be held TOGETHER. Human laps do that all
+//   the time: over a jump they keep W down and add S, which tilts the car so
+//   it lands flat. (The first version of this file had one three-way "pedal"
+//   choice, throttle / coast / brake, which could not express that.)
+//
 //   The chosen keys are held for `ticks` physics ticks (default 10 = 10 ms),
 //   then the agent is asked again.
+//
+//   HOLDING KEYS. A human holds W for nearly the whole lap (98 to 100% of it,
+//   pressing or releasing it once every few seconds). An agent that is asked
+//   every 10 ms and answers with some randomness "feathers" the key instead:
+//   measured on the previous agent, W was down 60 to 75% of the time with 30
+//   presses or releases per second. That costs acceleration everywhere and was
+//   the reason it arrived at every big jump 20 to 45 km/h too slow. Two things
+//   here work against it:
+//     - W and S are only read every `pedalEvery`-th decision (default 5, so
+//       every 50 ms). In between, the W and S parts of the action are ignored
+//       and the keys stay as they are. Steering is read on every decision.
+//       Observation [145] tells the agent which kind of decision this is.
+//     - Every press or release costs a little reward (see REWARD): W and S
+//       much more than A and D.
 //
 // ---------------------------------------------------------------------------
 // OBSERVATION: OBS_SIZE = 144 numbers, all scaled to be roughly within -1..1
@@ -51,7 +70,9 @@
 //   10     4      wheel on the ground? one per wheel           0 or 1
 //   14     1      front-wheel angle, positive = left           rad / 0.45
 //   15     2      keys held during the previous decision:      -1, 0 or 1
-//                 pedal (+1 throttle, -1 brake), steer (+1 left, -1 right)
+//                 [15] W minus S (+1 W only, -1 S only, 0 both or
+//                 neither; [144] tells those two apart),
+//                 [16] steer (+1 left, -1 right)
 //   17     3      nearest reference-line point, car frame      units / 10
 //                 (its `left` part is how far off the line we are)
 //   20     1      fraction of the lap completed                0..1
@@ -67,6 +88,9 @@
 //                 previous decision
 //   104    40     for each of the 20 points ahead: room from   units / 10
 //                 the LINE to the edge on its left, then right
+//   144    1      was S held during the previous decision      0 or 1
+//   145    1      will W and S be read at this decision?       0 or 1
+//                 (see HOLDING KEYS above)
 //
 // "Edge" is a wall, a barrier, or the end of the road surface, whichever is
 // nearer (sim/trackmesh.mjs). The edge numbers at 101 are measured from the
@@ -86,7 +110,7 @@
 //
 //   every step:  0.1 x (distance gained along the reference line, in units)
 //                  x pace, where pace = our speed / the human's speed at
-//                  this point of the line, limited to 0..1.5 (paceReward).
+//                  this point of the line, limited to 0..1 (paceReward, paceCap).
 //                  A unit of road covered at the human's speed is worth
 //                  0.1; covered at half that speed, 0.05. This pays for
 //                  carrying speed everywhere, not only for getting there.
@@ -96,6 +120,12 @@
 //                  A full second of scraping costs about 10, twice what a
 //                  second of driving at 200 km/h earns. Top human laps have
 //                  no body contact at all, so this never punishes good driving.
+//                minus a small cost for every key pressed or released:
+//                  0.05 for W or S (pedalTogglePenalty), 0.005 for a change
+//                  of steering (steerTogglePenalty). Holding a key is free.
+//                  Tapping W on and off ten times a second would cost 1 per
+//                  second, a fifth of what driving at 200 km/h earns; the
+//                  few dozen key changes of a human lap cost about 1 in total.
 //   on finish:   the rest of the line's length x 0.1 (so every finished lap
 //                has collected exactly the same progress reward), plus
 //                5 + 2 x (seconds left before the tick limit)
@@ -117,7 +147,8 @@
 //   truncated   the attempt was cut off:
 //     'stalled'     less than 1 unit of progress in `stallTicks` (2 s):
 //                   crashed, flipped, stuck or driving the wrong way
-//     'off line'    more than `maxOffLine` (20) units from the reference line
+//     'off line'    more than `maxOffLine` (20) units from the reference line,
+//                   or `maxOffLineAir` (60) over a stretch the human flew
 //     'off track'   more than `edgeMargin` (2) units beyond the road's edge
 //                   while over a stretch where the human was on the ground:
 //                   over an open edge, or outside the barriers
@@ -133,21 +164,19 @@ import { decodeRecording, toDense } from '../sim/recording.mjs';
 
 // ---- actions ---------------------------------------------------------------
 
-export const NUM_ACTIONS = 9;
+export const NUM_ACTIONS = 12;
 
 /** Action number -> the keys to hold (see the table at the top). */
 export function actionToControls(action) {
-  const pedal = Math.floor(action / 3), steer = action % 3;
-  return { up: pedal === 0, down: pedal === 2, left: steer === 1, right: steer === 2, reset: false };
+  const steer = action % 3;
+  return { up: Math.floor(action / 3) % 2 === 1, down: action >= 6, left: steer === 1, right: steer === 2, reset: false };
 }
 
 /** Keys -> action number. Used to drive this environment from a hand-written
- *  controller (rl/smoke_test.mjs). Throttle wins if both pedals are pressed,
- *  left wins if both steering keys are. */
+ *  controller (rl/smoke_test.mjs) and to label human laps (demo()). Left wins
+ *  if both steering keys are pressed. */
 export function controlsToAction(c) {
-  const pedal = c.up ? 0 : c.down ? 2 : 1;
-  const steer = c.left ? 1 : c.right ? 2 : 0;
-  return 3 * pedal + steer;
+  return (c.left ? 1 : c.right ? 2 : 0) + (c.up ? 3 : 0) + (c.down ? 6 : 0);
 }
 
 // ---- observation layout ----------------------------------------------------
@@ -155,7 +184,9 @@ export function controlsToAction(c) {
 /** How many reference-line points ahead the agent sees. */
 export const LOOKAHEAD_POINTS = 20;
 /** Length of the observation vector: 21 car numbers + 3 per point + 1 speed per point. */
-export const OBS_SIZE = 21 + 4 * LOOKAHEAD_POINTS + 3 + 2 * LOOKAHEAD_POINTS;
+export const OBS_SIZE = 21 + 4 * LOOKAHEAD_POINTS + 3 + 2 * LOOKAHEAD_POINTS + 2;
+/** Where the two newest inputs sit: S held, and "W and S are read now". */
+export const OBS_S_HELD = OBS_SIZE - 2, OBS_PEDAL_OPEN = OBS_SIZE - 1;
 /** Decisions between the save states an episode leaves behind for ownStart. */
 const OWN_SNAPSHOT_EVERY = 100;
 /** How many of those are kept (the last 8 seconds of driving). */
@@ -188,14 +219,29 @@ export const DEFAULTS = {
   maxTicks: null,
   stallTicks: 2000,
   maxOffLine: 20,
+  // The same limit over stretches the human FLEW. A car that takes off slower
+  // or faster than the human flies a lower or higher arc and can be far from
+  // the line in mid-air yet land on the road. Measured on winter2: attempts
+  // cut off at 20 units in the last big jump went on to finish when allowed.
+  maxOffLineAir: 60,
   // An episode also ends when the car's centre is this far beyond the road's
   // edge on a stretch where the human was on the ground ('off track').
   edgeMargin: 2,
   // Reward weights (see REWARD above).
   progressReward: 0.1,     // per world unit gained along the line
   paceReward: 1,           // 1: scale progress by our speed / the human's; 0: plain progress
+  // Upper limit of that scale. 1 = no extra pay for going faster than the
+  // human at this point. It was 1.5 at first, and the agent then arrived at a
+  // jump the human brakes for (summer5) 40 km/h too fast and overshot the
+  // landing every time. Going faster is still rewarded by the time bonus.
+  paceCap: 1,
   contactPenalty: 0.1,     // per step, times the share of its ticks with body contact
   impulsePenalty: 0.05,    // per step, times log10(1 + summed contact impulse)
+  pedalTogglePenalty: 0.05,  // per press or release of W or S
+  steerTogglePenalty: 0.005, // per change of the steering choice
+  // W and S are read only on every pedalEvery-th decision of an episode and
+  // held in between (see HOLDING KEYS at the top). 1 = read on every decision.
+  pedalEvery: 5,
   finishBonus: 5,          // for finishing at all
   timeBonusPerSecond: 2,   // per second left before maxTicks at the finish
   // Lookahead spacing: gap between seen line points = max(minGap, speed x gapSeconds).
@@ -414,7 +460,10 @@ export class RacingEnv {
     // ticks of its own counter, which save states do not rewind, so well
     // before that we make a fresh car and rebuild the ladder for it.
     if (!this.ladder || this.env.frames > CAR_TICK_BUDGET) await this._buildLadder();
-    this.previousAction = 3; // coast straight: no keys held before the first decision
+    // Keys held before the first decision: none on the start line; part-way
+    // round, whatever the human was holding on the tick before the hand-over
+    // (so that simply keeping W down is not charged as a key press).
+    this.previousAction = startTick === 0 ? 0 : controlsToAction(this.humanControls[startTick - 1] ?? {});
 
     if (startTick === 0) {
       await this._restore(this.ladder.startLine);
@@ -471,13 +520,78 @@ export class RacingEnv {
    * Replay the human's keys for ticks [from, to), one step() call per run of
    * ticks with the same keys held.
    */
-  async _replayHuman(from, to) {
+  async _replayHuman(from, to, keys = this.humanControls) {
     for (let t = from; t < to;) {
       let n = 1;
-      while (t + n < to && controlsKey(this.humanControls[t + n]) === controlsKey(this.humanControls[t])) n++;
-      await this._advance(this.humanControls[t], n);
+      while (t + n < to && controlsKey(keys[t + n]) === controlsKey(keys[t])) n++;
+      await this._advance(keys[t], n);
       t += n;
     }
+  }
+
+  /**
+   * Drive a HUMAN lap through this environment and record, at every decision
+   * point, what the agent would have seen and which action the human's keys
+   * amount to. Used to teach a new network by imitation before it practises
+   * on its own (rl/pretrain_bc.py).
+   *
+   *   lap   { frames, recording } as in data/laps/<track>.json. It does not
+   *         have to be the lap the reference line was built from: another
+   *         player's lap is seen RELATIVE to that line, a little off it, which
+   *         is exactly the kind of situation the agent needs examples of.
+   *
+   * The car is driven with the human's real keys, tick by tick, so the states
+   * are those of the real lap. Only the LABEL is rounded to what an action can
+   * express: for steering, whichever of straight/left/right was held for most
+   * of the decision's ticks; for W and S, whether the key was down for most of
+   * the pedalEvery decisions that the choice will be held for.
+   *
+   * Recording stops at the finish, or early if the lap strays more than
+   * maxOffLine from the reference line (a different route).
+   * Returns { obs: Float32Array (count x OBS_SIZE), actions: Uint8Array, count }.
+   */
+  async demo(lap) {
+    const { cfg } = this;
+    const keys = toDense(decodeRecording(lap.recording), lap.frames);
+    if (!this.ladder || this.env.frames > CAR_TICK_BUDGET) await this._buildLadder();
+    for (const old of (this.ownStates ?? []).splice(0)) this.env.dropState(old.handle);
+    // The untouched car, then the lap's first tick, so there is a state to observe.
+    await this._restore(this.ladder.rungs[0]);
+    await this._advance(keys[0] ?? {}, 1);
+    this.progressIndex = 0;
+    this.contactTicks = 0;
+    this.contactImpulse = 0;
+    this.previousAction = 0;
+    this.decisions = 0;
+    this._locate();
+
+    /** Was key `name` down for more than half of ticks [from, to)? */
+    const mostly = (name, from, to) => {
+      let held = 0;
+      const end = Math.min(to, keys.length);
+      for (let t = from; t < end; t++) if (keys[t][name]) held++;
+      return 2 * held > end - from;
+    };
+    const obs = [], actions = [];
+    for (let t = 1; t + cfg.ticks <= keys.length && this.state.finishFrames == null && this.offLine <= cfg.maxOffLineAir; t += cfg.ticks) {
+      const left = mostly('left', t, t + cfg.ticks), right = mostly('right', t, t + cfg.ticks);
+      let action = left ? 1 : right ? 2 : 0;
+      if (this.decisions % cfg.pedalEvery === 0) {
+        const span = cfg.ticks * cfg.pedalEvery;
+        action += (mostly('up', t, t + span) ? 3 : 0) + (mostly('down', t, t + span) ? 6 : 0);
+      } else {
+        action += 3 * Math.floor(this.previousAction / 3); // W and S stay as they are
+      }
+      obs.push(...this._observe());
+      actions.push(action);
+      await this._replayHuman(t, t + cfg.ticks, keys);
+      this.previousAction = action;
+      this.decisions++;
+      this._locate();
+    }
+    this.done = true;          // the next thing must be a reset()
+    this.lastCrashTick = null;
+    return { obs: Float32Array.from(obs), actions: Uint8Array.from(actions), count: actions.length };
   }
 
   /**
@@ -610,11 +724,13 @@ export class RacingEnv {
     for (const touching of state.wheelContact) obs[o++] = touching ? 1 : 0;
     obs[o++] = clip(state.steering / STEER_SCALE);
 
-    // [15..16] previous action as pedal and steer in -1, 0, 1. The steering
-    // angle lags behind the keys, so the agent needs to know what it last asked for.
-    const pedal = Math.floor(this.previousAction / 3), steer = this.previousAction % 3;
-    obs[o++] = pedal === 0 ? 1 : pedal === 2 ? -1 : 0;
-    obs[o++] = steer === 1 ? 1 : steer === 2 ? -1 : 0;
+    // [15..16] the keys held during the previous decision: W minus S, and
+    // steer in -1, 0, 1. The steering angle lags behind the keys, so the agent
+    // needs to know what it last asked for; and it needs to know which keys
+    // are down to be able to keep them down.
+    const held = actionToControls(this.previousAction);
+    obs[o++] = (held.up ? 1 : 0) - (held.down ? 1 : 0);
+    obs[o++] = held.left ? 1 : held.right ? -1 : 0;
 
     // [17..19] nearest line point in the car frame, [20] lap fraction.
     const last = line.points.length - 1;
@@ -642,6 +758,9 @@ export class RacingEnv {
     obs[EDGE_NOW] = room(this.edgeLeft);
     obs[EDGE_NOW + 1] = room(this.edgeRight);
     obs[EDGE_NOW + 2] = this.contactTicks > 0 ? 1 : 0;
+    // [144] S held; [145] whether W and S will be read at the coming decision.
+    obs[OBS_S_HELD] = held.down ? 1 : 0;
+    obs[OBS_PEDAL_OPEN] = this.decisions % cfg.pedalEvery === 0 ? 1 : 0;
     return obs;
   }
 
@@ -671,8 +790,17 @@ export class RacingEnv {
     if (!Number.isInteger(action) || action < 0 || action >= NUM_ACTIONS) throw new Error(`bad action ${action}`);
     const { cfg } = this;
 
+    // Between pedal decisions, W and S stay as they were whatever was asked
+    // for (see HOLDING KEYS at the top); only the steering part is taken.
+    const previous = this.previousAction;
+    if (this.decisions % cfg.pedalEvery !== 0) action = (action % 3) + 3 * Math.floor(previous / 3);
+    // Key changes against the previous decision, for the toggle cost below.
+    const was = actionToControls(previous), now = actionToControls(action);
+    const pedalChanges = (was.up !== now.up ? 1 : 0) + (was.down !== now.down ? 1 : 0);
+    const steerChanged = action % 3 !== previous % 3;
+
     const before = this.progress;
-    await this._advance(actionToControls(action), cfg.ticks);
+    await this._advance(now, cfg.ticks);
     this.previousAction = action;
     this._locate();
     const s = this.state;
@@ -681,12 +809,15 @@ export class RacingEnv {
     // scaled by pace: our speed against the human's at this point of the line.
     // The human's speed is floored at 30 km/h so the first metres off the
     // start line, where the human was nearly stationary, do not blow up.
-    const pace = cfg.paceReward ? Math.max(0, Math.min(1.5, s.speedKmh / Math.max(30, this.line.speedKmh[this.progressIndex]))) : 1;
+    const pace = cfg.paceReward ? Math.max(0, Math.min(cfg.paceCap, s.speedKmh / Math.max(30, this.line.speedKmh[this.progressIndex]))) : 1;
     let reward = cfg.progressReward * (this.progress - before) * pace;
     // Penalty for touching anything with the body during this step.
     if (this.contactTicks > 0) {
       reward -= cfg.contactPenalty * (this.contactTicks / cfg.ticks) + cfg.impulsePenalty * Math.log10(1 + this.contactImpulse);
     }
+
+    // The cost of pressing and releasing keys.
+    reward -= cfg.pedalTogglePenalty * pedalChanges + (steerChanged ? cfg.steerTogglePenalty : 0);
 
     // Stall clock: restart it whenever the car has gained a full unit.
     if (this.progress >= this.stallProgress + 1) { this.stallProgress = this.progress; this.stallTick = s.frames; }
@@ -698,7 +829,7 @@ export class RacingEnv {
       // every finished lap, then add the bonus that depends only on the time.
       reward += cfg.progressReward * (this.line.length - this.progress);
       reward += cfg.finishBonus + cfg.timeBonusPerSecond * Math.max(0, cfg.maxTicks - s.finishFrames) / 1000;
-    } else if (this.offLine > cfg.maxOffLine) reason = 'off line';
+    } else if (this.offLine > (this.line.grounded[this.progressIndex] ? cfg.maxOffLine : cfg.maxOffLineAir)) reason = 'off line';
     // Beyond the road's edge. Only judged where the human was on the ground:
     // in the air there is no road to be beside.
     else if (this.line.grounded[this.progressIndex] && Math.min(this.edgeLeft, this.edgeRight) < -cfg.edgeMargin) reason = 'off track';
@@ -724,6 +855,7 @@ export class RacingEnv {
     return {
       obs: this._observe(),
       reward,
+      action, // the keys actually held (W and S may differ from what was asked)
       terminated: reason === 'finished',
       truncated: this.done && reason !== 'finished',
       info: this._info(reason),

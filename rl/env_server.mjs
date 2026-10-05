@@ -14,17 +14,22 @@
 // request.
 //
 //   at start-up, unprompted:
-//     <- {"ready":true,"obsSize":101,"numActions":9,"track":"summer1",
+//     <- {"ready":true,"obsSize":146,"numActions":12,"track":"summer1",
 //         "ticks":10,"maxTicks":44558,"lineLength":..., "humanFrames":22279}
 //
 //   -> {"cmd":"reset"}                         optional: "seed":n, "startFraction":0..1
-//     <- {"obs":[...101 numbers...],"info":{...}}
+//     <- {"obs":[...146 numbers...],"info":{...}}
 //
-//   -> {"cmd":"step","action":0..8}
+//   -> {"cmd":"step","action":0..11}
 //     <- {"obs":[...],"reward":0.03,"terminated":false,"truncated":false,"info":{...}}
 //
 //   -> {"cmd":"save","run":"rl"}               after an episode that finished
 //     <- {"saved":"runs/rl_summer1.json","finishFrames":23000}
+//
+//   -> {"cmd":"demo","lap":0..9}               drive that human lap from
+//                                              data/laps/<track>.json and return what
+//                                              the agent would have seen and done
+//     <- {"obs":base64 float32,"actions":base64 uint8,"count":n}
 //
 //   -> {"cmd":"close"}                         the process exits; no reply
 //
@@ -41,6 +46,11 @@
 import { readFileSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 import { RacingEnv, DEFAULTS, OBS_SIZE, NUM_ACTIONS } from './racing_env.mjs';
+
+/** Outputs of the policy network: two scores for W (off, on), two for S
+ *  (off, on), three for steering (straight, left, right). Each group is its
+ *  own choice; see Agent in rl/train_ppo.py. */
+const NUM_SCORES = 7;
 
 // Keep stdout clean: route console.log to stderr before anything can use it.
 console.log = console.error;
@@ -69,6 +79,7 @@ send({
   numActions: NUM_ACTIONS,
   track: renv.cfg.track,
   ticks: renv.cfg.ticks,
+  pedalEvery: renv.cfg.pedalEvery,
   maxTicks: renv.cfg.maxTicks,
   lineLength: renv.line.length,
   humanFrames: renv.human.frames,
@@ -111,7 +122,7 @@ const actionRng = makeActionRng((options.seed ?? 0) + 7919);
  * raw float32 values, layer after layer, each as weights then biases:
  *   layer 1: hidden x OBS_SIZE weights (one row per hidden unit), hidden biases
  *   layer 2: hidden x hidden, hidden
- *   layer 3: NUM_ACTIONS x hidden, NUM_ACTIONS
+ *   layer 3: NUM_SCORES x hidden, NUM_SCORES
  */
 function loadActor(file, hidden) {
   const bytes = readFileSync(file);
@@ -122,7 +133,7 @@ function loadActor(file, hidden) {
     hidden,
     w1: take(hidden * OBS_SIZE), b1: take(hidden),
     w2: take(hidden * hidden), b2: take(hidden),
-    w3: take(NUM_ACTIONS * hidden), b3: take(NUM_ACTIONS),
+    w3: take(NUM_SCORES * hidden), b3: take(NUM_SCORES),
     // Scratch space for the two hidden layers' outputs.
     h1: new Float32Array(hidden), h2: new Float32Array(hidden),
   };
@@ -140,26 +151,36 @@ function layerTanh(weights, bias, input, out) {
   }
 }
 
-/** Run the actor on one observation and pick an action at random, each
- *  action's chance proportional to exp(score) (a softmax). */
+/** Pick one of scores[from .. from+count) at random, each one's chance
+ *  proportional to exp(score) (a softmax). Returns 0 .. count-1. */
+function sampleGroup(scores, from, count) {
+  // Subtracting the largest score before exp() avoids overflow and does not
+  // change the proportions.
+  let top = -Infinity;
+  for (let a = 0; a < count; a++) top = Math.max(top, scores[from + a]);
+  let total = 0;
+  const weight = new Float64Array(count);
+  for (let a = 0; a < count; a++) { weight[a] = Math.exp(scores[from + a] - top); total += weight[a]; }
+  let pick = actionRng() * total;
+  for (let a = 0; a < count; a++) { pick -= weight[a]; if (pick <= 0) return a; }
+  return count - 1;
+}
+
+/** Run the actor on one observation and pick the three parts of the action
+ *  (W, S, steering) independently, each from its own group of scores. */
 function sampleAction(actor, obs) {
   layerTanh(actor.w1, actor.b1, obs, actor.h1);
   layerTanh(actor.w2, actor.b2, actor.h1, actor.h2);
-  const scores = new Float64Array(NUM_ACTIONS);
-  let top = -Infinity;
-  for (let a = 0, w = 0; a < NUM_ACTIONS; a++) {
+  const scores = new Float64Array(NUM_SCORES);
+  for (let a = 0, w = 0; a < NUM_SCORES; a++) {
     let sum = actor.b3[a];
     for (let j = 0; j < actor.hidden; j++) sum += actor.w3[w++] * actor.h2[j];
     scores[a] = sum;
-    if (sum > top) top = sum;
   }
-  // Subtracting the largest score before exp() avoids overflow and does not
-  // change the proportions.
-  let total = 0;
-  for (let a = 0; a < NUM_ACTIONS; a++) { scores[a] = Math.exp(scores[a] - top); total += scores[a]; }
-  let pick = actionRng() * total;
-  for (let a = 0; a < NUM_ACTIONS; a++) { pick -= scores[a]; if (pick <= 0) return a; }
-  return NUM_ACTIONS - 1;
+  // action = steer + 3 * W + 6 * S (see the table at the top of racing_env.mjs).
+  // On decisions where W and S are not read, the environment ignores those
+  // two parts; step() reports the action that was really applied.
+  return sampleGroup(scores, 4, 3) + 3 * sampleGroup(scores, 0, 2) + 6 * sampleGroup(scores, 2, 2);
 }
 
 const b64 = (typed) => Buffer.from(typed.buffer, typed.byteOffset, typed.byteLength).toString('base64');
@@ -181,7 +202,7 @@ async function rollout({ steps, weights, hidden }) {
     obsOut.set(currentObs, t * OBS_SIZE);
     const action = sampleAction(actor, currentObs);
     const r = await renv.step(action);
-    actions[t] = action;
+    actions[t] = r.action;
     rewards[t] = r.reward;
     if (r.terminated || r.truncated) {
       dones[t] = 1;
@@ -207,6 +228,13 @@ async function handle(msg) {
     case 'step': {
       const r = await renv.step(msg.action);
       return { obs: round(r.obs), reward: r.reward, terminated: r.terminated, truncated: r.truncated, info: r.info };
+    }
+    case 'demo': {
+      const laps = JSON.parse(readFileSync(new URL(`../data/laps/${renv.cfg.track}.json`, import.meta.url), 'utf8'));
+      if (!laps[msg.lap]) throw new Error(`no lap ${msg.lap} for ${renv.cfg.track}`);
+      const demo = await renv.demo(laps[msg.lap]);
+      currentObs = null; // a rollout after this starts a fresh episode
+      return { obs: b64(demo.obs), actions: b64(demo.actions), count: demo.count };
     }
     case 'save':
       return { saved: renv.save(msg.run ?? 'rl', { unfinished: !!msg.unfinished }), finishFrames: renv.state.finishFrames };

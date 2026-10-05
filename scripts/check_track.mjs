@@ -12,7 +12,7 @@
 //   track         e.g. summer1, winter4, desert3 (any official track)
 //   seed          which random attempt (default 0). The agent picks its
 //                 actions with some randomness, so each seed is a different lap.
-//   --checkpoint  which trained agent (default rl/checkpoints/ppo_general.pt,
+//   --checkpoint  which trained agent (default rl/checkpoints/ppo_general3.pt,
 //                 the multi-track one). For the summer1 specialist use
 //                 rl/checkpoints/ppo_summer1.pt
 //   --greedy      always take the agent's top choice instead of sampling
@@ -25,7 +25,7 @@ const valueOf = (name, fallback) => (args.includes(name) ? args[args.indexOf(nam
 const positional = args.filter((a, i) => !a.startsWith('--') && args[i - 1] !== '--checkpoint');
 const [track, seed = '0'] = positional;
 if (!track) { console.error('usage: node scripts/check_track.mjs <track> [seed]'); process.exit(2); }
-const checkpoint = valueOf('--checkpoint', 'rl/checkpoints/ppo_general.pt');
+const checkpoint = valueOf('--checkpoint', 'rl/checkpoints/ppo_general3.pt');
 // Laps from this script are saved as runs/check_<track>.json.
 const run = 'check';
 
