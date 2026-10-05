@@ -194,13 +194,20 @@ class PolytrackVecEnv:
     Stable-Baselines3 VecEnv subclass.
     """
 
-    def __init__(self, num_envs: int, track: str = "summer1", ticks: int = 10, seed: int = 0, **options):
+    def __init__(self, num_envs: int, track="summer1", ticks: int = 10, seed: int = 0, **options):
         """Each environment gets its own seed (seed, seed+1, ...) so they do
-        not all pick the same random start positions."""
+        not all pick the same random start positions.
+
+        `track` is one name, or a list of names for multi-track training. With
+        a list, environment k drives tracks[k % len(tracks)] for its whole
+        life, so with as many environments as tracks every update contains
+        experience from every track. self.tracks[k] says which."""
+        tracks = [track] if isinstance(track, str) else list(track)
+        self.tracks = [tracks[k % len(tracks)] for k in range(num_envs)]
         self.servers = []
         try:
             for k in range(num_envs):
-                self.servers.append(EnvServer(track=track, ticks=ticks, seed=seed + k, **options))
+                self.servers.append(EnvServer(track=self.tracks[k], ticks=ticks, seed=seed + k, **options))
         except Exception:
             self.close()
             raise

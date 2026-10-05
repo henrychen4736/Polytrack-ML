@@ -112,7 +112,11 @@ class Agent(nn.Module):
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     # --- environment ---
-    p.add_argument("--track", default="summer1", help="summer1 or winter1")
+    p.add_argument("--track", default="summer1",
+                   help="one track, or several separated by commas for a multi-track (generalist) agent; "
+                        "use as many --envs as tracks so each track has its own environment")
+    p.add_argument("--no-lap-fraction", action="store_true",
+                   help="hide the 'how far round the lap am I' input, so the agent cannot memorise a track by position")
     p.add_argument("--envs", type=int, default=8, help="simulator processes to run in parallel")
     p.add_argument("--ticks", type=int, default=10, help="physics ticks (ms) per decision")
     p.add_argument("--random-start", type=float, default=0.5,
@@ -181,14 +185,23 @@ def main() -> None:
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     device = torch.device(args.device)
-    checkpoint_path = Path(args.checkpoint) if args.checkpoint else CHECKPOINT_DIR / f"ppo_{args.track}.pt"
+    tracks = args.track.split(",")
+    multi = len(tracks) > 1
+    # A multi-track checkpoint is named "general", not after one of its tracks.
+    default_name = "ppo_general.pt" if multi else f"ppo_{args.track}.pt"
+    checkpoint_path = Path(args.checkpoint) if args.checkpoint else CHECKPOINT_DIR / default_name
+    lap_fraction = 0 if args.no_lap_fraction else 1
 
-    envs = PolytrackVecEnv(args.envs, track=args.track, ticks=args.ticks, seed=args.seed, randomStart=args.random_start)
+    envs = PolytrackVecEnv(args.envs, track=tracks, ticks=args.ticks, seed=args.seed,
+                           randomStart=args.random_start, lapFraction=lap_fraction)
     N, T = args.envs, args.rollout
     batch_size = N * T                                  # decisions collected per update
     num_updates = max(1, args.total_steps // batch_size)
-    print(f"{args.track}: {N} environments x {T} decisions = {batch_size} per update, {num_updates} updates; "
-          f"human lap {envs.spec_info['humanFrames']} ticks, tick limit {envs.spec_info['maxTicks']}")
+    print(f"{args.track}: {N} environments x {T} decisions = {batch_size} per update, {num_updates} updates"
+          + ("" if multi else f"; human lap {envs.spec_info['humanFrames']} ticks, tick limit {envs.spec_info['maxTicks']}"))
+    # Multi-track only: the last episodes of each track, to report how each is
+    # going. Entries are (finished?, fraction of the lap reached).
+    per_track = {name: deque(maxlen=30) for name in tracks}
 
     agent = Agent(envs.obs_size, envs.num_actions, args.hidden).to(device)
     optimizer = torch.optim.Adam(agent.parameters(), lr=args.lr, eps=1e-5)
@@ -210,7 +223,7 @@ def main() -> None:
             "best_finish": best_finish,
             # What evaluate.py needs to rebuild the same network and environment.
             "obs_size": envs.obs_size, "num_actions": envs.num_actions, "hidden": args.hidden,
-            "track": args.track, "ticks": args.ticks,
+            "track": args.track, "ticks": args.ticks, "lap_fraction": lap_fraction,
         }, checkpoint_path)
 
     # Storage for one update's worth of experience, indexed [step, environment].
@@ -242,6 +255,7 @@ def main() -> None:
                 for k in np.flatnonzero(terminated | truncated):
                     info = infos[k]
                     recent.append((info["episodeReward"], info["fraction"], info["reason"]))
+                    per_track[envs.tracks[k]].append((info["reason"] == "finished", info["fraction"]))
                     if info["reason"] == "finished" and info["startTick"] <= 1:
                         # Only laps driven from the start line count as lap times.
                         if best_finish is None or info["finishFrames"] < best_finish:
@@ -311,10 +325,17 @@ def main() -> None:
                 counts = {r: reasons.count(r) for r in sorted(set(reasons))}
                 line += (f"  last {len(recent)} episodes: reward {np.mean(rewards_):.1f}, "
                          f"lap {100 * np.mean(fractions):.1f}%, ended {counts}")
-            if best_finish is not None:
+            # A single best lap time only means something on a single track.
+            if best_finish is not None and not multi:
                 line += f"  best lap {best_finish / 1000:.3f} s"
             line += f"  value loss {value_loss.item():.3f}  entropy {entropy.mean().item():.2f}"
             print(line, flush=True)
+            # Every 50 updates, one extra line per run with each track's recent
+            # record: finished/episodes and the average share of the lap reached.
+            if multi and update % 50 == 0:
+                parts = [f"{name} {sum(f for f, _ in eps)}/{len(eps)} {100 * np.mean([fr for _, fr in eps]):.0f}%"
+                         for name, eps in per_track.items() if eps]
+                print("  per track (finished/episodes, lap reached): " + ", ".join(parts), flush=True)
 
             if update % args.save_every == 0:
                 save_checkpoint()

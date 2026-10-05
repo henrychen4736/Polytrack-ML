@@ -2,7 +2,7 @@
 //
 // This is the loop that used to live in scripts/drive_baseline.mjs, pulled out
 // so the settings search can run the same lap thousands of times.
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { decodeState } from './state.mjs';
 import { buildLine } from './line.mjs';
 import { createController } from './controller.mjs';
@@ -14,7 +14,19 @@ export const DECISION_TICKS = 5;
 /** The human lap we take the reference line from: the first leaderboard run
  *  in polyrl's fixtures for this track. Returns { frames, recording, ... }. */
 export function loadHumanLap(trackName) {
-  return JSON.parse(readFileSync(new URL(`../vendor/polyrl/fixtures/leaderboard_${trackName}.json`, import.meta.url), 'utf8'))[0];
+  // Two sources, tried in this order:
+  //   1. polyrl's fixtures (summer1 and winter1 only). Kept first so that
+  //      everything tuned or trained against those two laps stays reproducible.
+  //   2. data/laps/<track>.json, written by scripts/fetch_laps.mjs, fastest
+  //      lap first. This covers every other official track.
+  const sources = [
+    new URL(`../vendor/polyrl/fixtures/leaderboard_${trackName}.json`, import.meta.url),
+    new URL(`../data/laps/${trackName}.json`, import.meta.url),
+  ];
+  for (const file of sources) {
+    if (existsSync(file)) return JSON.parse(readFileSync(file, 'utf8'))[0];
+  }
+  throw new Error(`no human lap for ${trackName}; run: node scripts/fetch_laps.mjs ${trackName}`);
 }
 
 /** Replay the human lap in `env` and turn its trajectory into a reference line. */

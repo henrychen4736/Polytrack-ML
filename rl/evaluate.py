@@ -56,7 +56,7 @@ def main() -> None:
 
         path = Path(args.checkpoint) if args.checkpoint else CHECKPOINT_DIR / f"ppo_{args.track}.pt"
         saved = torch.load(path, map_location="cpu", weights_only=True)
-        if saved["track"] != args.track:
+        if args.track not in saved["track"].split(","):
             print(f"note: this checkpoint was trained on {saved['track']}, evaluating on {args.track}")
         agent = Agent(saved["obs_size"], saved["num_actions"], saved["hidden"])
         agent.load_state_dict(saved["model"])
@@ -64,7 +64,8 @@ def main() -> None:
         print(f"loaded {path} ({saved['steps']} training steps)")
         # Same decision interval as in training: the policy learned what its
         # keys do over that many ticks.
-        env = PolytrackEnv(track=args.track, ticks=saved["ticks"])
+        # .get: checkpoints saved before the lap-fraction switch existed had it on.
+        env = PolytrackEnv(track=args.track, ticks=saved["ticks"], lapFraction=saved.get("lap_fraction", 1))
         torch.manual_seed(args.seed)
 
         def choose(obs: np.ndarray) -> int:

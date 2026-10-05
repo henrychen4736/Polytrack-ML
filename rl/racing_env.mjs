@@ -52,6 +52,7 @@
 //   17     3      nearest reference-line point, car frame      units / 10
 //                 (its `left` part is how far off the line we are)
 //   20     1      fraction of the lap completed                0..1
+//                 (always 0 when the lapFraction option is off)
 //   21     60     20 line points ahead, 3 numbers each         see below
 //                 (left, up, fwd) in the car frame
 //   81     20     the human's speed at each of those points    km/h / 300
@@ -155,6 +156,12 @@ export const DEFAULTS = {
   randomStart: 0,
   // Seed for the random start choice, so runs can be repeated exactly.
   seed: 0,
+  // Whether observation [20] carries the fraction of the lap completed
+  // (1) or is always 0 (0). On a single track it helps: the agent can learn
+  // "at 40% of the lap, do this". For an agent meant to drive tracks it has
+  // never seen, that is exactly the wrong habit, so multi-track training
+  // switches it off and the agent has to go by the line ahead of it.
+  lapFraction: 1,
 };
 
 // ---- small maths helpers ---------------------------------------------------
@@ -367,7 +374,7 @@ export class RacingEnv {
     // [17..19] nearest line point in the car frame, [20] lap fraction.
     const last = line.points.length - 1;
     for (const v of toCarFrame(sub(line.points[this.progressIndex], state.position), q)) obs[o++] = clip(v / NEAR_SCALE);
-    obs[o++] = this.progress / line.length;
+    obs[o++] = this.cfg.lapFraction ? this.progress / line.length : 0;
 
     // [21..80] the line ahead, [81..100] the human's speed at those points.
     // Past the end of the line the last point is repeated.
