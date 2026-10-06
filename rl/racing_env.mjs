@@ -91,6 +91,20 @@
 //   144    1      was S held during the previous decision      0 or 1
 //   145    1      will W and S be read at this decision?       0 or 1
 //                 (see HOLDING KEYS above)
+//   146    9      what the human was DOING at the nearest      unit vectors,
+//                 line point: which way the human's car        key shares
+//                 pointed (its forward, then its up, in our
+//                 car frame), and the keys held there:
+//                 W (0..1), S (0..1), steer (+1 left, -1 right)
+//   155    180    the same 9 numbers for each of the 20
+//                 points ahead
+//
+// Why the human's orientation and keys are shown (146 onwards): position and
+// speed say where the human went, not how. A drift is the car pointing one
+// way while travelling another; a long jump needs the car held at a certain
+// attitude in the air; an air brake is S held for the whole flight. None of
+// that can be read from positions. With these inputs the reference is a full
+// description of the lap, and the agent's job becomes following it.
 //
 // "Edge" is a wall, a barrier, or the end of the road surface, whichever is
 // nearer (sim/trackmesh.mjs). The edge numbers at 101 are measured from the
@@ -156,6 +170,7 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { Env, loadTrack } from '../sim/env.mjs';
 import { decodeState } from '../sim/state.mjs';
+import { readFileSync } from 'node:fs';
 import { loadHumanLap } from '../sim/drive.mjs';
 import { buildLine, nearestIndex, SPACING } from '../sim/line.mjs';
 import { rotate } from '../sim/track.mjs';
@@ -184,9 +199,14 @@ export function controlsToAction(c) {
 /** How many reference-line points ahead the agent sees. */
 export const LOOKAHEAD_POINTS = 20;
 /** Length of the observation vector: 21 car numbers + 3 per point + 1 speed per point. */
-export const OBS_SIZE = 21 + 4 * LOOKAHEAD_POINTS + 3 + 2 * LOOKAHEAD_POINTS + 2;
-/** Where the two newest inputs sit: S held, and "W and S are read now". */
-export const OBS_S_HELD = OBS_SIZE - 2, OBS_PEDAL_OPEN = OBS_SIZE - 1;
+/** Numbers describing what the human was doing at one line point: forward
+ *  (3), up (3), keys (3). */
+const REF_NUMBERS = 9;
+/** Where the reference's "what the human was doing" block starts. */
+const OBS_REF = 21 + 4 * LOOKAHEAD_POINTS + 3 + 2 * LOOKAHEAD_POINTS + 2;
+export const OBS_SIZE = OBS_REF + REF_NUMBERS * (1 + LOOKAHEAD_POINTS);
+/** S held, and "W and S are read now" (the two entries before that block). */
+export const OBS_S_HELD = OBS_REF - 2, OBS_PEDAL_OPEN = OBS_REF - 1;
 /** Decisions between the save states an episode leaves behind for ownStart. */
 const OWN_SNAPSHOT_EVERY = 100;
 /** How many of those are kept (the last 8 seconds of driving). */
@@ -238,7 +258,22 @@ export const DEFAULTS = {
   contactPenalty: 0.1,     // per step, times the share of its ticks with body contact
   impulsePenalty: 0.05,    // per step, times log10(1 + summed contact impulse)
   pedalTogglePenalty: 0.05,  // per press or release of W or S
-  steerTogglePenalty: 0.005, // per change of the steering choice
+  steerTogglePenalty: 0.02,  // per change of the steering choice (0.005 at first:
+                             // too cheap, the agent changed it 30 to 40 times a
+                             // second and weaved down every straight)
+  // Which human lap is the reference (the line, speeds, orientation and keys
+  // the agent is shown and scored against).
+  //   refLap   -1: the track's standard lap (sim/drive.mjs loadHumanLap), as
+  //            before. 0..9: that lap of data/laps/<track>.json (0 = fastest).
+  //   refLaps  n > 0: training mode. Every refEvery episodes, switch to a
+  //            random one of the first n laps of data/laps/<track>.json.
+  //            Different players take different lines and brake in different
+  //            places, so an agent trained this way has to FOLLOW whichever
+  //            reference it is given, instead of memorising one lap. That is
+  //            what makes it usable as the follower for an improved reference.
+  refLap: -1,
+  refLaps: 0,
+  refEvery: 25,
   // W and S are read only on every pedalEvery-th decision of an episode and
   // held in between (see HOLDING KEYS at the top). 1 = read on every decision.
   pedalEvery: 5,
@@ -328,31 +363,92 @@ export class RacingEnv {
     renv.env = await Env.create();
     renv.track = loadTrack(cfg.track);
 
-    // Replay the human lap once. Its trajectory becomes the reference line
-    // (as in sim/drive.mjs), and we also keep, for every tick of that lap,
-    // which line point the human had reached. reset() uses that table to
-    // start an episode part-way round the lap.
-    const human = renv.human = loadHumanLap(cfg.track);
-    const run = await renv.env.replay(renv.track, human.recording, human.frames + 100);
-    renv.line = buildLine(run.states);
-    renv.humanIndexAtTick = new Int32Array(run.states.length);
-    for (let t = 0, index = 0; t < run.states.length; t++) {
-      // The car moves a few centimetres per tick, so checking every 20th
-      // tick is plenty to keep `index` within the forward search window.
-      if (t % 20 === 0) index = nearestIndex(renv.line, decodeState(run.states[t]).position, index).index;
-      renv.humanIndexAtTick[t] = index;
-    }
-    // How much room there is beside each line point (see sim/trackmesh.mjs),
-    // and which way "left" is at each point, both worked out once here.
-    renv.clearance = clearanceProfile(buildTrackMesh(renv.track.trackData), renv.line);
-    renv.lineLeft = renv.line.quaternions.map((q) => rotate([1, 0, 0], q));
-    // The human's keys on every tick: humanControls[t] is held while tick t is computed.
-    renv.humanControls = toDense(decodeRecording(human.recording), human.frames);
-
-    cfg.maxTicks ??= 2 * human.frames;
+    renv.mesh = buildTrackMesh(renv.track.trackData);
+    renv.maxTicksOption = cfg.maxTicks;   // null unless the caller fixed it
+    renv.references = new Map();          // lap number -> everything built from that lap
     renv.rng = makeRng(cfg.seed);
+    await renv.setReference(cfg.refLaps > 0 ? Math.floor(renv.rng() * cfg.refLaps) : cfg.refLap);
     renv.done = true; // step() is refused until reset() has been called
     return renv;
+  }
+
+  /**
+   * Choose which human lap is the reference: -1 for the track's standard lap,
+   * or 0..9 for that lap of data/laps/<track>.json.
+   *
+   * Everything that depends on the reference is built here, the first time a
+   * lap is asked for, and kept for later:
+   *   human             { frames, recording }
+   *   line              the lap's trajectory (sim/line.mjs)
+   *   humanIndexAtTick  for every tick of the lap, the line point reached
+   *   clearance         room beside each line point (sim/trackmesh.mjs)
+   *   lineLeft/Fwd/Up   the human car's left, forward and up directions there
+   *   refW, refS, refSteer   the keys the human held at each line point:
+   *                     share of the ticks spent at that point with W down,
+   *                     with S down, and (left share minus right share)
+   *   humanControls     the human's keys on every tick
+   * The ladder of save states belongs to one reference and is rebuilt on the
+   * next reset().
+   */
+  async setReference(lapNumber) {
+    let ref = this.references.get(lapNumber);
+    if (!ref) {
+      let human;
+      if (lapNumber < 0) human = loadHumanLap(this.cfg.track);
+      else {
+        human = JSON.parse(readFileSync(new URL(`../data/laps/${this.cfg.track}.json`, import.meta.url), 'utf8'))[lapNumber];
+        if (!human) throw new Error(`no lap ${lapNumber} for ${this.cfg.track}`);
+      }
+      // Replay the lap once. Its trajectory becomes the reference line (as in
+      // sim/drive.mjs). This replaces the simulator's car, so any save states
+      // are gone; the ladder is rebuilt below.
+      const run = await this.env.replay(this.track, human.recording, human.frames + 100);
+      const line = buildLine(run.states);
+      const humanIndexAtTick = new Int32Array(run.states.length);
+      for (let t = 0, index = 0; t < run.states.length; t++) {
+        // The car moves a few centimetres per tick, so checking every 20th
+        // tick is plenty to keep `index` within the forward search window.
+        if (t % 20 === 0) index = nearestIndex(line, decodeState(run.states[t]).position, index).index;
+        humanIndexAtTick[t] = index;
+      }
+      const humanControls = toDense(decodeRecording(human.recording), human.frames);
+      // Keys per line point: average over the ticks the human spent there.
+      const count = line.points.length;
+      const refW = new Float32Array(count), refS = new Float32Array(count), refSteer = new Float32Array(count);
+      const ticksAt = new Int32Array(count);
+      for (let t = 0; t < humanControls.length; t++) {
+        const k = humanIndexAtTick[t], c = humanControls[t];
+        ticksAt[k]++;
+        if (c.up) refW[k]++;
+        if (c.down) refS[k]++;
+        refSteer[k] += (c.left ? 1 : 0) - (c.right ? 1 : 0);
+      }
+      for (let k = 0; k < count; k++) {
+        if (ticksAt[k]) { refW[k] /= ticksAt[k]; refS[k] /= ticksAt[k]; refSteer[k] /= ticksAt[k]; }
+        // A point no tick was assigned to (the table above advances in small
+        // jumps): the keys there are those of the point before.
+        else if (k > 0) { refW[k] = refW[k - 1]; refS[k] = refS[k - 1]; refSteer[k] = refSteer[k - 1]; }
+      }
+      ref = {
+        human, line, humanIndexAtTick, humanControls, refW, refS, refSteer,
+        clearance: clearanceProfile(this.mesh, line),
+        lineLeft: line.quaternions.map((q) => rotate([1, 0, 0], q)),
+        lineUp: line.quaternions.map((q) => rotate([0, 1, 0], q)),
+        lineFwd: line.quaternions.map((q) => rotate([0, 0, 1], q)),
+      };
+      this.references.set(lapNumber, ref);
+    }
+    Object.assign(this, ref);
+    this.refLap = lapNumber;
+    this.cfg.maxTicks = this.maxTicksOption ?? 2 * ref.human.frames;
+    // Things tied to the previous reference: its save states (the replay
+    // above may also have replaced the car they belonged to), the agent's own
+    // states, and the crash sites, which are line positions of the old line.
+    this.ladder = null;
+    this.ownStates = [];
+    this.failures = [];
+    this.lastCrashTick = null;
+    this.episodesOnReference = 0;
   }
 
   /**
@@ -408,6 +504,11 @@ export class RacingEnv {
     this.ownStates ??= [];
     this.ownRestarts ??= 0;   // own-state restarts in a row since the last fresh start
     this.decisions = 0;
+    // Training mode (refLaps): after refEvery episodes, a different human lap
+    // becomes the reference.
+    if (this.cfg.refLaps > 0 && startFraction == null && ++this.episodesOnReference > this.cfg.refEvery) {
+      await this.setReference(Math.floor(this.rng() * this.cfg.refLaps));
+    }
 
     // ownStart: straight after a crash, sometimes go back to the agent's own
     // state a few seconds earlier instead of starting somewhere fresh.
@@ -623,6 +724,11 @@ export class RacingEnv {
    * (`state`, `older`, the keys so far), which _restore puts back.
    */
   async _buildLadder() {
+    // Free every snapshot taken so far (the previous ladder and the agent's
+    // own states). Without this, each rebuild would leave the old ladder's
+    // memory behind in the simulator, and with a changing reference the
+    // ladder is rebuilt often.
+    this.env.dropAllStates();
     this.env.reset(this.track); // a new car; snapshots of the previous car are now useless
     this.ownStates = [];        // including the agent's own (their memory goes with the old car's base)
     this.controlsPerTick = [];
@@ -761,6 +867,20 @@ export class RacingEnv {
     // [144] S held; [145] whether W and S will be read at the coming decision.
     obs[OBS_S_HELD] = held.down ? 1 : 0;
     obs[OBS_PEDAL_OPEN] = this.decisions % cfg.pedalEvery === 0 ? 1 : 0;
+
+    // [146..] what the human was doing at the nearest point and at each of
+    // the 20 points ahead: the human car's forward and up directions seen
+    // from our car, and the keys held there.
+    const describe = (index, at) => {
+      const fwd = toCarFrame(this.lineFwd[index], q), up = toCarFrame(this.lineUp[index], q);
+      obs[at] = fwd[0]; obs[at + 1] = fwd[1]; obs[at + 2] = fwd[2];
+      obs[at + 3] = up[0]; obs[at + 4] = up[1]; obs[at + 5] = up[2];
+      obs[at + 6] = this.refW[index]; obs[at + 7] = this.refS[index]; obs[at + 8] = this.refSteer[index];
+    };
+    describe(this.progressIndex, OBS_REF);
+    for (let k = 1; k <= LOOKAHEAD_POINTS; k++) {
+      describe(Math.min(last, this.progressIndex + Math.round((k * gap) / SPACING)), OBS_REF + REF_NUMBERS * k);
+    }
     return obs;
   }
 

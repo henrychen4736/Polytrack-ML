@@ -51,16 +51,29 @@ from train_ppo import Agent, PEDAL_OPEN
 PREVIOUS_KEYS = [15, 16, 144]
 
 
-def collect(track: str, laps: int, lap_fraction: int, pedal_every: int):
-    """Drive `laps` human laps of one track; returns (observations, actions)."""
+def collect(track: str, laps: int, lap_fraction: int, pedal_every: int, seed: int):
+    """Drive human laps of one track; returns (observations, actions).
+
+    Each of the `laps` laps takes a turn as the REFERENCE (the lap the agent
+    is shown: line, speeds, orientation, keys). Against each reference two
+    laps are driven:
+      - the reference lap itself: the car is exactly on the reference, and
+        the right thing to press is what the reference shows;
+      - one other player's lap: the car is a little off the reference, at a
+        slightly different speed, and the right keys are that player's own.
+        These are the examples of following a reference one is not exactly on.
+    """
     server = EnvServer(track=track, lapFraction=lap_fraction, pedalEvery=pedal_every)
     obs_size = server.spec["obsSize"]
+    rng = np.random.default_rng(seed)
     obs, actions = [], []
     try:
-        for lap in range(laps):
-            reply = server.request(cmd="demo", lap=lap)
-            obs.append(np.frombuffer(base64.b64decode(reply["obs"]), dtype=np.float32).reshape(-1, obs_size))
-            actions.append(np.frombuffer(base64.b64decode(reply["actions"]), dtype=np.uint8))
+        for ref in range(laps):
+            other = (ref + 1 + int(rng.integers(laps - 1))) % laps if laps > 1 else ref
+            for lap in dict.fromkeys((ref, other)):
+                reply = server.request(cmd="demo", lap=lap, ref=ref)
+                obs.append(np.frombuffer(base64.b64decode(reply["obs"]), dtype=np.float32).reshape(-1, obs_size))
+                actions.append(np.frombuffer(base64.b64decode(reply["actions"]), dtype=np.uint8))
     finally:
         server.close()
     return track, np.concatenate(obs), np.concatenate(actions), server.spec
@@ -97,6 +110,8 @@ def main() -> None:
     p.add_argument("--pedal-every", type=int, default=5)
     p.add_argument("--lap-fraction", type=int, default=0, help="0 hides the lap-position input (multi-track)")
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--save-data", default=None,
+                   help="also write the examples to this .npz file, for train_ppo.py --bc-data")
     args = p.parse_args()
     torch.manual_seed(args.seed)
     rng = np.random.default_rng(args.seed)
@@ -104,14 +119,18 @@ def main() -> None:
 
     # ---- 1. examples: all tracks at once, one process each -----------------
     with ThreadPoolExecutor(max_workers=8) as pool:
-        results = list(pool.map(lambda t: collect(t, args.laps, args.lap_fraction, args.pedal_every), tracks))
+        results = list(pool.map(lambda t: collect(t, args.laps, args.lap_fraction, args.pedal_every, args.seed + tracks.index(t)), tracks))
     spec = results[0][3]
     for track, obs, actions, _ in results:
         w = ((actions // 3) % 2).mean()
-        print(f"  {track}: {len(actions)} decisions from {args.laps} laps, W down on {100 * w:.0f}%")
+        print(f"  {track}: {len(actions)} decisions with {args.laps} laps as reference, W down on {100 * w:.0f}%")
     obs = np.concatenate([r[1] for r in results])
     actions = np.concatenate([r[2] for r in results]).astype(np.int64)
     obs[:, PREVIOUS_KEYS] = 0  # hidden during imitation, see the top of this file
+    if args.save_data:
+        # float16 halves the file; network inputs do not need more precision.
+        np.savez(args.save_data, obs=obs.astype(np.float16), actions=actions.astype(np.uint8))
+        print(f"saved the examples to {args.save_data}")
 
     # Hold back 5% of the examples to check the network is learning the
     # situation -> keys rule and not memorising the examples.

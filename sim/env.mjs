@@ -139,6 +139,7 @@ export class Env {
     if (base && base.carId !== this.carId) throw new Error('saveState: the base snapshot belongs to another car');
     const slot = (this._nextSlot = (this._nextSlot ?? 0) + 1);
     const { bytes } = await this._control('snapshot', slot, { base: base?.slot ?? null });
+    (this._liveSlots ??= new Set()).add(slot);
     return { slot, carId: this.carId, bytes };
   }
 
@@ -154,7 +155,14 @@ export class Env {
 
   /** Free a snapshot's memory in the worker. */
   dropState(handle) {
+    this._liveSlots?.delete(handle.slot);
     this.worker.worker.postMessage({ __pt: 'drop', slot: handle.slot });
+  }
+
+  /** Free every snapshot that has not been dropped yet. */
+  dropAllStates() {
+    for (const slot of this._liveSlots ?? []) this.worker.worker.postMessage({ __pt: 'drop', slot });
+    this._liveSlots?.clear();
   }
 
   close() { return this.worker.terminate(); }

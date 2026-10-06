@@ -14,7 +14,7 @@ Three classes, from low level to high level:
     PolytrackVecEnv   N environments stepped together, each in its own
                       process, with automatic reset when an episode ends
 
-Observation: 146 float32 numbers, roughly within -1..1 (layout in
+Observation: 335 float32 numbers, roughly within -1..1 (layout in
 rl/racing_env.mjs). Action: an integer 0..11 = steer + 3 * W + 6 * S.
 
 Only numpy is required. If the `gymnasium` package is installed, PolytrackEnv

@@ -14,11 +14,11 @@
 // request.
 //
 //   at start-up, unprompted:
-//     <- {"ready":true,"obsSize":146,"numActions":12,"track":"summer1",
+//     <- {"ready":true,"obsSize":335,"numActions":12,"track":"summer1",
 //         "ticks":10,"maxTicks":44558,"lineLength":..., "humanFrames":22279}
 //
 //   -> {"cmd":"reset"}                         optional: "seed":n, "startFraction":0..1
-//     <- {"obs":[...146 numbers...],"info":{...}}
+//     <- {"obs":[...335 numbers...],"info":{...}}
 //
 //   -> {"cmd":"step","action":0..11}
 //     <- {"obs":[...],"reward":0.03,"terminated":false,"truncated":false,"info":{...}}
@@ -26,9 +26,12 @@
 //   -> {"cmd":"save","run":"rl"}               after an episode that finished
 //     <- {"saved":"runs/rl_summer1.json","finishFrames":23000}
 //
-//   -> {"cmd":"demo","lap":0..9}               drive that human lap from
+//   -> {"cmd":"demo","lap":0..9,"ref":0..9}    drive that human lap from
 //                                              data/laps/<track>.json and return what
-//                                              the agent would have seen and done
+//                                              the agent would have seen and done.
+//                                              "ref" (optional) first makes that lap
+//                                              the reference (setReference in
+//                                              racing_env.mjs)
 //     <- {"obs":base64 float32,"actions":base64 uint8,"count":n}
 //
 //   -> {"cmd":"close"}                         the process exits; no reply
@@ -232,6 +235,7 @@ async function handle(msg) {
     case 'demo': {
       const laps = JSON.parse(readFileSync(new URL(`../data/laps/${renv.cfg.track}.json`, import.meta.url), 'utf8'));
       if (!laps[msg.lap]) throw new Error(`no lap ${msg.lap} for ${renv.cfg.track}`);
+      if (msg.ref != null) await renv.setReference(msg.ref);
       const demo = await renv.demo(laps[msg.lap]);
       currentObs = null; // a rollout after this starts a fresh episode
       return { obs: b64(demo.obs), actions: b64(demo.actions), count: demo.count };

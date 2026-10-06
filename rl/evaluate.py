@@ -39,6 +39,9 @@ def parse_args() -> argparse.Namespace:
                    help="greedy: most likely action (default). sample: draw from the policy's "
                         "probabilities, as in training. random: uniform random keys, no checkpoint")
     p.add_argument("--seed", type=int, default=0, help="for --policy sample and random")
+    p.add_argument("--ref-lap", type=int, default=-1,
+                   help="which human lap is the reference: -1 the track's standard lap (default), "
+                        "0..9 that lap of data/laps/<track>.json")
     p.add_argument("--max-off-line", type=float, default=None,
                    help="override the distance from the line at which an attempt is cut off (default 20 units)")
     return p.parse_args()
@@ -70,7 +73,7 @@ def main() -> None:
         # pedalEvery: agents from before keys were held chose all keys afresh
         # at every decision, which is pedalEvery 1.
         env = PolytrackEnv(track=args.track, ticks=saved["ticks"], lapFraction=saved.get("lap_fraction", 1),
-                           pedalEvery=saved.get("pedal_every", 1),
+                           pedalEvery=saved.get("pedal_every", 1), refLap=args.ref_lap,
                            **({} if args.max_off_line is None else {"maxOffLine": args.max_off_line}))
         # Those older agents also pick one of 9 actions, 3 * pedal + steer with
         # pedal 0 = throttle, 1 = coast, 2 = brake. Translate to today's

@@ -10,7 +10,7 @@ What it does, in a loop ("update"):
 
   1. COLLECT. Run the current policy in N simulators at once for `--rollout`
      decisions each. The policy is a small neural network that looks at the
-     observation (146 numbers, see rl/racing_env.mjs) and gives probabilities
+     observation (335 numbers, see rl/racing_env.mjs) and gives probabilities
      for three separate choices: W down or up, S down or up, and steering
      straight, left or right. Each is drawn from its probabilities, so the
      car tries slightly different things every time.
@@ -66,8 +66,8 @@ class Agent(nn.Module):
     """The policy ("actor") and the value estimate ("critic").
 
     Two separate networks of the same shape:
-        observation (146) -> 256 -> 256 -> 7 action scores   (actor)
-        observation (146) -> 256 -> 256 -> 1 value           (critic)
+        observation (335) -> 256 -> 256 -> 7 action scores   (actor)
+        observation (335) -> 256 -> 256 -> 1 value           (critic)
 
     The 7 scores ("logits") are three independent choices, each turned into
     probabilities by its own softmax:
@@ -90,6 +90,11 @@ class Agent(nn.Module):
     def __init__(self, obs_size: int, num_actions: int, hidden: int = 256):
         super().__init__()
         self.factored = num_actions == 12
+        # How much of the steering choice's entropy counts towards the entropy
+        # bonus (1 = all of it, as for W and S). The bonus pays the policy for
+        # staying random; for steering that showed up as weaving on straights,
+        # so the trainer turns it down (--steer-entropy).
+        self.steer_entropy_scale = 1.0
         self.actor = nn.Sequential(
             _layer(obs_size, hidden, 2 ** 0.5), nn.Tanh(),
             _layer(hidden, hidden, 2 ** 0.5), nn.Tanh(),
@@ -146,7 +151,7 @@ class Agent(nn.Module):
         # nor towards the entropy bonus.
         pedal_open = (obs[:, PEDAL_OPEN] > 0.5).float()
         logprob = steer.log_prob(steer_pick) + pedal_open * (w.log_prob(w_pick) + s.log_prob(s_pick))
-        entropy = steer.entropy() + pedal_open * (w.entropy() + s.entropy())
+        entropy = self.steer_entropy_scale * steer.entropy() + pedal_open * (w.entropy() + s.entropy())
         return action, logprob, entropy, self.value(obs)
 
     def greedy(self, obs: torch.Tensor) -> torch.Tensor:
@@ -179,6 +184,21 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--pedal-every", type=int, default=5,
                    help="W and S are read on every this-many-th decision and held in between "
                         "(see HOLDING KEYS in rl/racing_env.mjs)")
+    p.add_argument("--ref-laps", type=int, default=0,
+                   help="if > 0, each environment keeps switching its reference among the first this-many "
+                        "human laps of its track (see refLaps in rl/racing_env.mjs)")
+    p.add_argument("--ref-every", type=int, default=25, help="episodes between reference switches")
+    p.add_argument("--bc-data", default=None,
+                   help="examples of human driving written by rl/pretrain_bc.py (--save-data). If given, "
+                        "every learning step also asks the policy to press what the human pressed in "
+                        "those examples, so that practice does not erode the habits it started with")
+    p.add_argument("--bc-coef", type=float, default=0.5, help="weight of that imitation term at the start of this run")
+    p.add_argument("--bc-coef-end", type=float, default=0.1, help="... and at the end (it changes linearly)")
+    p.add_argument("--steer-entropy", type=float, default=1.0,
+                   help="share of the steering choice's entropy that counts towards the entropy bonus")
+    p.add_argument("--lr-end", type=float, default=0.0,
+                   help="learning rate at the end of this run (default 0). A run that is continued in "
+                        "several stretches should not drop to 0 and jump back up each time")
     p.add_argument("--envs", type=int, default=8, help="simulator processes to run in parallel")
     p.add_argument("--ticks", type=int, default=10, help="physics ticks (ms) per decision")
     p.add_argument("--random-start", type=float, default=0.5,
@@ -210,6 +230,17 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--save-every", type=int, default=10, help="write the checkpoint every this many updates")
     p.add_argument("--resume", action="store_true", help="load the checkpoint and continue training")
     return p.parse_args()
+
+
+def imitation_loss(agent: "Agent", obs: torch.Tensor, action: torch.Tensor) -> torch.Tensor:
+    """How far the policy is from the human's choices on these examples:
+    cross-entropy for steering, plus W and S on the decisions where they are
+    read. Lower = the human's keys are more likely under the policy."""
+    logits = agent.actor(obs)
+    is_open = obs[:, PEDAL_OPEN] > 0.5
+    return (nn.functional.cross_entropy(logits[:, 4:7], action % 3)
+            + nn.functional.cross_entropy(logits[is_open, 0:2], (action[is_open] // 3) % 2)
+            + nn.functional.cross_entropy(logits[is_open, 2:4], action[is_open] // 6))
 
 
 def compute_advantages(rewards, values, dones, last_value, gamma, lam):
@@ -259,7 +290,7 @@ def main() -> None:
     envs = PolytrackVecEnv(args.envs, track=tracks, ticks=args.ticks, seed=args.seed,
                            randomStart=args.random_start, lapFraction=lap_fraction,
                            failureStart=args.failure_start, ownStart=args.own_start,
-                           pedalEvery=args.pedal_every)
+                           pedalEvery=args.pedal_every, refLaps=args.ref_laps, refEvery=args.ref_every)
     N, T = args.envs, args.rollout
     batch_size = N * T                                  # decisions collected per update
     num_updates = max(1, args.total_steps // batch_size)
@@ -270,6 +301,14 @@ def main() -> None:
     per_track = {name: deque(maxlen=30) for name in tracks}
 
     agent = Agent(envs.obs_size, envs.num_actions, args.hidden).to(device)
+    agent.steer_entropy_scale = args.steer_entropy
+    # Human examples for the imitation term (see --bc-data).
+    bc_obs = bc_actions = None
+    if args.bc_data:
+        loaded = np.load(args.bc_data)
+        bc_obs = torch.as_tensor(loaded["obs"].astype(np.float32), device=device)
+        bc_actions = torch.as_tensor(loaded["actions"].astype(np.int64), device=device)
+        print(f"imitation term: {len(bc_actions)} human decisions from {args.bc_data}")
     optimizer = torch.optim.Adam(agent.parameters(), lr=args.lr, eps=1e-5)
     steps_done = 0        # decisions collected so far, including earlier runs when resuming
     best_finish = None    # fastest finished lap seen in training, in ticks
@@ -324,7 +363,9 @@ def main() -> None:
     try:
         for update in range(1, num_updates + 1):
             # Learning rate falls in a straight line from --lr to 0 over this run.
-            optimizer.param_groups[0]["lr"] = args.lr * (1.0 - (update - 1) / num_updates)
+            done_share = (update - 1) / num_updates
+            optimizer.param_groups[0]["lr"] = args.lr + (args.lr_end - args.lr) * done_share
+            bc_coef = args.bc_coef + (args.bc_coef_end - args.bc_coef) * done_share
 
             # ---- 1. COLLECT ------------------------------------------------
             # Every server plays T decisions on its own with the current
@@ -396,6 +437,13 @@ def main() -> None:
                         loss = args.value_weight * value_loss
                     else:
                         loss = policy_loss + args.value_weight * value_loss - args.entropy * entropy.mean()
+                        if bc_obs is not None:
+                            # Imitation term: on a random handful of human
+                            # decisions, how unlikely does the policy make
+                            # what the human pressed? (Cross-entropy, as in
+                            # rl/pretrain_bc.py.)
+                            sample = torch.randint(len(bc_actions), (minibatch,), device=device)
+                            loss = loss + bc_coef * imitation_loss(agent, bc_obs[sample], bc_actions[sample])
 
                     optimizer.zero_grad()
                     loss.backward()
