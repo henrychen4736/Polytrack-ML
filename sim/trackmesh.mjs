@@ -34,7 +34,10 @@ function loadPartTriangles() {
   return partTrianglesCache;
 }
 
-const cellKey = (x, y, z) => `${x},${y},${z}`;
+// One number per grid cell (cells are within +-1024 of the origin on each
+// axis, far more than any track). A number is much cheaper to make and look
+// up than a string, and the long rays below look up many cells.
+const cellKey = (x, y, z) => ((x + 1024) * 2048 + (y + 1024)) * 2048 + (z + 1024);
 
 /**
  * Build the track's collision mesh.
@@ -111,7 +114,57 @@ export function buildTrackMesh(trackData) {
     return best <= max ? best : Infinity;
   }
 
-  return { triangles, count, raycast };
+  /**
+   * The same question as raycast(), for LONG rays (up to a few hundred units).
+   * raycast() tests every cell in the box around the ray, which for a long
+   * diagonal ray is hundreds of cells, nearly all of them nowhere near it.
+   * This one walks only the cells the ray actually passes through, in order
+   * (a "DDA" grid walk), and stops at the first cell that contains a hit.
+   */
+  function raycastFar(from, dir, max) {
+    const cell = [Math.floor(from[0] / CELL), Math.floor(from[1] / CELL), Math.floor(from[2] / CELL)];
+    const step = [0, 0, 0], tNext = [Infinity, Infinity, Infinity], tDelta = [Infinity, Infinity, Infinity];
+    for (let k = 0; k < 3; k++) {
+      if (dir[k] > 1e-9) { step[k] = 1; tNext[k] = ((cell[k] + 1) * CELL - from[k]) / dir[k]; tDelta[k] = CELL / dir[k]; }
+      else if (dir[k] < -1e-9) { step[k] = -1; tNext[k] = (cell[k] * CELL - from[k]) / dir[k]; tDelta[k] = -CELL / dir[k]; }
+    }
+    let best = Infinity;
+    for (;;) {
+      // Distance along the ray at which it leaves the current cell.
+      const exit = Math.min(tNext[0], tNext[1], tNext[2]);
+      const list = grid.get(cellKey(cell[0], cell[1], cell[2]));
+      if (list) {
+        for (const t of list) {
+          const b = t * 9;
+          const ax = triangles[b], ay = triangles[b + 1], az = triangles[b + 2];
+          const e1x = triangles[b + 3] - ax, e1y = triangles[b + 4] - ay, e1z = triangles[b + 5] - az;
+          const e2x = triangles[b + 6] - ax, e2y = triangles[b + 7] - ay, e2z = triangles[b + 8] - az;
+          const px = dir[1] * e2z - dir[2] * e2y, py = dir[2] * e2x - dir[0] * e2z, pz = dir[0] * e2y - dir[1] * e2x;
+          const det = e1x * px + e1y * py + e1z * pz;
+          if (det > -1e-9 && det < 1e-9) continue;
+          const inv = 1 / det;
+          const sx = from[0] - ax, sy = from[1] - ay, sz = from[2] - az;
+          const u = (sx * px + sy * py + sz * pz) * inv;
+          if (u < 0 || u > 1) continue;
+          const qx = sy * e1z - sz * e1y, qy = sz * e1x - sx * e1z, qz = sx * e1y - sy * e1x;
+          const v = (dir[0] * qx + dir[1] * qy + dir[2] * qz) * inv;
+          if (v < 0 || u + v > 1) continue;
+          const dist = (e2x * qx + e2y * qy + e2z * qz) * inv;
+          if (dist > 1e-6 && dist < best) best = dist;
+        }
+        // A hit inside this cell is the nearest there can be. (A triangle
+        // listed here may be hit further on, in a later cell; then keep walking.)
+        if (best <= exit) break;
+      }
+      if (exit > max) break;
+      const axis = tNext[0] <= tNext[1] ? (tNext[0] <= tNext[2] ? 0 : 2) : (tNext[1] <= tNext[2] ? 1 : 2);
+      cell[axis] += step[axis];
+      tNext[axis] += tDelta[axis];
+    }
+    return best <= max ? best : Infinity;
+  }
+
+  return { triangles, count, raycast, raycastFar };
 }
 
 /** Furthest distance, in units, that clearance is measured to. Anything

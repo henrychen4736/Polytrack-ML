@@ -98,6 +98,26 @@
 //                 W (0..1), S (0..1), steer (+1 left, -1 right)
 //   155    180    the same 9 numbers for each of the 20
 //                 points ahead
+//   335    17     distance to the first solid surface along    sqrt(units / 120),
+//                 17 rays cast FROM THE CAR (see RAYS below)   1 = nothing within 120
+//
+// RAYS (335 onwards). The road-edge numbers at 101..143 are measured sideways
+// from the human's line. They say how wide the road is where the human drove,
+// but not what is in front of this car's own nose: a car angled towards a
+// wall, or well off the line, or facing a pillar the line passes beside, was
+// blind to it. In the air there was nothing at all about where the landing
+// surface is. The rays fill that in, lidar-style, against the game's real
+// collision geometry (sim/trackmesh.mjs):
+//   13 in the car's own plane, from half a unit above its origin, fanned at
+//      0, +-5, +-10, +-20, +-35, +-55 and +-90 degrees from straight ahead
+//      (left first, then right, for each angle)
+//   3  in the car's vertical plane: straight down through the floor, and
+//      20 and 45 degrees below straight ahead (the road just ahead; in a
+//      flight, where the car is heading to come down)
+//   1  straight down in WORLD terms, whatever the car's attitude: height
+//      above whatever is underneath
+// The square root spreads out the short distances, where a unit matters most:
+// 1 unit reads 0.09, 5 units 0.2, 30 units 0.5.
 //
 // Why the human's orientation and keys are shown (146 onwards): position and
 // speed say where the human went, not how. A drift is the car pointing one
@@ -204,7 +224,26 @@ export const LOOKAHEAD_POINTS = 20;
 const REF_NUMBERS = 9;
 /** Where the reference's "what the human was doing" block starts. */
 const OBS_REF = 21 + 4 * LOOKAHEAD_POINTS + 3 + 2 * LOOKAHEAD_POINTS + 2;
-export const OBS_SIZE = OBS_REF + REF_NUMBERS * (1 + LOOKAHEAD_POINTS);
+/** Where the ray distances start (see RAYS at the top). */
+const OBS_RAYS = OBS_REF + REF_NUMBERS * (1 + LOOKAHEAD_POINTS);
+/** Furthest a ray looks, in units. At 300 km/h that is about 1.4 seconds away. */
+const RAY_RANGE = 120;
+/** Height above the car's origin that the rays start from, so that they pass
+ *  over the road surface the car is standing on. */
+const RAY_HEIGHT = 0.5;
+/** Ray directions in the car's frame (x = left, y = up, z = forward). */
+const RAY_DIRECTIONS = (() => {
+  const rad = (degrees) => (degrees * Math.PI) / 180;
+  const out = [[0, 0, 1]];
+  for (const a of [5, 10, 20, 35, 55, 90]) {
+    out.push([Math.sin(rad(a)), 0, Math.cos(rad(a))]);   // to the left
+    out.push([-Math.sin(rad(a)), 0, Math.cos(rad(a))]);  // to the right
+  }
+  out.push([0, -1, 0]);
+  for (const a of [20, 45]) out.push([0, -Math.sin(rad(a)), Math.cos(rad(a))]);
+  return out;
+})();
+export const OBS_SIZE = OBS_RAYS + RAY_DIRECTIONS.length + 1;
 /** S held, and "W and S are read now" (the two entries before that block). */
 export const OBS_S_HELD = OBS_REF - 2, OBS_PEDAL_OPEN = OBS_REF - 1;
 /** Decisions between the save states an episode leaves behind for ownStart. */
@@ -881,6 +920,13 @@ export class RacingEnv {
     for (let k = 1; k <= LOOKAHEAD_POINTS; k++) {
       describe(Math.min(last, this.progressIndex + Math.round((k * gap) / SPACING)), OBS_REF + REF_NUMBERS * k);
     }
+
+    // [335..] rays from the car (see RAYS at the top of the file).
+    const carUp = rotate([0, 1, 0], q);
+    const eye = [state.position[0] + carUp[0] * RAY_HEIGHT, state.position[1] + carUp[1] * RAY_HEIGHT, state.position[2] + carUp[2] * RAY_HEIGHT];
+    const reading = (direction) => Math.sqrt(Math.min(RAY_RANGE, this.mesh.raycastFar(eye, direction, RAY_RANGE)) / RAY_RANGE);
+    for (let k = 0; k < RAY_DIRECTIONS.length; k++) obs[OBS_RAYS + k] = reading(rotate(RAY_DIRECTIONS[k], q));
+    obs[OBS_RAYS + RAY_DIRECTIONS.length] = reading([0, -1, 0]);
     return obs;
   }
 
