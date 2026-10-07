@@ -50,10 +50,20 @@ import { readFileSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 import { RacingEnv, DEFAULTS, OBS_SIZE, NUM_ACTIONS } from './racing_env.mjs';
 
-/** Outputs of the policy network: two scores for W (off, on), two for S
- *  (off, on), three for steering (straight, left, right). Each group is its
- *  own choice; see Agent in rl/train_ppo.py. */
-const NUM_SCORES = 7;
+/** Outputs of the policy network. Each group of scores is its own choice;
+ *  see Agent in rl/train_ppo.py.
+ *    per-decision actions (block = 0), 7 scores:
+ *      W (off, on), S (off, on), steering (straight, left, right)
+ *    block decisions (block > 0), 22 scores, see BLOCK DECISIONS in
+ *    racing_env.mjs:
+ *      steering target (3), steering "at" (5), W target (2), W "at" (5),
+ *      S target (2), S "at" (5) */
+let NUM_SCORES = 7;
+/** Numbers stored per decision in a rollout: 1 action, or the 6 of a block decision. */
+let ACTION_WIDTH = 1;
+/** numActions value that tells the Python side this is a block-decision
+ *  environment (3 x 5 x 2 x 5 x 2 x 5 combinations). */
+const BLOCK_ACTIONS = 1500;
 
 // Keep stdout clean: route console.log to stderr before anything can use it.
 console.log = console.error;
@@ -76,10 +86,12 @@ try {
   send({ error: `could not start the simulator: ${err.message}` });
   process.exit(1);
 }
+if (renv.cfg.block > 0) { NUM_SCORES = 22; ACTION_WIDTH = 6; }
 send({
   ready: true,
   obsSize: OBS_SIZE,
-  numActions: NUM_ACTIONS,
+  numActions: renv.cfg.block > 0 ? BLOCK_ACTIONS : NUM_ACTIONS,
+  block: renv.cfg.block,
   track: renv.cfg.track,
   ticks: renv.cfg.ticks,
   pedalEvery: renv.cfg.pedalEvery,
@@ -144,13 +156,23 @@ function loadActor(file, hidden) {
   return actor;
 }
 
-/** out[i] = tanh(bias[i] + sum_j weights[i][j] * input[j]) for one layer. */
+/** out[i] = tanh(bias[i] + sum_j weights[i][j] * input[j]) for one layer.
+ *  The sum is kept in four running totals, four inputs at a time. It is the
+ *  same sum; written this way the processor can work on the four at once,
+ *  which measured 1.6 times faster. This function is about a quarter of all
+ *  training time, so that is worth the less obvious loop. */
 function layerTanh(weights, bias, input, out) {
-  const n = input.length;
+  const n = input.length, n4 = n - (n % 4);
   for (let i = 0, w = 0; i < out.length; i++) {
-    let sum = bias[i];
-    for (let j = 0; j < n; j++) sum += weights[w++] * input[j];
-    out[i] = Math.tanh(sum);
+    let s0 = bias[i], s1 = 0, s2 = 0, s3 = 0, j = 0;
+    for (; j < n4; j += 4, w += 4) {
+      s0 += weights[w] * input[j];
+      s1 += weights[w + 1] * input[j + 1];
+      s2 += weights[w + 2] * input[j + 2];
+      s3 += weights[w + 3] * input[j + 3];
+    }
+    for (; j < n; j++) s0 += weights[w++] * input[j];
+    out[i] = Math.tanh(s0 + s1 + s2 + s3);
   }
 }
 
@@ -180,6 +202,11 @@ function sampleAction(actor, obs) {
     for (let j = 0; j < actor.hidden; j++) sum += actor.w3[w++] * actor.h2[j];
     scores[a] = sum;
   }
+  if (ACTION_WIDTH === 6) {
+    // Block decision: [steer, steerAt, w, wAt, s, sAt].
+    return [sampleGroup(scores, 0, 3), sampleGroup(scores, 3, 5), sampleGroup(scores, 8, 2),
+      sampleGroup(scores, 10, 5), sampleGroup(scores, 15, 2), sampleGroup(scores, 17, 5)];
+  }
   // action = steer + 3 * W + 6 * S (see the table at the top of racing_env.mjs).
   // On decisions where W and S are not read, the environment ignores those
   // two parts; step() reports the action that was really applied.
@@ -195,17 +222,25 @@ let currentObs = null;
 async function rollout({ steps, weights, hidden }) {
   const actor = loadActor(weights, hidden);
   const obsOut = new Float32Array(steps * OBS_SIZE);
-  const actions = new Uint8Array(steps);
+  const actions = new Uint8Array(steps * ACTION_WIDTH);
   const rewards = new Float32Array(steps);
   const dones = new Uint8Array(steps);
   const episodes = []; // one entry per episode that ended during this rollout
+  // Where this rollout's time went: running the policy network, and stepping
+  // the simulator (which includes building the next observation).
+  let actorMs = 0, stepMs = 0;
   if (currentObs == null) currentObs = Float32Array.from((await renv.reset()).obs);
 
   for (let t = 0; t < steps; t++) {
     obsOut.set(currentObs, t * OBS_SIZE);
+    const t0 = performance.now();
     const action = sampleAction(actor, currentObs);
-    const r = await renv.step(action);
-    actions[t] = r.action;
+    const t1 = performance.now();
+    const r = ACTION_WIDTH === 6 ? await renv.stepBlock(action) : await renv.step(action);
+    actorMs += t1 - t0;
+    stepMs += performance.now() - t1;
+    if (ACTION_WIDTH === 6) actions.set(action, t * 6);
+    else actions[t] = r.action;
     rewards[t] = r.reward;
     if (r.terminated || r.truncated) {
       dones[t] = 1;
@@ -217,7 +252,7 @@ async function rollout({ steps, weights, hidden }) {
       currentObs = Float32Array.from(r.obs);
     }
   }
-  return { obs: b64(obsOut), actions: b64(actions), rewards: b64(rewards), dones: b64(dones), lastObs: b64(currentObs), episodes };
+  return { obs: b64(obsOut), actions: b64(actions), rewards: b64(rewards), dones: b64(dones), lastObs: b64(currentObs), episodes, actorMs, stepMs };
 }
 
 async function handle(msg) {
@@ -229,7 +264,8 @@ async function handle(msg) {
       return { obs: round(obs), info };
     }
     case 'step': {
-      const r = await renv.step(msg.action);
+      // A block-decision environment takes "decision": [steer, steerAt, w, wAt, s, sAt].
+      const r = renv.cfg.block > 0 ? await renv.stepBlock(msg.decision) : await renv.step(msg.action);
       return { obs: round(r.obs), reward: r.reward, terminated: r.terminated, truncated: r.truncated, info: r.info };
     }
     case 'demo': {

@@ -44,14 +44,14 @@ import torch
 import torch.nn.functional as F
 
 from polytrack_env import EnvServer
-from train_ppo import Agent, PEDAL_OPEN
+from train_ppo import Agent, PEDAL_OPEN, block_imitation_loss
 
 # Observation entries holding the previous decision's keys (see the table at
 # the top of rl/racing_env.mjs).
 PREVIOUS_KEYS = [15, 16, 144]
 
 
-def collect(track: str, laps: int, lap_fraction: int, pedal_every: int, seed: int):
+def collect(track: str, laps: int, lap_fraction: int, pedal_every: int, seed: int, block: int = 0):
     """Drive human laps of one track; returns (observations, actions).
 
     Each of the `laps` laps takes a turn as the REFERENCE (the lap the agent
@@ -63,8 +63,9 @@ def collect(track: str, laps: int, lap_fraction: int, pedal_every: int, seed: in
         slightly different speed, and the right keys are that player's own.
         These are the examples of following a reference one is not exactly on.
     """
-    server = EnvServer(track=track, lapFraction=lap_fraction, pedalEvery=pedal_every)
+    server = EnvServer(track=track, lapFraction=lap_fraction, pedalEvery=pedal_every, block=block)
     obs_size = server.spec["obsSize"]
+    width = 6 if block else 1  # numbers per label: a block decision has six
     rng = np.random.default_rng(seed)
     obs, actions = [], []
     try:
@@ -73,7 +74,7 @@ def collect(track: str, laps: int, lap_fraction: int, pedal_every: int, seed: in
             for lap in dict.fromkeys((ref, other)):
                 reply = server.request(cmd="demo", lap=lap, ref=ref)
                 obs.append(np.frombuffer(base64.b64decode(reply["obs"]), dtype=np.float32).reshape(-1, obs_size))
-                actions.append(np.frombuffer(base64.b64decode(reply["actions"]), dtype=np.uint8))
+                actions.append(np.frombuffer(base64.b64decode(reply["actions"]), dtype=np.uint8).reshape(-1, width))
     finally:
         server.close()
     return track, np.concatenate(obs), np.concatenate(actions), server.spec
@@ -84,6 +85,9 @@ def losses(agent: Agent, obs: torch.Tensor, action: torch.Tensor):
     how often the network's top choice matches. W and S only count on the
     decisions where they are read."""
     logits = agent.actor(obs)
+    if agent.block:
+        return block_imitation_loss(logits, action)
+    action = action.reshape(-1)
     steer, w, s = action % 3, (action // 3) % 2, action // 6
     is_open = obs[:, PEDAL_OPEN] > 0.5
     loss = (F.cross_entropy(logits[:, 4:7], steer)
@@ -110,6 +114,9 @@ def main() -> None:
     p.add_argument("--pedal-every", type=int, default=5)
     p.add_argument("--lap-fraction", type=int, default=0, help="0 hides the lap-position input (multi-track)")
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--block", type=int, default=0,
+                   help="if > 0, make examples and a network for block decisions of this many 10 ms "
+                        "slices (see BLOCK DECISIONS in rl/racing_env.mjs)")
     p.add_argument("--save-data", default=None,
                    help="also write the examples to this .npz file, for train_ppo.py --bc-data")
     args = p.parse_args()
@@ -119,10 +126,10 @@ def main() -> None:
 
     # ---- 1. examples: all tracks at once, one process each -----------------
     with ThreadPoolExecutor(max_workers=8) as pool:
-        results = list(pool.map(lambda t: collect(t, args.laps, args.lap_fraction, args.pedal_every, args.seed + tracks.index(t)), tracks))
+        results = list(pool.map(lambda t: collect(t, args.laps, args.lap_fraction, args.pedal_every, args.seed + tracks.index(t), args.block), tracks))
     spec = results[0][3]
     for track, obs, actions, _ in results:
-        w = ((actions // 3) % 2).mean()
+        w = actions[:, 2].mean() if args.block else ((actions // 3) % 2).mean()
         print(f"  {track}: {len(actions)} decisions with {args.laps} laps as reference, W down on {100 * w:.0f}%")
     obs = np.concatenate([r[1] for r in results])
     actions = np.concatenate([r[2] for r in results]).astype(np.int64)
@@ -156,7 +163,7 @@ def main() -> None:
             with torch.no_grad():
                 check_loss, acc = losses(agent, obs_t[held_back], actions_t[held_back])
             print(f"epoch {epoch}: held-back loss {check_loss.item():.3f}; same choice as the human: "
-                  f"W {100 * acc['W']:.1f}%, S {100 * acc['S']:.1f}%, steering {100 * acc['steer']:.1f}%", flush=True)
+                  + ", ".join(f"{name} {100 * value:.1f}%" for name, value in acc.items()), flush=True)
 
     # The previous-key inputs were always zero here, so their connections
     # still hold their random starting values. Zero them: otherwise the first
@@ -172,7 +179,7 @@ def main() -> None:
         "model": agent.state_dict(), "optimizer": None, "steps": 0, "best_finish": None,
         "obs_size": spec["obsSize"], "num_actions": spec["numActions"], "hidden": args.hidden,
         "track": args.track, "ticks": spec["ticks"], "lap_fraction": args.lap_fraction,
-        "pedal_every": args.pedal_every,
+        "pedal_every": args.pedal_every, "block": args.block,
     }, path)
     print(f"saved {path}")
 

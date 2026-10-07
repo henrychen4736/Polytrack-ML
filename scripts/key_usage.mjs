@@ -18,7 +18,8 @@
 import { readFileSync } from 'node:fs';
 import { Env, loadTrack } from '../sim/env.mjs';
 import { decodeState } from '../sim/state.mjs';
-import { buildLine, nearestIndex } from '../sim/line.mjs';
+import { buildLine, nearestIndex, lineStraightness } from '../sim/line.mjs';
+import { rotate } from '../sim/track.mjs';
 import { loadHumanLap } from '../sim/drive.mjs';
 import { CHANNELS, fromDense, toDense, encodeRecording, decodeRecording } from '../sim/recording.mjs';
 
@@ -57,6 +58,35 @@ console.log('key     held: human / ours     presses+releases per second: human /
 for (const [ch, label] of [['up', 'W'], ['down', 'S'], ['left', 'A'], ['right', 'D']]) {
   console.log(`${label}       ${(100 * hu[ch].share).toFixed(0).padStart(3)}% / ${(100 * ou[ch].share).toFixed(0).padStart(3)}%` +
     `            ${hu[ch].perSecond.toFixed(1).padStart(5)} / ${ou[ch].perSecond.toFixed(1).padStart(5)}`);
+}
+
+// ---- 1b. steering on straights against steering elsewhere -------------------
+// "Straight" = lineStraightness above 0.8 with the human's wheels on the
+// ground. There a good driver has no steering key down and hardly touches
+// one; elsewhere tapping can be the right technique. Weaving shows up as a
+// low "neither A nor D" share and many changes per second on the straights.
+{
+  const straight = lineStraightness(line, line.quaternions.map((q) => rotate([0, 1, 0], q)));
+  const measure = (states, keys) => {
+    const out = { straight: { ticks: 0, changes: 0, neither: 0 }, elsewhere: { ticks: 0, changes: 0, neither: 0 } };
+    let index = 0;
+    for (let t = 1; t < Math.min(states.length, keys.length); t++) {
+      if (t % 10 === 0) index = nearestIndex(line, decodeState(states[t]).position, index).index;
+      const b = straight[index] > 0.8 && line.grounded[index] ? out.straight : out.elsewhere;
+      b.ticks++;
+      if (!keys[t].left && !keys[t].right) b.neither++;
+      if (!!keys[t].left !== !!keys[t - 1].left || !!keys[t].right !== !!keys[t - 1].right) b.changes++;
+    }
+    return out;
+  };
+  const hm = measure(humanRun.states, humanKeys), om = measure(ourRun.states, ourKeys);
+  console.log('\nsteering              share of lap   neither A nor D: human / ours   changes per second: human / ours');
+  for (const where of ['straight', 'elsewhere']) {
+    const a = hm[where], b = om[where];
+    const pc = (x, y) => `${Math.round((100 * x) / Math.max(1, y))}%`.padStart(4);
+    console.log(`${(where === 'straight' ? 'on straights' : 'elsewhere').padEnd(22)}${pc(a.ticks, humanKeys.length)}            ${pc(a.neither, a.ticks)} / ${pc(b.neither, b.ticks)}                     ` +
+      `${((1000 * a.changes) / Math.max(1, a.ticks)).toFixed(1).padStart(5)} / ${((1000 * b.changes) / Math.max(1, b.ticks)).toFixed(1).padStart(5)}`);
+  }
 }
 
 // ---- 2. the approach to the end ---------------------------------------------

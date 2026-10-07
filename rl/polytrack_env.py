@@ -170,7 +170,12 @@ class PolytrackEnv(gym.Env if gym else object):
           truncated   the attempt was cut off; info["reason"] says why:
                       'stalled', 'off line' or 'time limit'
         """
-        reply = self.server.request(cmd="step", action=int(action))
+        # A block-decision environment (block > 0) takes six numbers per
+        # decision instead of one action number.
+        if np.ndim(action) > 0:
+            reply = self.server.request(cmd="step", decision=[int(v) for v in action])
+        else:
+            reply = self.server.request(cmd="step", action=int(action))
         return _obs(reply), float(reply["reward"]), reply["terminated"], reply["truncated"], reply["info"]
 
     def save_lap(self, run: str = "rl", unfinished: bool = False) -> dict:
@@ -323,7 +328,10 @@ class PolytrackVecEnv:
         # Each server's arrays are [step, ...]; stacking on axis 1 gives [step, environment, ...].
         return {
             "obs": np.stack([decode(r["obs"], np.float32).reshape(steps, self.obs_size) for r in replies], axis=1),
-            "actions": np.stack([decode(r["actions"], np.uint8) for r in replies], axis=1).astype(np.int64),
+            # One number per decision, or six for block decisions: [step, environment(, 6)].
+            "actions": np.stack([decode(r["actions"], np.uint8).reshape(steps, -1) for r in replies], axis=1)
+                         .astype(np.int64).squeeze(-1) if self.spec_info.get("block", 0) == 0 else
+                       np.stack([decode(r["actions"], np.uint8).reshape(steps, 6) for r in replies], axis=1).astype(np.int64),
             "rewards": np.stack([decode(r["rewards"], np.float32) for r in replies], axis=1),
             "dones": np.stack([decode(r["dones"], np.uint8) for r in replies], axis=1).astype(np.float32),
             "last_obs": np.stack([decode(r["lastObs"], np.float32) for r in replies]),

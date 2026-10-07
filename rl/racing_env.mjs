@@ -47,6 +47,34 @@
 //     - Every press or release costs a little reward (see REWARD): W and S
 //       much more than A and D.
 //
+// BLOCK DECISIONS (the `block` option; the newer way to drive)
+//
+//   With block = 5, the agent is asked once per 5 x `ticks` = 50 ms, and for
+//   each of the three controls it says two things:
+//     target   what the control should be at the end of the block
+//              steering: 0 none, 1 left (A), 2 right (D);  W: 0/1;  S: 0/1
+//     at       if that is a change, which 10 ms slice of the block it
+//              happens in: 0 (at once), 1, 2, 3
+//              or 4 (after 40 ms). Ignored when the target is what the
+//              control is already doing.
+//   stepBlock() then holds the current keys up to the chosen moment and the
+//   target after it. That is all the freedom there is: at most ONE change per
+//   control per 50 ms, timed to 10 ms.
+//
+//   Why. Asked for raw keys every 10 ms, the agent steered by flipping
+//   between A and D several times a second and never let go, which made the
+//   car weave. Top human laps do not look like that. Measured over 170 of
+//   them, in 50 ms blocks: no steering key at all in 40% of blocks, a key
+//   held throughout in 36%, and two or more steering changes inside one block
+//   in only 1.7%. A human "rapid tap" is about 70 ms down and 70 ms up. So
+//   one change per 50 ms can express essentially everything the best players
+//   do, cannot express the flipping, and makes "keep doing what I am doing"
+//   a single plain choice. It also means a fifth as many decisions per lap.
+//
+//   The per-10 ms actions above are still what moves the car (stepBlock calls
+//   step five times) and are still available directly when block = 0, which
+//   is how the earlier models were trained and are evaluated.
+//
 // ---------------------------------------------------------------------------
 // OBSERVATION: OBS_SIZE = 144 numbers, all scaled to be roughly within -1..1
 // (The first 101 are unchanged from the first version of this file; the road
@@ -155,11 +183,35 @@
 //                  second of driving at 200 km/h earns. Top human laps have
 //                  no body contact at all, so this never punishes good driving.
 //                minus a small cost for every key pressed or released:
-//                  0.05 for W or S (pedalTogglePenalty), 0.005 for a change
-//                  of steering (steerTogglePenalty). Holding a key is free.
+//                  0.05 for W or S (pedalTogglePenalty). Holding W or S is free.
 //                  Tapping W on and off ten times a second would cost 1 per
 //                  second, a fifth of what driving at 200 km/h earns; the
 //                  few dozen key changes of a human lap cost about 1 in total.
+//                minus the cost of STEERING, which depends on where the car is.
+//                  "straightness" (sim/line.mjs lineStraightness) runs from 1
+//                  on a dead-straight stretch of road to 0 in a corner, and
+//                  is 0 wherever the human was in the air.
+//                    per change of steering: 0.005 (steerTogglePenalty)
+//                      + 0.05 x straightness (steerStraightTogglePenalty)
+//                    per decision with A or D down: 0.01 x straightness
+//                      (steerHoldPenalty)
+//                    per switch straight from A to D or D to A, with no
+//                      moment of neither in between: 0.03, anywhere
+//                      (steerReversalPenalty)
+//                  Why: rapid tapping is the right technique through some
+//                  corners, so there it is nearly free. On a straight it only
+//                  costs speed, so there it is priced like tapping W. And the
+//                  agent used to go straight by flipping between A and D with
+//                  never a moment of neither (A or D down for 100% of a lap
+//                  where the human has neither down half the time), which is
+//                  what the charge for merely holding a key on a straight is
+//                  for: there, letting go is the only free choice.
+//                  The reversal charge is for the rest of the lap. Measured
+//                  off the straights, the human changes steering about as
+//                  often as the agent did (4 to 9 times a second), but as
+//                  taps: press, let go, press again, with no key down 30 to
+//                  50% of the time. The agent flipped A-D-A-D. A tap costs
+//                  two cheap changes; a flip costs this on top.
 //   on finish:   the rest of the line's length x 0.1 (so every finished lap
 //                has collected exactly the same progress reward), plus
 //                5 + 2 x (seconds left before the tick limit)
@@ -192,7 +244,7 @@ import { Env, loadTrack } from '../sim/env.mjs';
 import { decodeState } from '../sim/state.mjs';
 import { readFileSync } from 'node:fs';
 import { loadHumanLap } from '../sim/drive.mjs';
-import { buildLine, nearestIndex, SPACING } from '../sim/line.mjs';
+import { buildLine, nearestIndex, lineStraightness, SPACING } from '../sim/line.mjs';
 import { rotate } from '../sim/track.mjs';
 import { buildTrackMesh, clearanceProfile, MAX_CLEARANCE } from '../sim/trackmesh.mjs';
 import { decodeRecording, toDense } from '../sim/recording.mjs';
@@ -297,9 +349,11 @@ export const DEFAULTS = {
   contactPenalty: 0.1,     // per step, times the share of its ticks with body contact
   impulsePenalty: 0.05,    // per step, times log10(1 + summed contact impulse)
   pedalTogglePenalty: 0.05,  // per press or release of W or S
-  steerTogglePenalty: 0.02,  // per change of the steering choice (0.005 at first:
-                             // too cheap, the agent changed it 30 to 40 times a
-                             // second and weaved down every straight)
+  // Steering costs; see REWARD at the top for the reasoning.
+  steerTogglePenalty: 0.005,         // per change of the steering choice, anywhere
+  steerStraightTogglePenalty: 0.05,  // extra per change, times how straight the road is
+  steerHoldPenalty: 0.01,            // per decision with A or D down, times how straight the road is
+  steerReversalPenalty: 0.03,        // per switch directly between A and D, anywhere
   // Which human lap is the reference (the line, speeds, orientation and keys
   // the agent is shown and scored against).
   //   refLap   -1: the track's standard lap (sim/drive.mjs loadHumanLap), as
@@ -318,6 +372,11 @@ export const DEFAULTS = {
   pedalEvery: 5,
   finishBonus: 5,          // for finishing at all
   timeBonusPerSecond: 2,   // per second left before maxTicks at the finish
+  // Decisions per block for stepBlock() (see BLOCK DECISIONS at the top).
+  // 0 = the agent drives with step(), one action per decision, as before.
+  // With a block, W and S are free on every decision inside it (pedalEvery
+  // is treated as 1): the block itself is what makes keys be held.
+  block: 0,
   // Lookahead spacing: gap between seen line points = max(minGap, speed x gapSeconds).
   minGap: 2,
   gapSeconds: 0.15,
@@ -402,6 +461,7 @@ export class RacingEnv {
     renv.env = await Env.create();
     renv.track = loadTrack(cfg.track);
 
+    if (cfg.block > 0) cfg.pedalEvery = 1;
     renv.mesh = buildTrackMesh(renv.track.trackData);
     renv.maxTicksOption = cfg.maxTicks;   // null unless the caller fixed it
     renv.references = new Map();          // lap number -> everything built from that lap
@@ -475,6 +535,10 @@ export class RacingEnv {
         lineUp: line.quaternions.map((q) => rotate([0, 1, 0], q)),
         lineFwd: line.quaternions.map((q) => rotate([0, 0, 1], q)),
       };
+      // How straight the road is at each point, for the steering costs. Zero
+      // where the human was in the air: steering does nothing there.
+      ref.straight = lineStraightness(line, ref.lineUp);
+      for (let k = 0; k < count; k++) if (!line.grounded[k]) ref.straight[k] = 0;
       this.references.set(lapNumber, ref);
     }
     Object.assign(this, ref);
@@ -713,6 +777,26 @@ export class RacingEnv {
       return 2 * held > end - from;
     };
     const obs = [], actions = [];
+    if (cfg.block > 0) {
+      // Block decisions: one example per block. The car is still driven by
+      // the human's real keys; the label is the block decision nearest to
+      // what those keys did (_blockLabel).
+      const span = cfg.ticks * cfg.block;
+      let before = [0, 0, 0];
+      for (let t = 1; t + span <= keys.length && this.state.finishFrames == null && this.offLine <= cfg.maxOffLineAir; t += span) {
+        const label = this._blockLabel(keys, t, before);
+        obs.push(...this._observe());
+        actions.push(...label);
+        await this._replayHuman(t, t + span, keys);
+        before = [label[0], label[2], label[4]];
+        this.previousAction = before[0] + 3 * before[1] + 6 * before[2];
+        this.decisions += cfg.block;
+        this._locate();
+      }
+      this.done = true;
+      this.lastCrashTick = null;
+      return { obs: Float32Array.from(obs), actions: Uint8Array.from(actions), count: actions.length / 6 };
+    }
     for (let t = 1; t + cfg.ticks <= keys.length && this.state.finishFrames == null && this.offLine <= cfg.maxOffLineAir; t += cfg.ticks) {
       const left = mostly('left', t, t + cfg.ticks), right = mostly('right', t, t + cfg.ticks);
       let action = left ? 1 : right ? 2 : 0;
@@ -951,7 +1035,7 @@ export class RacingEnv {
    * Hold the keys for action `action` for cfg.ticks ticks.
    * Returns { obs, reward, terminated, truncated, info }.
    */
-  async step(action) {
+  async step(action, { observe = true } = {}) {
     if (this.done) throw new Error('step() called on a finished episode; call reset() first');
     if (!Number.isInteger(action) || action < 0 || action >= NUM_ACTIONS) throw new Error(`bad action ${action}`);
     const { cfg } = this;
@@ -983,7 +1067,11 @@ export class RacingEnv {
     }
 
     // The cost of pressing and releasing keys.
-    reward -= cfg.pedalTogglePenalty * pedalChanges + (steerChanged ? cfg.steerTogglePenalty : 0);
+    const straight = this.straight[this.progressIndex];
+    reward -= cfg.pedalTogglePenalty * pedalChanges;
+    if (steerChanged) reward -= cfg.steerTogglePenalty + cfg.steerStraightTogglePenalty * straight;
+    if (action % 3 !== 0) reward -= cfg.steerHoldPenalty * straight;
+    if (steerChanged && action % 3 !== 0 && previous % 3 !== 0) reward -= cfg.steerReversalPenalty;
 
     // Stall clock: restart it whenever the car has gained a full unit.
     if (this.progress >= this.stallProgress + 1) { this.stallProgress = this.progress; this.stallTick = s.frames; }
@@ -1019,13 +1107,78 @@ export class RacingEnv {
     this.decisions++;
     if (cfg.ownStart > 0 && !this.done && this.decisions % OWN_SNAPSHOT_EVERY === 0) await this._rememberOwnState();
     return {
-      obs: this._observe(),
+      // stepBlock skips the observation for all but the last step of a block.
+      obs: observe ? this._observe() : null,
       reward,
       action, // the keys actually held (W and S may differ from what was asked)
       terminated: reason === 'finished',
       truncated: this.done && reason !== 'finished',
       info: this._info(reason),
     };
+  }
+
+  /**
+   * One block decision (see BLOCK DECISIONS at the top of the file).
+   *
+   *   decision = [steer, steerAt, w, wAt, s, sAt]
+   *     steer 0..2, w 0..1, s 0..1   what each control should be at the end
+   *     ...At 0..4                   the 10 ms slice in which it changes
+   *
+   * Runs cfg.block ordinary steps, adds up their rewards, and stops early if
+   * the episode ends. Returns the same shape as step(); `obs` is what the
+   * agent sees for its next block decision.
+   */
+  async stepBlock(decision) {
+    const [steer, steerAt, w, wAt, s, sAt] = decision;
+    // What each control is doing as the block begins.
+    const before = this.previousAction;
+    const steerBefore = before % 3, wBefore = Math.floor(before / 3) % 2, sBefore = before >= 6 ? 1 : 0;
+    let reward = 0, r;
+    for (let slice = 0; slice < this.cfg.block; slice++) {
+      const action = (slice >= steerAt ? steer : steerBefore)
+        + 3 * (slice >= wAt ? w : wBefore)
+        + 6 * (slice >= sAt ? s : sBefore);
+      r = await this.step(action, { observe: false });
+      reward += r.reward;
+      if (r.terminated || r.truncated) break;
+    }
+    return { ...r, obs: this._observe(), reward };
+  }
+
+  /**
+   * Turn one block of a human lap's keys into the block decision that comes
+   * closest to it (used by demo() when cfg.block is set).
+   *
+   *   keys     the lap's keys per tick
+   *   t        first tick of the block
+   *   before   [steer, w, s] as the block begins (the previous block's targets)
+   *
+   * For each control: the target is its state on the block's last tick, and
+   * "at" is the slice in which it last changed to that. If it ends the block
+   * as it began, there is nothing to decide and "at" is 5, meaning "no
+   * change"; the learning code leaves the timing out for those.
+   */
+  _blockLabel(keys, t, before) {
+    const { cfg } = this;
+    const span = cfg.ticks * cfg.block, end = Math.min(keys.length, t + span) - 1;
+    const read = [
+      (c) => (c.left ? 1 : c.right ? 2 : 0),
+      (c) => (c.up ? 1 : 0),
+      (c) => (c.down ? 1 : 0),
+    ];
+    const label = [];
+    for (let control = 0; control < 3; control++) {
+      const target = read[control](keys[end]);
+      let at = 5;
+      if (target !== before[control]) {
+        // Walk back from the end to the first tick of the final run of `target`.
+        let first = end;
+        while (first > t && read[control](keys[first - 1]) === target) first--;
+        at = Math.min(cfg.block - 1, Math.round((first - t) / cfg.ticks));
+      }
+      label.push(target, at);
+    }
+    return label;
   }
 
   /**

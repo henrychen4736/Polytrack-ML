@@ -42,6 +42,10 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--ref-lap", type=int, default=-1,
                    help="which human lap is the reference: -1 the track's standard lap (default), "
                         "0..9 that lap of data/laps/<track>.json")
+    p.add_argument("--sticky", type=float, default=0.0,
+                   help="experiment: add this much to the score of whatever each key is ALREADY doing "
+                        "before choosing, so that keeping the current keys is favoured and a change "
+                        "needs a clear reason. 0 = off. 3 makes a stray change about 20 times rarer")
     p.add_argument("--max-off-line", type=float, default=None,
                    help="override the distance from the line at which an attempt is cut off (default 20 units)")
     return p.parse_args()
@@ -74,6 +78,7 @@ def main() -> None:
         # at every decision, which is pedalEvery 1.
         env = PolytrackEnv(track=args.track, ticks=saved["ticks"], lapFraction=saved.get("lap_fraction", 1),
                            pedalEvery=saved.get("pedal_every", 1), refLap=args.ref_lap,
+                           block=saved.get("block", 0),
                            **({} if args.max_off_line is None else {"maxOffLine": args.max_off_line}))
         # Those older agents also pick one of 9 actions, 3 * pedal + steer with
         # pedal 0 = throttle, 1 = coast, 2 = brake. Translate to today's
@@ -82,7 +87,7 @@ def main() -> None:
         from_old = lambda a: a % 3 + (3 if a // 3 == 0 else 6 if a // 3 == 2 else 0)
         torch.manual_seed(args.seed)
 
-        def choose(obs: np.ndarray) -> int:
+        def choose(obs: np.ndarray):
             with torch.no_grad():
                 # A checkpoint from before the road-edge inputs were added
                 # expects only the first 101 numbers; those are unchanged, so
@@ -90,6 +95,23 @@ def main() -> None:
                 # A newer network needs the whole observation (it reads the
                 # last entry to know whether W and S are open).
                 batch = torch.as_tensor(obs[:saved["obs_size"]]).unsqueeze(0)  # a batch of size 1
+                if agent.block:
+                    # Block decisions: six numbers (see BLOCK DECISIONS in racing_env.mjs).
+                    decision = agent.greedy(batch) if args.policy == "greedy" else agent.act(batch)[0]
+                    return [int(v) for v in decision[0]]
+                if args.sticky and agent.factored:
+                    # --sticky: read which keys are down from the observation
+                    # ([15] W minus S, [144] S, [16] steer: +1 left, -1 right)
+                    # and raise the score of "the same again" for each choice.
+                    logits = agent.actor(batch)[0].clone()
+                    s_down = int(obs[144] > 0.5)
+                    w_down = int(obs[15] + s_down > 0.5)
+                    steer = 1 if obs[16] > 0.5 else 2 if obs[16] < -0.5 else 0
+                    logits[0 + w_down] += args.sticky
+                    logits[2 + s_down] += args.sticky
+                    logits[4 + steer] += args.sticky
+                    pick = (lambda l: int(l.argmax())) if args.policy == "greedy" else                            (lambda l: int(torch.distributions.Categorical(logits=l).sample()))
+                    return pick(logits[4:7]) + 3 * pick(logits[0:2]) + 6 * pick(logits[2:4])
                 action = int(agent.greedy(batch) if args.policy == "greedy" else agent.act(batch)[0])
             return from_old(action) if old_layout else action
 

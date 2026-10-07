@@ -35,6 +35,7 @@ step is visible and commented here.
 from __future__ import annotations
 
 import argparse
+import shutil
 import time
 from collections import deque
 from pathlib import Path
@@ -60,6 +61,30 @@ def _layer(inputs: int, outputs: int, gain: float) -> nn.Linear:
 # Observation entry that says whether W and S are read at this decision
 # (OBS_PEDAL_OPEN in rl/racing_env.mjs).
 PEDAL_OPEN = 145
+# The number of actions a block-decision environment reports (see BLOCK
+# DECISIONS in rl/racing_env.mjs); the Agent uses it to know which kind it is.
+BLOCK_ACTIONS = 1500
+# Where the keys held at the previous decision sit in the observation:
+# [15] W minus S, [16] steering (+1 left, -1 right), [144] S.
+OBS_PEDAL, OBS_STEER, OBS_S = 15, 16, 144
+
+
+def block_parts(logits: torch.Tensor):
+    """Split a block-decision network's 22 scores into its six choices, in the
+    order of a block decision: steering target (3 options), steering "at" (5),
+    W target (2), W "at" (5), S target (2), S "at" (5)."""
+    Categorical = torch.distributions.Categorical
+    edges = [0, 3, 8, 10, 15, 17, 22]
+    return [Categorical(logits=logits[:, a:b]) for a, b in zip(edges, edges[1:])]
+
+
+def held_keys(obs: torch.Tensor):
+    """What each control was doing as the decision was made, read back from
+    the observation: (steering 0 none / 1 left / 2 right, W 0/1, S 0/1)."""
+    s = (obs[:, OBS_S] > 0.5).long()
+    w = (obs[:, OBS_PEDAL] + s > 0.5).long()
+    steer = torch.where(obs[:, OBS_STEER] > 0.5, 1, torch.where(obs[:, OBS_STEER] < -0.5, 2, 0))
+    return steer, w, s
 
 
 class Agent(nn.Module):
@@ -90,6 +115,8 @@ class Agent(nn.Module):
     def __init__(self, obs_size: int, num_actions: int, hidden: int = 256):
         super().__init__()
         self.factored = num_actions == 12
+        # Block decisions: six choices and 22 scores (see block_parts above).
+        self.block = num_actions == BLOCK_ACTIONS
         # How much of the steering choice's entropy counts towards the entropy
         # bonus (1 = all of it, as for W and S). The bonus pays the policy for
         # staying random; for steering that showed up as weaving on straights,
@@ -100,7 +127,7 @@ class Agent(nn.Module):
             _layer(hidden, hidden, 2 ** 0.5), nn.Tanh(),
             # Tiny final weights: the starting policy barely depends on the
             # observation, so its starting behaviour is set by the bias below.
-            _layer(hidden, 7 if self.factored else num_actions, 0.01),
+            _layer(hidden, 22 if self.block else 7 if self.factored else num_actions, 0.01),
         )
         self.critic = nn.Sequential(
             _layer(obs_size, hidden, 2 ** 0.5), nn.Tanh(),
@@ -113,7 +140,10 @@ class Agent(nn.Module):
         # seen nothing. +2 makes W down (and S up) about 7 times as likely as
         # the opposite at the start; training is free to change it.
         with torch.no_grad():
-            if self.factored:
+            if self.block:
+                self.actor[-1].bias[9] = 2.0   # W target: down
+                self.actor[-1].bias[15] = 2.0  # S target: up
+            elif self.factored:
                 self.actor[-1].bias[1] = 2.0  # W down
                 self.actor[-1].bias[2] = 2.0  # S up
             else:
@@ -131,6 +161,24 @@ class Agent(nn.Module):
         little during training stops the policy becoming certain too early.
         """
         logits = self.actor(obs)
+        if self.block:
+            parts = block_parts(logits)
+            if action is None:
+                action = torch.stack([part.sample() for part in parts], dim=1)
+            # The three "at" choices only do something when their control's
+            # target differs from what it is doing now. Where the target is
+            # "the same again" the timing had no effect, so it is left out of
+            # the action's probability (as W and S are on closed decisions in
+            # the older scheme below).
+            steer_now, w_now, s_now = held_keys(obs)
+            changed = [(action[:, 0] != steer_now).float(), (action[:, 2] != w_now).float(), (action[:, 4] != s_now).float()]
+            logprob = sum(parts[2 * k].log_prob(action[:, 2 * k]) + changed[k] * parts[2 * k + 1].log_prob(action[:, 2 * k + 1])
+                          for k in range(3))
+            # Entropy bonus: the three targets in full (steering scaled as
+            # elsewhere), the timings at half weight.
+            entropy = (self.steer_entropy_scale * parts[0].entropy() + parts[2].entropy() + parts[4].entropy()
+                       + 0.5 * (parts[1].entropy() + parts[3].entropy() + parts[5].entropy()))
+            return action, logprob, entropy, self.value(obs)
         if not self.factored:  # old checkpoints: one choice among 9
             distribution = torch.distributions.Categorical(logits=logits)
             if action is None:
@@ -157,6 +205,8 @@ class Agent(nn.Module):
     def greedy(self, obs: torch.Tensor) -> torch.Tensor:
         """The single most likely action for each observation (used when evaluating)."""
         logits = self.actor(obs)
+        if self.block:
+            return torch.stack([part.logits.argmax(dim=-1) for part in block_parts(logits)], dim=1)
         if not self.factored:
             return logits.argmax(dim=-1)
         return logits[:, 4:7].argmax(dim=-1) + 3 * logits[:, 0:2].argmax(dim=-1) + 6 * logits[:, 2:4].argmax(dim=-1)
@@ -199,6 +249,9 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--lr-end", type=float, default=0.0,
                    help="learning rate at the end of this run (default 0). A run that is continued in "
                         "several stretches should not drop to 0 and jump back up each time")
+    p.add_argument("--block", type=int, default=0,
+                   help="if > 0, drive with block decisions of this many 10 ms slices (5 = one decision "
+                        "per 50 ms; see BLOCK DECISIONS in rl/racing_env.mjs). Needs a network made for it")
     p.add_argument("--envs", type=int, default=8, help="simulator processes to run in parallel")
     p.add_argument("--ticks", type=int, default=10, help="physics ticks (ms) per decision")
     p.add_argument("--random-start", type=float, default=0.5,
@@ -228,8 +281,56 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--device", default="cpu", help="cpu or cuda. The networks are small; cpu is fine")
     p.add_argument("--checkpoint", default=None, help="checkpoint file (default rl/checkpoints/ppo_<track>.pt)")
     p.add_argument("--save-every", type=int, default=10, help="write the checkpoint every this many updates")
+    p.add_argument("--keep-every", type=int, default=0,
+                   help="if > 0, every this many updates also keep a copy of the checkpoint as "
+                        "<checkpoint>.u<update>.pt. A policy can get worse as well as better during a "
+                        "run (one specialist went from finishing 67 in 100 to 1 in 100 in its last "
+                        "quarter), and with only the latest checkpoint the good one is gone")
     p.add_argument("--resume", action="store_true", help="load the checkpoint and continue training")
     return p.parse_args()
+
+
+def block_imitation_loss(logits: torch.Tensor, label: torch.Tensor):
+    """Imitation for block decisions. `label` has six columns per example
+    (steer, steerAt, w, wAt, s, sAt) as written by demo() in racing_env.mjs,
+    where an "at" of 5 means the control did not change in that block.
+
+    Targets: cross-entropy on every example. Timings: only on the examples
+    where that control changed (a small minority, so each of those three terms
+    is an average over its own examples).
+
+    Returns (loss, accuracy dict): how often the network's top choice matches
+    the human's, for each of the six choices.
+    """
+    edges = [0, 3, 8, 10, 15, 17, 22]
+    names = ["steer", "steer_at", "W", "W_at", "S", "S_at"]
+    loss, accuracy = 0.0, {}
+    for k, name in enumerate(names):
+        scores, wanted = logits[:, edges[k]:edges[k + 1]], label[:, k]
+        if k % 2 == 1:  # a timing: keep only the examples with a change
+            keep = wanted < 5
+            if not keep.any():
+                continue
+            scores, wanted = scores[keep], wanted[keep]
+        loss = loss + nn.functional.cross_entropy(scores, wanted)
+        accuracy[name] = (scores.argmax(1) == wanted).float().mean().item()
+    return loss, accuracy
+
+
+def replace_with_retry(source: Path, target: Path, attempts: int = 50) -> None:
+    """Rename `source` over `target`, trying again for a few seconds if
+    Windows refuses. Windows will not replace a file that another program has
+    open at that instant (a virus scanner looking at it, a simulator still
+    reading the weights), and reports "Access is denied". That once ended a
+    training run an hour in; a moment later the same rename succeeds."""
+    for attempt in range(attempts):
+        try:
+            source.replace(target)
+            return
+        except PermissionError:
+            if attempt == attempts - 1:
+                raise
+            time.sleep(0.1)
 
 
 def imitation_loss(agent: "Agent", obs: torch.Tensor, action: torch.Tensor) -> torch.Tensor:
@@ -237,6 +338,9 @@ def imitation_loss(agent: "Agent", obs: torch.Tensor, action: torch.Tensor) -> t
     cross-entropy for steering, plus W and S on the decisions where they are
     read. Lower = the human's keys are more likely under the policy."""
     logits = agent.actor(obs)
+    if agent.block:
+        return block_imitation_loss(logits, action)[0]
+    action = action.reshape(-1)
     is_open = obs[:, PEDAL_OPEN] > 0.5
     return (nn.functional.cross_entropy(logits[:, 4:7], action % 3)
             + nn.functional.cross_entropy(logits[is_open, 0:2], (action[is_open] // 3) % 2)
@@ -290,7 +394,8 @@ def main() -> None:
     envs = PolytrackVecEnv(args.envs, track=tracks, ticks=args.ticks, seed=args.seed,
                            randomStart=args.random_start, lapFraction=lap_fraction,
                            failureStart=args.failure_start, ownStart=args.own_start,
-                           pedalEvery=args.pedal_every, refLaps=args.ref_laps, refEvery=args.ref_every)
+                           pedalEvery=args.pedal_every, refLaps=args.ref_laps, refEvery=args.ref_every,
+                           block=args.block)
     N, T = args.envs, args.rollout
     batch_size = N * T                                  # decisions collected per update
     num_updates = max(1, args.total_steps // batch_size)
@@ -333,12 +438,12 @@ def main() -> None:
             # What evaluate.py needs to rebuild the same network and environment.
             "obs_size": envs.obs_size, "num_actions": envs.num_actions, "hidden": args.hidden,
             "track": args.track, "ticks": args.ticks, "lap_fraction": lap_fraction,
-            "pedal_every": args.pedal_every,
+            "pedal_every": args.pedal_every, "block": args.block,
         }, temporary)
         # Written under a temporary name and then renamed: if the run is killed
         # in the middle of a save, the previous checkpoint is still intact.
         # (A kill during a direct save once left a truncated, unreadable file.)
-        temporary.replace(checkpoint_path)
+        replace_with_retry(temporary, checkpoint_path)
 
     # Results of the last 100 episodes that ended, for the progress line.
     recent = deque(maxlen=100)  # (total reward, lap fraction reached, reason)
@@ -357,9 +462,14 @@ def main() -> None:
             parts += [layer.weight.detach().cpu().numpy().ravel(), layer.bias.detach().cpu().numpy().ravel()]
         temporary = weights_file.with_suffix(".tmp")
         np.concatenate(parts).astype(np.float32).tofile(temporary)
-        temporary.replace(weights_file)
+        replace_with_retry(temporary, weights_file)
+
+    # Actions arrive as [step, environment] (one number each) or, for block
+    # decisions, [step, environment, 6]. Either way, one row per decision.
+    flat = (lambda a: a.reshape(batch_size, 6)) if args.block else (lambda a: a.reshape(-1))
 
     start_time = time.perf_counter()
+    collect_seconds = 0.0  # time spent waiting for the simulators, to report where the time goes
     try:
         for update in range(1, num_updates + 1):
             # Learning rate falls in a straight line from --lr to 0 over this run.
@@ -371,7 +481,9 @@ def main() -> None:
             # Every server plays T decisions on its own with the current
             # policy and reports back once. Buffers are indexed [step, environment].
             write_actor_weights()
+            collect_started = time.perf_counter()
             data = envs.rollout(T, str(weights_file), args.hidden)
+            collect_seconds += time.perf_counter() - collect_started
             obs_buf = torch.as_tensor(data["obs"], device=device)
             action_buf = torch.as_tensor(data["actions"], device=device)
             reward_buf = torch.as_tensor(data["rewards"], device=device).clone()
@@ -401,7 +513,7 @@ def main() -> None:
             # how likely each picked action was and what the critic thought
             # each situation was worth, with the same weights the servers used.
             with torch.no_grad():
-                _, flat_logprob, _, flat_value = agent.act(obs_buf.reshape(batch_size, -1), action_buf.reshape(-1))
+                _, flat_logprob, _, flat_value = agent.act(obs_buf.reshape(batch_size, -1), flat(action_buf))
                 logprob_buf, value_buf = flat_logprob.reshape(T, N), flat_value.reshape(T, N)
                 last_value = agent.value(last_obs)
             advantages, returns = compute_advantages(reward_buf, value_buf, done_buf, last_value, args.gamma, args.gae_lambda)
@@ -409,7 +521,7 @@ def main() -> None:
             # ---- 3. LEARN --------------------------------------------------
             # Flatten [step, environment] into one long batch.
             b_obs = obs_buf.reshape(batch_size, -1)
-            b_actions, b_logprobs = action_buf.reshape(-1), logprob_buf.reshape(-1)
+            b_actions, b_logprobs = flat(action_buf), logprob_buf.reshape(-1)
             b_advantages, b_returns = advantages.reshape(-1), returns.reshape(-1)
             minibatch = batch_size // args.minibatches
             for _ in range(args.epochs):
@@ -462,6 +574,9 @@ def main() -> None:
             if best_finish is not None and not multi:
                 line += f"  best lap {best_finish / 1000:.3f} s"
             line += f"  value loss {value_loss.item():.3f}  entropy {entropy.mean().item():.2f}"
+            # Share of the run spent driving in the simulators; the rest is
+            # the learning step (scoring the decisions and updating the networks).
+            line += f"  simulators {100 * collect_seconds / elapsed:.0f}% of time"
             print(line, flush=True)
             # Every 50 updates, one extra line per run with each track's recent
             # record: finished/episodes and the average share of the lap reached.
@@ -472,6 +587,9 @@ def main() -> None:
 
             if update % args.save_every == 0:
                 save_checkpoint()
+            if args.keep_every and update % args.keep_every == 0:
+                save_checkpoint()
+                shutil.copyfile(checkpoint_path, checkpoint_path.with_suffix(f".u{update}.pt"))
     except KeyboardInterrupt:
         print("interrupted; saving the checkpoint")
     finally:

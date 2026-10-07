@@ -4,3 +4,5 @@ capture/
 __pycache__/
 .venv/
 runs/
+graphify-out/cache/
+graphify-out/.graphify_*
