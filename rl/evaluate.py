@@ -42,6 +42,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--ref-lap", type=int, default=-1,
                    help="which human lap is the reference: -1 the track's standard lap (default), "
                         "0..9 that lap of data/laps/<track>.json")
+    p.add_argument("--ref-file", default="",
+                   help="use this lap file as the reference instead of a human lap (see refFile in rl/racing_env.mjs)")
     p.add_argument("--sticky", type=float, default=0.0,
                    help="experiment: add this much to the score of whatever each key is ALREADY doing "
                         "before choosing, so that keeping the current keys is favoured and a change "
@@ -79,6 +81,7 @@ def main() -> None:
         env = PolytrackEnv(track=args.track, ticks=saved["ticks"], lapFraction=saved.get("lap_fraction", 1),
                            pedalEvery=saved.get("pedal_every", 1), refLap=args.ref_lap,
                            block=saved.get("block", 0),
+                           **({"refFile": args.ref_file} if args.ref_file else {}),
                            **({} if args.max_off_line is None else {"maxOffLine": args.max_off_line}))
         # Those older agents also pick one of 9 actions, 3 * pedal + steer with
         # pedal 0 = throttle, 1 = coast, 2 = brake. Translate to today's

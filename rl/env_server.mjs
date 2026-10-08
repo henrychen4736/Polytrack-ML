@@ -71,12 +71,12 @@ console.log = console.error;
 /** Write one protocol line. */
 const send = (message) => process.stdout.write(JSON.stringify(message) + '\n');
 
-// key=value arguments -> options. Values are numbers except `track`.
+// key=value arguments -> options. Values are numbers except `track` and `refFile`.
 const options = {};
 for (const arg of process.argv.slice(2)) {
   const [key, value] = arg.split('=');
   if (!(key in DEFAULTS) || value === undefined) { send({ error: `unknown argument "${arg}"` }); process.exit(2); }
-  options[key] = key === 'track' ? value : Number(value);
+  options[key] = key === 'track' || key === 'refFile' ? value : Number(value);
 }
 
 let renv;

@@ -249,6 +249,22 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--lr-end", type=float, default=0.0,
                    help="learning rate at the end of this run (default 0). A run that is continued in "
                         "several stretches should not drop to 0 and jump back up each time")
+    p.add_argument("--pace-cap", type=float, default=1.0,
+                   help="upper limit of the pace scale on the progress reward (speed / the reference's "
+                        "speed). 1 = going faster than the reference earns nothing extra per unit of "
+                        "road; above 1 pays for it, up to this limit")
+    p.add_argument("--max-off-line", type=float, default=20.0,
+                   help="distance from the reference line at which an attempt on the ground is cut off; "
+                        "larger leaves room for a different line from the reference's")
+    p.add_argument("--ref-file", default="",
+                   help="use this lap file ({frames, recording}, path from the project root) as the "
+                        "reference instead of a human lap (see refFile in rl/racing_env.mjs)")
+    p.add_argument("--kick", type=float, default=0.0,
+                   help="probability that an episode starting part-way round begins with a short burst of "
+                        "random steering, so the agent practises recovering from off the line everywhere "
+                        "(see kick in rl/racing_env.mjs)")
+    p.add_argument("--lane-penalty", type=float, default=0.05,
+                   help="most the blocked-lane cost can be per step (see REWARD in rl/racing_env.mjs); 0 = off")
     p.add_argument("--block", type=int, default=0,
                    help="if > 0, drive with block decisions of this many 10 ms slices (5 = one decision "
                         "per 50 ms; see BLOCK DECISIONS in rl/racing_env.mjs). Needs a network made for it")
@@ -395,7 +411,9 @@ def main() -> None:
                            randomStart=args.random_start, lapFraction=lap_fraction,
                            failureStart=args.failure_start, ownStart=args.own_start,
                            pedalEvery=args.pedal_every, refLaps=args.ref_laps, refEvery=args.ref_every,
-                           block=args.block)
+                           block=args.block, kick=args.kick, lanePenalty=args.lane_penalty,
+                           paceCap=args.pace_cap, maxOffLine=args.max_off_line,
+                           **({"refFile": args.ref_file} if args.ref_file else {}))
     N, T = args.envs, args.rollout
     batch_size = N * T                                  # decisions collected per update
     num_updates = max(1, args.total_steps // batch_size)
