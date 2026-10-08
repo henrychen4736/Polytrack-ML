@@ -28,6 +28,7 @@
 //   seconds=60   time budget
 //   workers=8    parallel simulator processes
 //   rngSeed=1    random seed; same seed and settings give the same run
+//   out=search   name of the result: runs/<out>_<track>.recording.json
 //   maxShift, removeChance, windowStart, windowEnd, extraChangeChance
 //                mutation settings, see MUTATE_DEFAULTS in sim/search.mjs
 // Writes runs/search_<track>.recording.json (updated on every improvement).
@@ -47,7 +48,8 @@ const seconds = Number(opt.seconds ?? 60);
 const workers = Number(opt.workers ?? 8);
 const rng = createRng(Number(opt.rngSeed ?? 1));
 // Everything else numeric is passed through as a mutation setting.
-const mutateOptions = Object.fromEntries(Object.entries(opt).filter(([k]) => !['seed', 'seconds', 'workers', 'rngSeed'].includes(k)).map(([k, v]) => [k, Number(v)]));
+const outName = opt.out ?? 'search';
+const mutateOptions = Object.fromEntries(Object.entries(opt).filter(([k]) => !['seed', 'seconds', 'workers', 'rngSeed', 'out'].includes(k)).map(([k, v]) => [k, Number(v)]));
 
 // --- starting lap --------------------------------------------------------------
 const runsDir = new URL('../runs/', import.meta.url);
@@ -74,7 +76,7 @@ const startFrames = bestFrames;
 console.log(`${name}: starting from the ${seedName} lap, ${(bestFrames / 1000).toFixed(3)} s, ${countFlips(best)} key flips`);
 console.log(`searching for ${seconds} s with ${workers} processes...`);
 
-const outFile = new URL(`search_${name}.recording.json`, runsDir);
+const outFile = new URL(`${outName}_${name}.recording.json`, runsDir);
 const save = () => writeFileSync(outFile, JSON.stringify({ track: name, frames: bestFrames, recording: encodeRecording(best) }, null, 2));
 
 // --- search loop -----------------------------------------------------------------
@@ -129,5 +131,5 @@ await verifier.terminate();
 console.log(`\ntried ${evaluated} laps in ${elapsed().toFixed(0)} s (${(evaluated / elapsed()).toFixed(1)} per second); ${finishedCount} finished in time, ${improvements} improvements, ${ties} ties`);
 console.log(`${(startFrames / 1000).toFixed(3)} s -> ${(bestFrames / 1000).toFixed(3)} s (${startFrames - bestFrames} ms faster), ${countFlips(best)} key flips`);
 console.log(`${verified ? 'PASS' : 'FAIL'} Verify: the game ${verified ? 'finishes' : 'does NOT finish'} the result on tick ${bestFrames}`);
-console.log(`saved runs/search_${name}.recording.json`);
+console.log(`saved runs/${outName}_${name}.recording.json`);
 process.exit(verified ? 0 : 1);

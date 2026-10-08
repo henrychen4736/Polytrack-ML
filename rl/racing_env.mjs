@@ -212,6 +212,25 @@
 //                  taps: press, let go, press again, with no key down 30 to
 //                  50% of the time. The agent flipped A-D-A-D. A tap costs
 //                  two cheap changes; a flip costs this on top.
+//                minus a cost for being in a BLOCKED LANE (lanePenalty):
+//                  The road's width is known for every point ahead. Take how
+//                  far the car is to the left or right of the line now, and
+//                  ask of each point it will reach in the next second: if the
+//                  car stays that far over, is it still on the road there?
+//                  If some point says no, the cost is up to 0.05 per step,
+//                  scaled by how far outside the road the car would be (full
+//                  cost at 2 units) and by how soon (full cost at the point,
+//                  fading to nothing a second away). The worst point counts.
+//                  Speed plays no part: flat out at a wall is free if the
+//                  car's position fits through the gap, so late braking and
+//                  using the whole width of the road are not discouraged.
+//                  Why: a model trained on other tracks drove at 440 km/h
+//                  into a structure beside the human's line on winter4. Its
+//                  inputs showed the gap narrowing 0.8 s ahead, but nothing
+//                  in the reward spoke until the impact. This is that earlier
+//                  signal. It is faded out in tight corners (where "how far
+//                  over am I" changes by itself) and absent where the human
+//                  was in the air.
 //   on finish:   the rest of the line's length x 0.1 (so every finished lap
 //                has collected exactly the same progress reward), plus
 //                5 + 2 x (seconds left before the tick limit)
@@ -367,9 +386,31 @@ export const DEFAULTS = {
   refLap: -1,
   refLaps: 0,
   refEvery: 25,
+  // A lap file to use as the reference instead of a human lap: the path of a
+  // JSON file holding { frames, recording }, which is what
+  // scripts/export_recording.mjs and scripts/search_timeline.mjs write.
+  // This is how the reference stops being "what the best human did" and
+  // becomes "the best lap found so far": when the agent, or a search over its
+  // key timings, produces a lap faster than the current reference, that lap
+  // can be made the reference for the next round of training. '' = not used.
+  refFile: '',
   // W and S are read only on every pedalEvery-th decision of an episode and
   // held in between (see HOLDING KEYS at the top). 1 = read on every decision.
   pedalEvery: 5,
+  // Blocked-lane cost (see REWARD at the top): the most it can be per step,
+  // and how far ahead in time it looks.
+  lanePenalty: 0.05,
+  laneSeconds: 1,
+  // Probability that an episode starting part-way round begins with a "kick":
+  // 0.1 to 0.4 s of steering chosen at random, before the agent takes over.
+  // Why: a trained agent stays close to the line, so it only ever practises
+  // getting back from a bad position at the few places where it happened to
+  // get into one, and on a track it has never driven it has no such practice
+  // at all. A kick leaves it a few units off the line at a random place, so
+  // recovering becomes something it practises everywhere. It also does not
+  // depend on how sure of itself the agent has become. 0 = never (and never
+  // when a start is asked for explicitly, as in evaluation).
+  kick: 0,
   finishBonus: 5,          // for finishing at all
   timeBonusPerSecond: 2,   // per second left before maxTicks at the finish
   // Decisions per block for stepBlock() (see BLOCK DECISIONS at the top).
@@ -466,7 +507,9 @@ export class RacingEnv {
     renv.maxTicksOption = cfg.maxTicks;   // null unless the caller fixed it
     renv.references = new Map();          // lap number -> everything built from that lap
     renv.rng = makeRng(cfg.seed);
-    await renv.setReference(cfg.refLaps > 0 ? Math.floor(renv.rng() * cfg.refLaps) : cfg.refLap);
+    await renv.setReference(cfg.refFile
+      ? JSON.parse(readFileSync(new URL(`../${cfg.refFile}`, import.meta.url), 'utf8'))
+      : cfg.refLaps > 0 ? Math.floor(renv.rng() * cfg.refLaps) : cfg.refLap);
     renv.done = true; // step() is refused until reset() has been called
     return renv;
   }
@@ -493,7 +536,9 @@ export class RacingEnv {
     let ref = this.references.get(lapNumber);
     if (!ref) {
       let human;
-      if (lapNumber < 0) human = loadHumanLap(this.cfg.track);
+      // A lap handed over directly (cfg.refFile), not a number.
+      if (typeof lapNumber === 'object') human = lapNumber;
+      else if (lapNumber < 0) human = loadHumanLap(this.cfg.track);
       else {
         human = JSON.parse(readFileSync(new URL(`../data/laps/${this.cfg.track}.json`, import.meta.url), 'utf8'))[lapNumber];
         if (!human) throw new Error(`no lap ${lapNumber} for ${this.cfg.track}`);
@@ -539,6 +584,9 @@ export class RacingEnv {
       // where the human was in the air: steering does nothing there.
       ref.straight = lineStraightness(line, ref.lineUp);
       for (let k = 0; k < count; k++) if (!line.grounded[k]) ref.straight[k] = 0;
+      // For the blocked-lane cost: 1 on straight or gently curving road,
+      // falling to 0 only in a tight corner (radius 20 units or less).
+      ref.openRoad = lineStraightness(line, ref.lineUp, { full: 0.05 });
       this.references.set(lapNumber, ref);
     }
     Object.assign(this, ref);
@@ -682,6 +730,7 @@ export class RacingEnv {
       // We know which line point the human had reached by this tick. Start
       // the search a little before it; nearestIndex only looks forward.
       this.progressIndex = Math.max(0, this.humanIndexAtTick[Math.max(0, startTick - 1)] - 5);
+      if (startFraction == null && this.rng() < this.cfg.kick) await this._kick();
     }
 
     return this._beginEpisode();
@@ -700,6 +749,54 @@ export class RacingEnv {
     this.episodeReward = 0;
     this.done = false;
     return { obs: this._observe(), info: this._info(null) };
+  }
+
+  /**
+   * A "kick" (see `kick` in DEFAULTS): hold a randomly chosen steering key
+   * for 0.1 to 0.4 seconds, keeping W and S as the human had them, so the
+   * episode begins a little off the line and off the human's heading.
+   * Done in slices of 0.1 s, re-locating the car on the line after each, so
+   * the forward-only line search never falls behind at high speed.
+   */
+  async _kick() {
+    const pedals = this.previousAction - (this.previousAction % 3);
+    const steer = this.rng() < 0.5 ? 1 : 2;
+    const slices = 1 + Math.floor(this.rng() * 4);
+    for (let k = 0; k < slices; k++) {
+      await this._advance(actionToControls(pedals + steer), 100);
+      this._locate();
+    }
+    this.previousAction = pedals + steer;
+  }
+
+  /**
+   * The blocked-lane cost for the current position, 0..1 (see REWARD at the
+   * top of the file). Looks along the line for cfg.laneSeconds of travel.
+   */
+  _laneCost() {
+    const { line, clearance, cfg } = this;
+    const offset = Math.abs(this.lateral);
+    // Within half a unit of the line counts as on it; and nothing to say in
+    // the air or in a tight corner.
+    const weight = line.grounded[this.progressIndex] ? this.openRoad[this.progressIndex] : 0;
+    if (offset < 0.5 || weight === 0) return 0;
+    const room = this.lateral > 0 ? clearance.left : clearance.right;
+    const speed = Math.max(10, this.state.speedKmh / 3.6);        // units per second
+    const reach = Math.min(line.points.length - 1 - this.progressIndex, Math.ceil(speed * cfg.laneSeconds / SPACING));
+    const HALF_WIDTH = 1; // the car's half width: a scrape starts about 1 unit from an edge
+    let worst = 0;
+    for (let k = 2; k <= reach; k += 2) {
+      const j = this.progressIndex + k;
+      if (!line.grounded[j] || room[j] >= MAX_CLEARANCE) continue; // no edge on that side there
+      // How far beyond the edge the car's side would be; never more than the
+      // car's own offset, so that a place where even the line runs close to a
+      // wall does not charge a car that is nearly on the line.
+      const outside = Math.min(offset, offset + HALF_WIDTH - room[j]);
+      if (outside <= 0) continue;
+      const soon = 1 - (k * SPACING) / (speed * cfg.laneSeconds);
+      worst = Math.max(worst, Math.min(1, outside / 2) * soon);
+    }
+    return worst * weight;
   }
 
   /**
@@ -918,6 +1015,7 @@ export class RacingEnv {
     const lateral = dot(sub(state.position, line.points[near.index]), this.lineLeft[near.index]);
     this.edgeLeft = this.clearance.left[near.index] - lateral;
     this.edgeRight = this.clearance.right[near.index] + lateral;
+    this.lateral = lateral; // how far left of the line the car is (negative = right)
   }
 
   /** Build the observation vector described at the top of this file. */
@@ -1072,6 +1170,9 @@ export class RacingEnv {
     if (steerChanged) reward -= cfg.steerTogglePenalty + cfg.steerStraightTogglePenalty * straight;
     if (action % 3 !== 0) reward -= cfg.steerHoldPenalty * straight;
     if (steerChanged && action % 3 !== 0 && previous % 3 !== 0) reward -= cfg.steerReversalPenalty;
+
+    // The cost of being in a lane that is blocked ahead.
+    if (cfg.lanePenalty > 0) reward -= cfg.lanePenalty * this._laneCost();
 
     // Stall clock: restart it whenever the car has gained a full unit.
     if (this.progress >= this.stallProgress + 1) { this.stallProgress = this.progress; this.stallTick = s.frames; }
