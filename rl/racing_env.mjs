@@ -818,6 +818,50 @@ export class RacingEnv {
   }
 
   /**
+   * MARK AND REWIND, for searches that try many continuations of one moment
+   * (scripts/search_rollout.mjs).
+   *
+   * mark() saves the simulator and the episode's bookkeeping as they are now,
+   * between two decisions. rewind(mark) puts both back and returns the same
+   * { obs, info } a reset() would, so the episode can be driven on from there
+   * again, any number of times. Every continuation of one mark starts from
+   * exactly the same car, so two continuations with the same decisions give
+   * the same result, to the tick.
+   *
+   * A mark belongs to the car that was alive when it was made: it is useless
+   * after anything that builds a new car (a reset() that rebuilds the ladder,
+   * setReference(), demo()). The per-episode counters that only feed the
+   * reward and the stall clock start afresh on a rewind, as they do on any
+   * other start.
+   */
+  async mark() {
+    return {
+      handle: await this.env.saveState(this.ladder.base),
+      state: this.state,
+      older: this.older,
+      controlsLength: this.controlsPerTick.length,
+      previousAction: this.previousAction,
+      progressIndex: this.progressIndex,
+      decisions: this.decisions,
+    };
+  }
+
+  async rewind(mark) {
+    await this.env.loadState(mark.handle);
+    this.state = mark.state;
+    this.older = mark.older;
+    this.controlsPerTick.length = mark.controlsLength;
+    this.previousAction = mark.previousAction;
+    this.progressIndex = mark.progressIndex;
+    this.decisions = mark.decisions;
+    this.lastCrashTick = null;
+    return this._beginEpisode();
+  }
+
+  /** Free a mark's memory in the simulator. */
+  dropMark(mark) { this.env.dropState(mark.handle); }
+
+  /**
    * Replay the human's keys for ticks [from, to), one step() call per run of
    * ticks with the same keys held.
    */

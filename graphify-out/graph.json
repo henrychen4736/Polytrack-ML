@@ -101,28 +101,40 @@
       "source_location": "L192"
     },
     {
-      "id": "scripts_diff_capture_dec",
-      "label": "dec()",
+      "id": "scripts_search_sections_all",
+      "label": "all()",
       "_callable": true,
       "_origin": "ast",
       "community": 0,
-      "community_name": "diff_capture.mjs",
+      "community_name": "search_sections.mjs",
       "file_type": "code",
-      "norm_label": "dec()",
-      "source_file": "scripts/diff_capture.mjs",
-      "source_location": "L7"
+      "norm_label": "all()",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L99"
     },
     {
-      "id": "scripts_diff_capture_f32eq",
-      "label": "f32eq()",
+      "id": "scripts_search_sections_elapsed",
+      "label": "elapsed()",
       "_callable": true,
       "_origin": "ast",
       "community": 0,
-      "community_name": "diff_capture.mjs",
+      "community_name": "search_sections.mjs",
       "file_type": "code",
-      "norm_label": "f32eq()",
-      "source_file": "scripts/diff_capture.mjs",
-      "source_location": "L12"
+      "norm_label": "elapsed()",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L139"
+    },
+    {
+      "id": "scripts_search_sections_refreshpath",
+      "label": "refreshPath()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "search_sections.mjs",
+      "file_type": "code",
+      "norm_label": "refreshpath()",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L113"
     },
     {
       "id": "rl_racing_env_actiontocontrols",
@@ -159,6 +171,18 @@
       "norm_label": "controlskey()",
       "source_file": "rl/racing_env.mjs",
       "source_location": "L490"
+    },
+    {
+      "id": "rl_racing_env_controlstoaction",
+      "label": "controlsToAction()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "racing_env.mjs",
+      "file_type": "code",
+      "norm_label": "controlstoaction()",
+      "source_file": "rl/racing_env.mjs",
+      "source_location": "L284"
     },
     {
       "id": "rl_racing_env_dot",
@@ -230,7 +254,7 @@
       "file_type": "code",
       "norm_label": "._blocklabel()",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1262"
+      "source_location": "L1306"
     },
     {
       "id": "rl_racing_env_racingenv_buildladder",
@@ -242,7 +266,7 @@
       "file_type": "code",
       "norm_label": "._buildladder()",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L946"
+      "source_location": "L990"
     },
     {
       "id": "rl_racing_env_racingenv_close",
@@ -254,7 +278,7 @@
       "file_type": "code",
       "norm_label": ".close()",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1312"
+      "source_location": "L1356"
     },
     {
       "id": "rl_racing_env_racingenv_create",
@@ -278,7 +302,19 @@
       "file_type": "code",
       "norm_label": ".demo()",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L854"
+      "source_location": "L898"
+    },
+    {
+      "id": "rl_racing_env_racingenv_dropmark",
+      "label": ".dropMark()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "racing_env.mjs",
+      "file_type": "code",
+      "norm_label": ".dropmark()",
+      "source_file": "rl/racing_env.mjs",
+      "source_location": "L862"
     },
     {
       "id": "rl_racing_env_racingenv_info",
@@ -290,7 +326,7 @@
       "file_type": "code",
       "norm_label": "._info()",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1116"
+      "source_location": "L1160"
     },
     {
       "id": "rl_racing_env_racingenv_kick",
@@ -326,7 +362,19 @@
       "file_type": "code",
       "norm_label": "._locate()",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L995"
+      "source_location": "L1039"
+    },
+    {
+      "id": "rl_racing_env_racingenv_mark",
+      "label": ".mark()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "racing_env.mjs",
+      "file_type": "code",
+      "norm_label": ".mark()",
+      "source_file": "rl/racing_env.mjs",
+      "source_location": "L837"
     },
     {
       "id": "rl_racing_env_racingenv_observe",
@@ -338,7 +386,7 @@
       "file_type": "code",
       "norm_label": "._observe()",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1022"
+      "source_location": "L1066"
     },
     {
       "id": "rl_racing_env_racingenv_rememberownstate",
@@ -362,7 +410,7 @@
       "file_type": "code",
       "norm_label": "._replayhuman()",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L824"
+      "source_location": "L868"
     },
     {
       "id": "rl_racing_env_racingenv_reset",
@@ -386,7 +434,19 @@
       "file_type": "code",
       "norm_label": "._restore()",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L983"
+      "source_location": "L1027"
+    },
+    {
+      "id": "rl_racing_env_racingenv_rewind",
+      "label": ".rewind()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "racing_env.mjs",
+      "file_type": "code",
+      "norm_label": ".rewind()",
+      "source_file": "rl/racing_env.mjs",
+      "source_location": "L849"
     },
     {
       "id": "rl_racing_env_racingenv_save",
@@ -398,7 +458,7 @@
       "file_type": "code",
       "norm_label": ".save()",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1290"
+      "source_location": "L1334"
     },
     {
       "id": "rl_racing_env_racingenv_setreference",
@@ -422,7 +482,7 @@
       "file_type": "code",
       "norm_label": ".step()",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1136"
+      "source_location": "L1180"
     },
     {
       "id": "rl_racing_env_racingenv_stepblock",
@@ -434,7 +494,7 @@
       "file_type": "code",
       "norm_label": ".stepblock()",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1232"
+      "source_location": "L1276"
     },
     {
       "id": "rl_racing_env_sub",
@@ -461,6 +521,102 @@
       "source_location": "L463"
     },
     {
+      "id": "rl_rollout_child_decide",
+      "label": "decide()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "racing_env.mjs",
+      "file_type": "code",
+      "norm_label": "decide()",
+      "source_file": "rl/rollout_child.mjs",
+      "source_location": "L113"
+    },
+    {
+      "id": "rl_rollout_child_layertanh",
+      "label": "layerTanh()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "racing_env.mjs",
+      "file_type": "code",
+      "norm_label": "layertanh()",
+      "source_file": "rl/rollout_child.mjs",
+      "source_location": "L74"
+    },
+    {
+      "id": "rl_rollout_child_loadactor",
+      "label": "loadActor()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "racing_env.mjs",
+      "file_type": "code",
+      "norm_label": "loadactor()",
+      "source_file": "rl/rollout_child.mjs",
+      "source_location": "L57"
+    },
+    {
+      "id": "rl_rollout_child_makerng",
+      "label": "makeRng()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "racing_env.mjs",
+      "file_type": "code",
+      "norm_label": "makerng()",
+      "source_file": "rl/rollout_child.mjs",
+      "source_location": "L97"
+    },
+    {
+      "id": "rl_rollout_child_prepare",
+      "label": "prepare()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "racing_env.mjs",
+      "file_type": "code",
+      "norm_label": "prepare()",
+      "source_file": "rl/rollout_child.mjs",
+      "source_location": "L130"
+    },
+    {
+      "id": "rl_rollout_child_scoresfor",
+      "label": "scoresFor()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "racing_env.mjs",
+      "file_type": "code",
+      "norm_label": "scoresfor()",
+      "source_file": "rl/rollout_child.mjs",
+      "source_location": "L84"
+    },
+    {
+      "id": "rl_smoke_test_check",
+      "label": "check()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "racing_env.mjs",
+      "file_type": "code",
+      "norm_label": "check()",
+      "source_file": "rl/smoke_test.mjs",
+      "source_location": "L30"
+    },
+    {
+      "id": "rl_smoke_test_controllerlap",
+      "label": "controllerLap()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "racing_env.mjs",
+      "file_type": "code",
+      "norm_label": "controllerlap()",
+      "source_file": "rl/smoke_test.mjs",
+      "source_location": "L82"
+    },
+    {
       "id": "sim_env_env_create",
       "label": ".create()",
       "_callable": true,
@@ -485,16 +641,16 @@
       "source_location": "L103"
     },
     {
-      "id": "sim_recording_decoderecording",
-      "label": "decodeRecording()",
+      "id": "sim_recording_todense",
+      "label": "toDense()",
       "_callable": true,
       "_origin": "ast",
       "community": 1,
       "community_name": "racing_env.mjs",
       "file_type": "code",
-      "norm_label": "decoderecording()",
+      "norm_label": "todense()",
       "source_file": "sim/recording.mjs",
-      "source_location": "L10"
+      "source_location": "L38"
     },
     {
       "id": "sim_track_rotate",
@@ -507,54 +663,6 @@
       "norm_label": "rotate()",
       "source_file": "sim/track.mjs",
       "source_location": "L154"
-    },
-    {
-      "id": "sim_trackmesh_clearanceprofile",
-      "label": "clearanceProfile()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "racing_env.mjs",
-      "file_type": "code",
-      "norm_label": "clearanceprofile()",
-      "source_file": "sim/trackmesh.mjs",
-      "source_location": "L190"
-    },
-    {
-      "id": "rl_evaluate_main",
-      "label": "main()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "polytrack_env.py",
-      "file_type": "code",
-      "norm_label": "main()",
-      "source_file": "rl/evaluate.py",
-      "source_location": "L56"
-    },
-    {
-      "id": "rl_evaluate_main_choose",
-      "label": "choose()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "polytrack_env.py",
-      "file_type": "code",
-      "norm_label": "choose()",
-      "source_file": "rl/evaluate.py",
-      "source_location": "L93"
-    },
-    {
-      "id": "rl_evaluate_parse_args",
-      "label": "parse_args()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "polytrack_env.py",
-      "file_type": "code",
-      "norm_label": "parse_args()",
-      "source_file": "rl/evaluate.py",
-      "source_location": "L33"
     },
     {
       "id": "rl_train_ppo_compute_advantages",
@@ -651,6 +759,30 @@
       "norm_label": "main()",
       "source_file": "rl/extend_checkpoint_inputs.py",
       "source_location": "L28"
+    },
+    {
+      "id": "rl_train_ppo_agent_init",
+      "label": ".__init__()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "Agent",
+      "file_type": "code",
+      "norm_label": ".__init__()",
+      "source_file": "rl/train_ppo.py",
+      "source_location": "L115"
+    },
+    {
+      "id": "rl_train_ppo_layer",
+      "label": "_layer()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "Agent",
+      "file_type": "code",
+      "norm_label": "_layer()",
+      "source_file": "rl/train_ppo.py",
+      "source_location": "L52"
     },
     {
       "id": "rl_widen_checkpoint_main",
@@ -905,100 +1037,100 @@
       "source_location": "L99"
     },
     {
-      "id": "rl_polytrack_env_polytrackenv_init",
-      "label": ".__init__()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "EnvServer",
-      "file_type": "code",
-      "norm_label": ".__init__()",
-      "source_file": "rl/polytrack_env.py",
-      "source_location": "L135"
-    },
-    {
-      "id": "scripts_check_path_dist",
-      "label": "dist()",
+      "id": "rl_evaluate_main",
+      "label": "main()",
       "_callable": true,
       "_origin": "ast",
       "community": 17,
-      "community_name": "env.mjs",
+      "community_name": "evaluate.py",
       "file_type": "code",
-      "norm_label": "dist()",
-      "source_file": "scripts/check_path.mjs",
-      "source_location": "L20"
+      "norm_label": "main()",
+      "source_file": "rl/evaluate.py",
+      "source_location": "L56"
     },
     {
-      "id": "scripts_check_path_fmt",
-      "label": "fmt()",
+      "id": "rl_evaluate_main_choose",
+      "label": "choose()",
       "_callable": true,
       "_origin": "ast",
       "community": 17,
-      "community_name": "env.mjs",
+      "community_name": "evaluate.py",
       "file_type": "code",
-      "norm_label": "fmt()",
-      "source_file": "scripts/check_path.mjs",
-      "source_location": "L19"
+      "norm_label": "choose()",
+      "source_file": "rl/evaluate.py",
+      "source_location": "L93"
     },
     {
-      "id": "sim_env_loadtrack",
-      "label": "loadTrack()",
+      "id": "rl_evaluate_parse_args",
+      "label": "parse_args()",
       "_callable": true,
       "_origin": "ast",
       "community": 17,
-      "community_name": "env.mjs",
+      "community_name": "evaluate.py",
       "file_type": "code",
-      "norm_label": "loadtrack()",
-      "source_file": "sim/env.mjs",
-      "source_location": "L15"
+      "norm_label": "parse_args()",
+      "source_file": "rl/evaluate.py",
+      "source_location": "L33"
     },
     {
-      "id": "sim_host_bootworker",
-      "label": "bootWorker()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 17,
-      "community_name": "env.mjs",
-      "file_type": "code",
-      "norm_label": "bootworker()",
-      "source_file": "sim/host.mjs",
-      "source_location": "L32"
-    },
-    {
-      "id": "sim_host_loadcaptured",
-      "label": "loadCaptured()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 17,
-      "community_name": "env.mjs",
-      "file_type": "code",
-      "norm_label": "loadcaptured()",
-      "source_file": "sim/host.mjs",
-      "source_location": "L27"
-    },
-    {
-      "id": "rl_train_ppo_agent_init",
-      "label": ".__init__()",
+      "id": "sim_sectional_anglebetween",
+      "label": "angleBetween()",
       "_callable": true,
       "_origin": "ast",
       "community": 18,
-      "community_name": "_layer",
+      "community_name": "sectional.mjs",
       "file_type": "code",
-      "norm_label": ".__init__()",
-      "source_file": "rl/train_ppo.py",
-      "source_location": "L115"
+      "norm_label": "anglebetween()",
+      "source_file": "sim/sectional.mjs",
+      "source_location": "L90"
     },
     {
-      "id": "rl_train_ppo_layer",
-      "label": "_layer()",
+      "id": "sim_sectional_controlsat",
+      "label": "controlsAt()",
       "_callable": true,
       "_origin": "ast",
       "community": 18,
-      "community_name": "_layer",
+      "community_name": "sectional.mjs",
       "file_type": "code",
-      "norm_label": "_layer()",
-      "source_file": "rl/train_ppo.py",
-      "source_location": "L52"
+      "norm_label": "controlsat()",
+      "source_file": "sim/sectional.mjs",
+      "source_location": "L41"
+    },
+    {
+      "id": "sim_sectional_heldat",
+      "label": "heldAt()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 18,
+      "community_name": "sectional.mjs",
+      "file_type": "code",
+      "norm_label": "heldat()",
+      "source_file": "sim/sectional.mjs",
+      "source_location": "L34"
+    },
+    {
+      "id": "sim_sectional_rejoin",
+      "label": "rejoin()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 18,
+      "community_name": "sectional.mjs",
+      "file_type": "code",
+      "norm_label": "rejoin()",
+      "source_file": "sim/sectional.mjs",
+      "source_location": "L125"
+    },
+    {
+      "id": "sim_sectional_splice",
+      "label": "splice()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 18,
+      "community_name": "sectional.mjs",
+      "file_type": "code",
+      "norm_label": "splice()",
+      "source_file": "sim/sectional.mjs",
+      "source_location": "L70"
     },
     {
       "id": "rl_ladder_test_body",
@@ -1085,18 +1217,6 @@
       "source_location": "L41"
     },
     {
-      "id": "scripts_setup_run",
-      "label": "run()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 2,
-      "community_name": "Env",
-      "file_type": "code",
-      "norm_label": "run()",
-      "source_file": "scripts/setup.mjs",
-      "source_location": "L14"
-    },
-    {
       "id": "sim_env_env_close",
       "label": ".close()",
       "_callable": true,
@@ -1145,6 +1265,18 @@
       "source_location": "L157"
     },
     {
+      "id": "sim_env_env_evaluate",
+      "label": ".evaluate()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "Env",
+      "file_type": "code",
+      "norm_label": ".evaluate()",
+      "source_file": "sim/env.mjs",
+      "source_location": "L94"
+    },
+    {
       "id": "sim_env_env_loadstate",
       "label": ".loadState()",
       "_callable": true,
@@ -1167,6 +1299,18 @@
       "norm_label": "._newcar()",
       "source_file": "sim/env.mjs",
       "source_location": "L37"
+    },
+    {
+      "id": "sim_env_env_replay",
+      "label": ".replay()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "Env",
+      "file_type": "code",
+      "norm_label": ".replay()",
+      "source_file": "sim/env.mjs",
+      "source_location": "L67"
     },
     {
       "id": "sim_env_env_reset",
@@ -1205,6 +1349,78 @@
       "source_location": "L54"
     },
     {
+      "id": "sim_section_child_drive",
+      "label": "drive()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "Env",
+      "file_type": "code",
+      "norm_label": "drive()",
+      "source_file": "sim/section_child.mjs",
+      "source_location": "L65"
+    },
+    {
+      "id": "sim_section_child_prepare",
+      "label": "prepare()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "Env",
+      "file_type": "code",
+      "norm_label": "prepare()",
+      "source_file": "sim/section_child.mjs",
+      "source_location": "L46"
+    },
+    {
+      "id": "sim_sectional_nextflipafter",
+      "label": "nextFlipAfter()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "Env",
+      "file_type": "code",
+      "norm_label": "nextflipafter()",
+      "source_file": "sim/sectional.mjs",
+      "source_location": "L48"
+    },
+    {
+      "id": "sim_state_decodestate",
+      "label": "decodeState()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "Env",
+      "file_type": "code",
+      "norm_label": "decodestate()",
+      "source_file": "sim/state.mjs",
+      "source_location": "L22"
+    },
+    {
+      "id": "sim_state_statefinished",
+      "label": "stateFinished()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "Env",
+      "file_type": "code",
+      "norm_label": "statefinished()",
+      "source_file": "sim/state.mjs",
+      "source_location": "L10"
+    },
+    {
+      "id": "sim_state_stateframes",
+      "label": "stateFrames()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "Env",
+      "file_type": "code",
+      "norm_label": "stateframes()",
+      "source_file": "sim/state.mjs",
+      "source_location": "L9"
+    },
+    {
       "id": "sim_state_statelength",
       "label": "stateLength()",
       "_callable": true,
@@ -1217,52 +1433,52 @@
       "source_location": "L14"
     },
     {
-      "id": "scripts_fetch_laps_get",
-      "label": "get()",
+      "id": "sim_search_countflips",
+      "label": "countFlips()",
       "_callable": true,
       "_origin": "ast",
       "community": 20,
-      "community_name": "fetch_laps.mjs",
+      "community_name": "search.mjs",
       "file_type": "code",
-      "norm_label": "get()",
-      "source_file": "scripts/fetch_laps.mjs",
-      "source_location": "L49"
+      "norm_label": "countflips()",
+      "source_file": "sim/search.mjs",
+      "source_location": "L100"
     },
     {
-      "id": "scripts_fetch_laps_sleep",
-      "label": "sleep()",
+      "id": "sim_search_createrng",
+      "label": "createRng()",
       "_callable": true,
       "_origin": "ast",
       "community": 20,
-      "community_name": "fetch_laps.mjs",
+      "community_name": "search.mjs",
       "file_type": "code",
-      "norm_label": "sleep()",
-      "source_file": "scripts/fetch_laps.mjs",
-      "source_location": "L47"
+      "norm_label": "createrng()",
+      "source_file": "sim/search.mjs",
+      "source_location": "L21"
     },
     {
-      "id": "sim_host_decodecaptured",
-      "label": "decodeCaptured()",
+      "id": "sim_search_mutate",
+      "label": "mutate()",
       "_callable": true,
       "_origin": "ast",
-      "community": 21,
-      "community_name": "host.mjs",
+      "community": 20,
+      "community_name": "search.mjs",
       "file_type": "code",
-      "norm_label": "decodecaptured()",
-      "source_file": "sim/host.mjs",
-      "source_location": "L15"
+      "norm_label": "mutate()",
+      "source_file": "sim/search.mjs",
+      "source_location": "L67"
     },
     {
-      "id": "scripts_watch_ghost_sha256",
-      "label": "sha256()",
+      "id": "sim_search_randint",
+      "label": "randInt()",
       "_callable": true,
       "_origin": "ast",
-      "community": 23,
-      "community_name": "watch_ghost.mjs",
+      "community": 20,
+      "community_name": "search.mjs",
       "file_type": "code",
-      "norm_label": "sha256()",
-      "source_file": "scripts/watch_ghost.mjs",
-      "source_location": "L40"
+      "norm_label": "randint()",
+      "source_file": "sim/search.mjs",
+      "source_location": "L33"
     },
     {
       "id": "scripts_export_recording_key",
@@ -1289,12 +1505,36 @@
       "source_location": "L76"
     },
     {
+      "id": "sim_recording_decoderecording",
+      "label": "decodeRecording()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "export_recording.mjs",
+      "file_type": "code",
+      "norm_label": "decoderecording()",
+      "source_file": "sim/recording.mjs",
+      "source_location": "L10"
+    },
+    {
+      "id": "sim_recording_fromdense",
+      "label": "fromDense()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "export_recording.mjs",
+      "file_type": "code",
+      "norm_label": "fromdense()",
+      "source_file": "sim/recording.mjs",
+      "source_location": "L52"
+    },
+    {
       "id": "scripts_check_track_flag",
       "label": "flag()",
       "_callable": true,
       "_origin": "ast",
       "community": 28,
-      "community_name": "check_track.mjs",
+      "community_name": "search_rollout.mjs",
       "file_type": "code",
       "norm_label": "flag()",
       "source_file": "scripts/check_track.mjs",
@@ -1306,7 +1546,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 28,
-      "community_name": "check_track.mjs",
+      "community_name": "search_rollout.mjs",
       "file_type": "code",
       "norm_label": "step()",
       "source_file": "scripts/check_track.mjs",
@@ -1318,10 +1558,130 @@
       "_callable": true,
       "_origin": "ast",
       "community": 28,
-      "community_name": "check_track.mjs",
+      "community_name": "search_rollout.mjs",
       "file_type": "code",
       "norm_label": "valueof()",
       "source_file": "scripts/check_track.mjs",
+      "source_location": "L24"
+    },
+    {
+      "id": "scripts_search_rollout_all",
+      "label": "all()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "all()",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L88"
+    },
+    {
+      "id": "scripts_search_rollout_alter",
+      "label": "alter()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "alter()",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L94"
+    },
+    {
+      "id": "scripts_search_rollout_consider",
+      "label": "consider()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "consider()",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L143"
+    },
+    {
+      "id": "scripts_search_rollout_elapsed",
+      "label": "elapsed()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "elapsed()",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L161"
+    },
+    {
+      "id": "scripts_search_rollout_num",
+      "label": "num()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "num()",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L72"
+    },
+    {
+      "id": "scripts_search_rollout_randint",
+      "label": "randInt()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "randint()",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L78"
+    },
+    {
+      "id": "scripts_search_rollout_variant",
+      "label": "variant()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "variant()",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L112"
+    },
+    {
+      "id": "scripts_setup_run",
+      "label": "run()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "run()",
+      "source_file": "scripts/setup.mjs",
+      "source_location": "L14"
+    },
+    {
+      "id": "scripts_watch_ghost_sha256",
+      "label": "sha256()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "sha256()",
+      "source_file": "scripts/watch_ghost.mjs",
+      "source_location": "L40"
+    },
+    {
+      "id": "sim_pool_createpool",
+      "label": "createPool()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "createpool()",
+      "source_file": "sim/pool.mjs",
       "source_location": "L24"
     },
     {
@@ -1347,6 +1707,18 @@
       "norm_label": ".close()",
       "source_file": "rl/polytrack_env.py",
       "source_location": "L188"
+    },
+    {
+      "id": "rl_polytrack_env_polytrackenv_init",
+      "label": ".__init__()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 3,
+      "community_name": "PolytrackVecEnv",
+      "file_type": "code",
+      "norm_label": ".__init__()",
+      "source_file": "rl/polytrack_env.py",
+      "source_location": "L135"
     },
     {
       "id": "rl_polytrack_env_polytrackenv_reset",
@@ -1553,6 +1925,30 @@
       "source_location": "L94"
     },
     {
+      "id": "sim_controller_createcontroller",
+      "label": "createController()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "key_usage.mjs",
+      "file_type": "code",
+      "norm_label": "createcontroller()",
+      "source_file": "sim/controller.mjs",
+      "source_location": "L92"
+    },
+    {
+      "id": "sim_controller_tocarframe",
+      "label": "toCarFrame()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "key_usage.mjs",
+      "file_type": "code",
+      "norm_label": "tocarframe()",
+      "source_file": "sim/controller.mjs",
+      "source_location": "L80"
+    },
+    {
       "id": "sim_drive_drivelap",
       "label": "driveLap()",
       "_callable": true,
@@ -1589,28 +1985,16 @@
       "source_location": "L33"
     },
     {
-      "id": "sim_env_env_evaluate",
-      "label": ".evaluate()",
+      "id": "sim_env_loadtrack",
+      "label": "loadTrack()",
       "_callable": true,
       "_origin": "ast",
       "community": 4,
       "community_name": "key_usage.mjs",
       "file_type": "code",
-      "norm_label": ".evaluate()",
+      "norm_label": "loadtrack()",
       "source_file": "sim/env.mjs",
-      "source_location": "L94"
-    },
-    {
-      "id": "sim_env_env_replay",
-      "label": ".replay()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "key_usage.mjs",
-      "file_type": "code",
-      "norm_label": ".replay()",
-      "source_file": "sim/env.mjs",
-      "source_location": "L67"
+      "source_location": "L15"
     },
     {
       "id": "sim_line_buildline",
@@ -1637,6 +2021,18 @@
       "source_location": "L14"
     },
     {
+      "id": "sim_line_indexahead",
+      "label": "indexAhead()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "key_usage.mjs",
+      "file_type": "code",
+      "norm_label": "indexahead()",
+      "source_file": "sim/line.mjs",
+      "source_location": "L71"
+    },
+    {
       "id": "sim_line_nearestindex",
       "label": "nearestIndex()",
       "_callable": true,
@@ -1649,40 +2045,16 @@
       "source_location": "L59"
     },
     {
-      "id": "sim_state_decodestate",
-      "label": "decodeState()",
+      "id": "scripts_search_sections_save",
+      "label": "save()",
       "_callable": true,
       "_origin": "ast",
-      "community": 4,
-      "community_name": "key_usage.mjs",
+      "community": 5,
+      "community_name": "search_timeline.mjs",
       "file_type": "code",
-      "norm_label": "decodestate()",
-      "source_file": "sim/state.mjs",
-      "source_location": "L22"
-    },
-    {
-      "id": "sim_state_statefinished",
-      "label": "stateFinished()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "key_usage.mjs",
-      "file_type": "code",
-      "norm_label": "statefinished()",
-      "source_file": "sim/state.mjs",
-      "source_location": "L10"
-    },
-    {
-      "id": "sim_state_stateframes",
-      "label": "stateFrames()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "key_usage.mjs",
-      "file_type": "code",
-      "norm_label": "stateframes()",
-      "source_file": "sim/state.mjs",
-      "source_location": "L9"
+      "norm_label": "save()",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L135"
     },
     {
       "id": "scripts_search_timeline_elapsed",
@@ -1721,76 +2093,112 @@
       "source_location": "L25"
     },
     {
-      "id": "sim_recording_fromdense",
-      "label": "fromDense()",
+      "id": "scripts_check_path_dist",
+      "label": "dist()",
       "_callable": true,
       "_origin": "ast",
-      "community": 5,
-      "community_name": "search_timeline.mjs",
+      "community": 6,
+      "community_name": "env.mjs",
       "file_type": "code",
-      "norm_label": "fromdense()",
-      "source_file": "sim/recording.mjs",
-      "source_location": "L52"
+      "norm_label": "dist()",
+      "source_file": "scripts/check_path.mjs",
+      "source_location": "L20"
     },
     {
-      "id": "sim_recording_todense",
-      "label": "toDense()",
+      "id": "scripts_check_path_fmt",
+      "label": "fmt()",
       "_callable": true,
       "_origin": "ast",
-      "community": 5,
-      "community_name": "search_timeline.mjs",
+      "community": 6,
+      "community_name": "env.mjs",
       "file_type": "code",
-      "norm_label": "todense()",
-      "source_file": "sim/recording.mjs",
-      "source_location": "L38"
+      "norm_label": "fmt()",
+      "source_file": "scripts/check_path.mjs",
+      "source_location": "L19"
     },
     {
-      "id": "sim_search_countflips",
-      "label": "countFlips()",
+      "id": "scripts_diff_capture_dec",
+      "label": "dec()",
       "_callable": true,
       "_origin": "ast",
-      "community": 5,
-      "community_name": "search_timeline.mjs",
+      "community": 6,
+      "community_name": "env.mjs",
       "file_type": "code",
-      "norm_label": "countflips()",
-      "source_file": "sim/search.mjs",
-      "source_location": "L100"
+      "norm_label": "dec()",
+      "source_file": "scripts/diff_capture.mjs",
+      "source_location": "L7"
     },
     {
-      "id": "sim_search_createrng",
-      "label": "createRng()",
+      "id": "scripts_diff_capture_f32eq",
+      "label": "f32eq()",
       "_callable": true,
       "_origin": "ast",
-      "community": 5,
-      "community_name": "search_timeline.mjs",
+      "community": 6,
+      "community_name": "env.mjs",
       "file_type": "code",
-      "norm_label": "createrng()",
-      "source_file": "sim/search.mjs",
-      "source_location": "L21"
+      "norm_label": "f32eq()",
+      "source_file": "scripts/diff_capture.mjs",
+      "source_location": "L12"
     },
     {
-      "id": "sim_search_mutate",
-      "label": "mutate()",
+      "id": "scripts_fetch_laps_get",
+      "label": "get()",
       "_callable": true,
       "_origin": "ast",
-      "community": 5,
-      "community_name": "search_timeline.mjs",
+      "community": 6,
+      "community_name": "env.mjs",
       "file_type": "code",
-      "norm_label": "mutate()",
-      "source_file": "sim/search.mjs",
-      "source_location": "L67"
+      "norm_label": "get()",
+      "source_file": "scripts/fetch_laps.mjs",
+      "source_location": "L49"
     },
     {
-      "id": "sim_search_randint",
-      "label": "randInt()",
+      "id": "scripts_fetch_laps_sleep",
+      "label": "sleep()",
       "_callable": true,
       "_origin": "ast",
-      "community": 5,
-      "community_name": "search_timeline.mjs",
+      "community": 6,
+      "community_name": "env.mjs",
       "file_type": "code",
-      "norm_label": "randint()",
-      "source_file": "sim/search.mjs",
-      "source_location": "L33"
+      "norm_label": "sleep()",
+      "source_file": "scripts/fetch_laps.mjs",
+      "source_location": "L47"
+    },
+    {
+      "id": "sim_host_bootworker",
+      "label": "bootWorker()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 6,
+      "community_name": "env.mjs",
+      "file_type": "code",
+      "norm_label": "bootworker()",
+      "source_file": "sim/host.mjs",
+      "source_location": "L32"
+    },
+    {
+      "id": "sim_host_decodecaptured",
+      "label": "decodeCaptured()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 6,
+      "community_name": "env.mjs",
+      "file_type": "code",
+      "norm_label": "decodecaptured()",
+      "source_file": "sim/host.mjs",
+      "source_location": "L15"
+    },
+    {
+      "id": "sim_host_loadcaptured",
+      "label": "loadCaptured()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 6,
+      "community_name": "env.mjs",
+      "file_type": "code",
+      "norm_label": "loadcaptured()",
+      "source_file": "sim/host.mjs",
+      "source_location": "L27"
     },
     {
       "id": "sim_track_buildpath",
@@ -1798,7 +2206,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 6,
-      "community_name": "track.mjs",
+      "community_name": "env.mjs",
       "file_type": "code",
       "norm_label": "buildpath()",
       "source_file": "sim/track.mjs",
@@ -1810,7 +2218,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 6,
-      "community_name": "track.mjs",
+      "community_name": "env.mjs",
       "file_type": "code",
       "norm_label": "decodesavestring()",
       "source_file": "sim/track.mjs",
@@ -1822,7 +2230,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 6,
-      "community_name": "track.mjs",
+      "community_name": "env.mjs",
       "file_type": "code",
       "norm_label": "loadpartconfigs()",
       "source_file": "sim/track.mjs",
@@ -1834,7 +2242,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 6,
-      "community_name": "track.mjs",
+      "community_name": "env.mjs",
       "file_type": "code",
       "norm_label": "parsetrack()",
       "source_file": "sim/track.mjs",
@@ -1846,7 +2254,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 6,
-      "community_name": "track.mjs",
+      "community_name": "env.mjs",
       "file_type": "code",
       "norm_label": "pathfromsavestring()",
       "source_file": "sim/track.mjs",
@@ -1858,7 +2266,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 6,
-      "community_name": "track.mjs",
+      "community_name": "env.mjs",
       "file_type": "code",
       "norm_label": "quatmultiply()",
       "source_file": "sim/track.mjs",
@@ -1870,7 +2278,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 6,
-      "community_name": "track.mjs",
+      "community_name": "env.mjs",
       "file_type": "code",
       "norm_label": "buildtrackmesh()",
       "source_file": "sim/trackmesh.mjs",
@@ -1882,7 +2290,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 6,
-      "community_name": "track.mjs",
+      "community_name": "env.mjs",
       "file_type": "code",
       "norm_label": "raycast()",
       "source_file": "sim/trackmesh.mjs",
@@ -1894,7 +2302,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 6,
-      "community_name": "track.mjs",
+      "community_name": "env.mjs",
       "file_type": "code",
       "norm_label": "raycastfar()",
       "source_file": "sim/trackmesh.mjs",
@@ -1906,11 +2314,23 @@
       "_callable": true,
       "_origin": "ast",
       "community": 6,
-      "community_name": "track.mjs",
+      "community_name": "env.mjs",
       "file_type": "code",
       "norm_label": "cellkey()",
       "source_file": "sim/trackmesh.mjs",
       "source_location": "L40"
+    },
+    {
+      "id": "sim_trackmesh_clearanceprofile",
+      "label": "clearanceProfile()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 6,
+      "community_name": "env.mjs",
+      "file_type": "code",
+      "norm_label": "clearanceprofile()",
+      "source_file": "sim/trackmesh.mjs",
+      "source_location": "L190"
     },
     {
       "id": "sim_trackmesh_loadparttriangles",
@@ -1918,7 +2338,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 6,
-      "community_name": "track.mjs",
+      "community_name": "env.mjs",
       "file_type": "code",
       "norm_label": "loadparttriangles()",
       "source_file": "sim/trackmesh.mjs",
@@ -1983,18 +2403,6 @@
       "norm_label": "save()",
       "source_file": "scripts/search_settings.mjs",
       "source_location": "L162"
-    },
-    {
-      "id": "sim_pool_createpool",
-      "label": "createPool()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 7,
-      "community_name": "search_settings.mjs",
-      "file_type": "code",
-      "norm_label": "createpool()",
-      "source_file": "sim/pool.mjs",
-      "source_location": "L23"
     },
     {
       "id": "scripts_capture_init_constructor",
@@ -2165,85 +2573,13 @@
       "source_location": "L72"
     },
     {
-      "id": "rl_racing_env_controlstoaction",
-      "label": "controlsToAction()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "env_server.mjs",
-      "file_type": "code",
-      "norm_label": "controlstoaction()",
-      "source_file": "rl/racing_env.mjs",
-      "source_location": "L284"
-    },
-    {
-      "id": "rl_smoke_test_check",
-      "label": "check()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "env_server.mjs",
-      "file_type": "code",
-      "norm_label": "check()",
-      "source_file": "rl/smoke_test.mjs",
-      "source_location": "L30"
-    },
-    {
-      "id": "rl_smoke_test_controllerlap",
-      "label": "controllerLap()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "env_server.mjs",
-      "file_type": "code",
-      "norm_label": "controllerlap()",
-      "source_file": "rl/smoke_test.mjs",
-      "source_location": "L82"
-    },
-    {
-      "id": "sim_controller_createcontroller",
-      "label": "createController()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "env_server.mjs",
-      "file_type": "code",
-      "norm_label": "createcontroller()",
-      "source_file": "sim/controller.mjs",
-      "source_location": "L92"
-    },
-    {
-      "id": "sim_controller_tocarframe",
-      "label": "toCarFrame()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "env_server.mjs",
-      "file_type": "code",
-      "norm_label": "tocarframe()",
-      "source_file": "sim/controller.mjs",
-      "source_location": "L80"
-    },
-    {
-      "id": "sim_line_indexahead",
-      "label": "indexAhead()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "env_server.mjs",
-      "file_type": "code",
-      "norm_label": "indexahead()",
-      "source_file": "sim/line.mjs",
-      "source_location": "L71"
-    },
-    {
       "id": "rl_requirements_gymnasium",
       "label": "gymnasium>=0.29 (optional)",
       "_origin": "ast",
       "author": null,
       "captured_at": null,
-      "community": 3,
-      "community_name": "PolytrackVecEnv",
+      "community": 17,
+      "community_name": "evaluate.py",
       "contributor": null,
       "file_type": "concept",
       "norm_label": "gymnasium>=0.29 (optional)",
@@ -2258,8 +2594,8 @@
       "_origin": "ast",
       "author": null,
       "captured_at": null,
-      "community": 3,
-      "community_name": "PolytrackVecEnv",
+      "community": 17,
+      "community_name": "evaluate.py",
       "contributor": null,
       "file_type": "concept",
       "norm_label": "numpy>=1.26",
@@ -2273,8 +2609,8 @@
       "_origin": "ast",
       "author": null,
       "captured_at": null,
-      "community": 3,
-      "community_name": "PolytrackVecEnv",
+      "community": 17,
+      "community_name": "evaluate.py",
       "contributor": null,
       "file_type": "concept",
       "norm_label": "torch>=2.2",
@@ -2289,8 +2625,8 @@
       "_origin": "ast",
       "author": null,
       "captured_at": null,
-      "community": 3,
-      "community_name": "PolytrackVecEnv",
+      "community": 17,
+      "community_name": "evaluate.py",
       "contributor": null,
       "file_type": "document",
       "norm_label": "rl/requirements.txt (python 3.10+)",
@@ -2299,48 +2635,224 @@
       "source_url": null
     },
     {
-      "id": "scripts_diff_capture",
-      "label": "diff_capture.mjs",
+      "id": "scripts_search_sections",
+      "label": "search_sections.mjs",
       "_origin": "ast",
       "community": 0,
-      "community_name": "diff_capture.mjs",
+      "community_name": "search_sections.mjs",
       "file_type": "code",
-      "norm_label": "diff_capture.mjs",
-      "source_file": "scripts/diff_capture.mjs",
+      "norm_label": "search_sections.mjs",
+      "source_file": "scripts/search_sections.mjs",
       "source_location": "L1"
     },
     {
-      "id": "scripts_diff_capture_byid",
-      "label": "byId",
+      "id": "scripts_search_sections_args",
+      "label": "args",
       "_origin": "ast",
       "community": 0,
-      "community_name": "diff_capture.mjs",
+      "community_name": "search_sections.mjs",
       "file_type": "code",
-      "norm_label": "byid",
-      "source_file": "scripts/diff_capture.mjs",
-      "source_location": "L17"
+      "norm_label": "args",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L64"
     },
     {
-      "id": "scripts_diff_capture_cap",
-      "label": "cap",
+      "id": "scripts_search_sections_best",
+      "label": "best",
       "_origin": "ast",
       "community": 0,
-      "community_name": "diff_capture.mjs",
+      "community_name": "search_sections.mjs",
       "file_type": "code",
-      "norm_label": "cap",
-      "source_file": "scripts/diff_capture.mjs",
-      "source_location": "L6"
+      "norm_label": "best",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L101"
     },
     {
-      "id": "scripts_diff_capture_ours",
-      "label": "ours",
+      "id": "scripts_search_sections_finalstring",
+      "label": "finalString",
       "_origin": "ast",
       "community": 0,
-      "community_name": "diff_capture.mjs",
+      "community_name": "search_sections.mjs",
       "file_type": "code",
-      "norm_label": "ours",
-      "source_file": "scripts/diff_capture.mjs",
-      "source_location": "L10"
+      "norm_label": "finalstring",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L214"
+    },
+    {
+      "id": "scripts_search_sections_minscore",
+      "label": "minScore",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "search_sections.mjs",
+      "file_type": "code",
+      "norm_label": "minscore",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L75"
+    },
+    {
+      "id": "scripts_search_sections_mutateoptions",
+      "label": "mutateOptions",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "search_sections.mjs",
+      "file_type": "code",
+      "norm_label": "mutateoptions",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L77"
+    },
+    {
+      "id": "scripts_search_sections_opt",
+      "label": "opt",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "search_sections.mjs",
+      "file_type": "code",
+      "norm_label": "opt",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L66"
+    },
+    {
+      "id": "scripts_search_sections_outfile",
+      "label": "outFile",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "search_sections.mjs",
+      "file_type": "code",
+      "norm_label": "outfile",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L134"
+    },
+    {
+      "id": "scripts_search_sections_passes",
+      "label": "passes",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "search_sections.mjs",
+      "file_type": "code",
+      "norm_label": "passes",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L74"
+    },
+    {
+      "id": "scripts_search_sections_path",
+      "label": "path",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "search_sections.mjs",
+      "file_type": "code",
+      "norm_label": "path",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L105"
+    },
+    {
+      "id": "scripts_search_sections_rejoinoptions",
+      "label": "rejoinOptions",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "search_sections.mjs",
+      "file_type": "code",
+      "norm_label": "rejoinoptions",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L77"
+    },
+    {
+      "id": "scripts_search_sections_rng",
+      "label": "rng",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "search_sections.mjs",
+      "file_type": "code",
+      "norm_label": "rng",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L70"
+    },
+    {
+      "id": "scripts_search_sections_runsdir",
+      "label": "runsDir",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "search_sections.mjs",
+      "file_type": "code",
+      "norm_label": "runsdir",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L84"
+    },
+    {
+      "id": "scripts_search_sections_seconds",
+      "label": "seconds",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "search_sections.mjs",
+      "file_type": "code",
+      "norm_label": "seconds",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L68"
+    },
+    {
+      "id": "scripts_search_sections_sectionsperpass",
+      "label": "sectionsPerPass",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "search_sections.mjs",
+      "file_type": "code",
+      "norm_label": "sectionsperpass",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L142"
+    },
+    {
+      "id": "scripts_search_sections_sectionticks",
+      "label": "sectionTicks",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "search_sections.mjs",
+      "file_type": "code",
+      "norm_label": "sectionticks",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L72"
+    },
+    {
+      "id": "scripts_search_sections_stepticks",
+      "label": "stepTicks",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "search_sections.mjs",
+      "file_type": "code",
+      "norm_label": "stepticks",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L73"
+    },
+    {
+      "id": "scripts_search_sections_t0",
+      "label": "t0",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "search_sections.mjs",
+      "file_type": "code",
+      "norm_label": "t0",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L138"
+    },
+    {
+      "id": "scripts_search_sections_track",
+      "label": "track",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "search_sections.mjs",
+      "file_type": "code",
+      "norm_label": "track",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L96"
+    },
+    {
+      "id": "scripts_search_sections_workers",
+      "label": "workers",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "search_sections.mjs",
+      "file_type": "code",
+      "norm_label": "workers",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L69"
     },
     {
       "id": "rl_block_test",
@@ -2387,6 +2899,17 @@
       "source_location": "L291"
     },
     {
+      "id": "rl_racing_env_num_actions",
+      "label": "NUM_ACTIONS",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "racing_env.mjs",
+      "file_type": "code",
+      "norm_label": "num_actions",
+      "source_file": "rl/racing_env.mjs",
+      "source_location": "L273"
+    },
+    {
       "id": "rl_racing_env_obs_pedal_open",
       "label": "OBS_PEDAL_OPEN",
       "_origin": "ast",
@@ -2409,6 +2932,17 @@
       "source_location": "L319"
     },
     {
+      "id": "rl_racing_env_obs_size",
+      "label": "OBS_SIZE",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "racing_env.mjs",
+      "file_type": "code",
+      "norm_label": "obs_size",
+      "source_file": "rl/racing_env.mjs",
+      "source_location": "L317"
+    },
+    {
       "id": "rl_racing_env_ray_directions",
       "label": "RAY_DIRECTIONS",
       "_origin": "ast",
@@ -2420,26 +2954,81 @@
       "source_location": "L306"
     },
     {
-      "id": "rl_evaluate",
-      "label": "evaluate.py",
+      "id": "rl_rollout_child",
+      "label": "rollout_child.mjs",
       "_origin": "ast",
-      "community": 10,
-      "community_name": "polytrack_env.py",
+      "community": 1,
+      "community_name": "racing_env.mjs",
       "file_type": "code",
-      "norm_label": "evaluate.py",
-      "source_file": "rl/evaluate.py",
+      "norm_label": "rollout_child.mjs",
+      "source_file": "rl/rollout_child.mjs",
       "source_location": "L1"
     },
     {
-      "id": "rl_evaluate_py_namespace",
-      "label": "Namespace",
+      "id": "rl_rollout_child_groups",
+      "label": "GROUPS",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "racing_env.mjs",
+      "file_type": "code",
+      "norm_label": "groups",
+      "source_file": "rl/rollout_child.mjs",
+      "source_location": "L46"
+    },
+    {
+      "id": "rl_rollout_child_prefix",
+      "label": "prefix",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "racing_env.mjs",
+      "file_type": "code",
+      "norm_label": "prefix",
+      "source_file": "rl/rollout_child.mjs",
+      "source_location": "L52"
+    },
+    {
+      "id": "rl_smoke_test",
+      "label": "smoke_test.mjs",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "racing_env.mjs",
+      "file_type": "code",
+      "norm_label": "smoke_test.mjs",
+      "source_file": "rl/smoke_test.mjs",
+      "source_location": "L1"
+    },
+    {
+      "id": "rl_smoke_test_laps",
+      "label": "laps",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "racing_env.mjs",
+      "file_type": "code",
+      "norm_label": "laps",
+      "source_file": "rl/smoke_test.mjs",
+      "source_location": "L94"
+    },
+    {
+      "id": "rl_smoke_test_ticks",
+      "label": "ticks",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "racing_env.mjs",
+      "file_type": "code",
+      "norm_label": "ticks",
+      "source_file": "rl/smoke_test.mjs",
+      "source_location": "L32"
+    },
+    {
+      "id": "rl_export_actor",
+      "label": "export_actor.py",
       "_origin": "ast",
       "community": 10,
       "community_name": "polytrack_env.py",
       "file_type": "code",
-      "norm_label": "namespace",
-      "source_file": "",
-      "source_location": ""
+      "norm_label": "export_actor.py",
+      "source_file": "rl/export_actor.py",
+      "source_location": "L1"
     },
     {
       "id": "rl_polytrack_env",
@@ -2453,14 +3042,14 @@
       "source_location": "L1"
     },
     {
-      "id": "rl_evaluate_rationale_1",
-      "label": "Drive one lap with a trained policy and save it. Usage (from the project root):\u2026",
+      "id": "rl_export_actor_rationale_1",
+      "label": "Write a checkpoint's policy network as the raw weights file the Node side\u2026",
       "_origin": "ast",
       "community": 10,
       "community_name": "polytrack_env.py",
       "file_type": "rationale",
-      "norm_label": "drive one lap with a trained policy and save it. usage (from the project root):...",
-      "source_file": "rl/evaluate.py",
+      "norm_label": "write a checkpoint's policy network as the raw weights file the node side...",
+      "source_file": "rl/export_actor.py",
       "source_location": "L1"
     },
     {
@@ -2552,6 +3141,17 @@
       "source_location": "L367"
     },
     {
+      "id": "linear",
+      "label": "Linear",
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "Agent",
+      "file_type": "code",
+      "norm_label": "linear",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
       "id": "rl_extend_checkpoint_inputs",
       "label": "extend_checkpoint_inputs.py",
       "_origin": "ast",
@@ -2594,6 +3194,17 @@
       "norm_label": "let a trained network accept a longer observation without changing what it...",
       "source_file": "rl/extend_checkpoint_inputs.py",
       "source_location": "L1"
+    },
+    {
+      "id": "rl_train_ppo_rationale_53",
+      "label": "A linear layer with orthogonal starting weights and zero bias, the usual choice\u2026",
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "Agent",
+      "file_type": "rationale",
+      "norm_label": "a linear layer with orthogonal starting weights and zero bias, the usual choice...",
+      "source_file": "rl/train_ppo.py",
+      "source_location": "L53"
     },
     {
       "id": "rl_train_ppo_rationale_91",
@@ -2827,17 +3438,6 @@
       "source_location": "L111"
     },
     {
-      "id": "rl_polytrack_env_rationale_136",
-      "label": "track 'summer1' or 'winter1' ticks physics ticks (milliseconds) each action is\u2026",
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "EnvServer",
-      "file_type": "rationale",
-      "norm_label": "track 'summer1' or 'winter1' ticks physics ticks (milliseconds) each action is...",
-      "source_file": "rl/polytrack_env.py",
-      "source_location": "L136"
-    },
-    {
       "id": "rl_polytrack_env_rationale_57",
       "label": "One Node environment process and the request/reply pipe to it.",
       "_origin": "ast",
@@ -2871,103 +3471,70 @@
       "source_location": "L87"
     },
     {
-      "id": "scripts_bench_step",
-      "label": "bench_step.mjs",
+      "id": "rl_evaluate",
+      "label": "evaluate.py",
       "_origin": "ast",
       "community": 17,
-      "community_name": "env.mjs",
+      "community_name": "evaluate.py",
       "file_type": "code",
-      "norm_label": "bench_step.mjs",
-      "source_file": "scripts/bench_step.mjs",
+      "norm_label": "evaluate.py",
+      "source_file": "rl/evaluate.py",
       "source_location": "L1"
     },
     {
-      "id": "scripts_bench_step_track",
-      "label": "track",
+      "id": "rl_evaluate_py_namespace",
+      "label": "Namespace",
       "_origin": "ast",
       "community": 17,
-      "community_name": "env.mjs",
+      "community_name": "evaluate.py",
       "file_type": "code",
-      "norm_label": "track",
-      "source_file": "scripts/bench_step.mjs",
-      "source_location": "L6"
-    },
-    {
-      "id": "scripts_check_path",
-      "label": "check_path.mjs",
-      "_origin": "ast",
-      "community": 17,
-      "community_name": "env.mjs",
-      "file_type": "code",
-      "norm_label": "check_path.mjs",
-      "source_file": "scripts/check_path.mjs",
-      "source_location": "L1"
-    },
-    {
-      "id": "scripts_verify_fixtures",
-      "label": "verify_fixtures.mjs",
-      "_origin": "ast",
-      "community": 17,
-      "community_name": "env.mjs",
-      "file_type": "code",
-      "norm_label": "verify_fixtures.mjs",
-      "source_file": "scripts/verify_fixtures.mjs",
-      "source_location": "L1"
-    },
-    {
-      "id": "scripts_verify_fixtures_fix",
-      "label": "FIX",
-      "_origin": "ast",
-      "community": 17,
-      "community_name": "env.mjs",
-      "file_type": "code",
-      "norm_label": "fix",
-      "source_file": "scripts/verify_fixtures.mjs",
-      "source_location": "L8"
-    },
-    {
-      "id": "sim_env",
-      "label": "env.mjs",
-      "_origin": "ast",
-      "community": 17,
-      "community_name": "env.mjs",
-      "file_type": "code",
-      "norm_label": "env.mjs",
-      "source_file": "sim/env.mjs",
-      "source_location": "L1"
-    },
-    {
-      "id": "sim_eval_child",
-      "label": "eval_child.mjs",
-      "_origin": "ast",
-      "community": 17,
-      "community_name": "env.mjs",
-      "file_type": "code",
-      "norm_label": "eval_child.mjs",
-      "source_file": "sim/eval_child.mjs",
-      "source_location": "L1"
-    },
-    {
-      "id": "linear",
-      "label": "Linear",
-      "_origin": "ast",
-      "community": 18,
-      "community_name": "_layer",
-      "file_type": "code",
-      "norm_label": "linear",
+      "norm_label": "namespace",
       "source_file": "",
       "source_location": ""
     },
     {
-      "id": "rl_train_ppo_rationale_53",
-      "label": "A linear layer with orthogonal starting weights and zero bias, the usual choice\u2026",
+      "id": "rl_evaluate_rationale_1",
+      "label": "Drive one lap with a trained policy and save it. Usage (from the project root):\u2026",
+      "_origin": "ast",
+      "community": 17,
+      "community_name": "evaluate.py",
+      "file_type": "rationale",
+      "norm_label": "drive one lap with a trained policy and save it. usage (from the project root):...",
+      "source_file": "rl/evaluate.py",
+      "source_location": "L1"
+    },
+    {
+      "id": "sim_recording_channels",
+      "label": "CHANNELS",
       "_origin": "ast",
       "community": 18,
-      "community_name": "_layer",
-      "file_type": "rationale",
-      "norm_label": "a linear layer with orthogonal starting weights and zero bias, the usual choice...",
-      "source_file": "rl/train_ppo.py",
-      "source_location": "L53"
+      "community_name": "sectional.mjs",
+      "file_type": "code",
+      "norm_label": "channels",
+      "source_file": "sim/recording.mjs",
+      "source_location": "L7"
+    },
+    {
+      "id": "sim_sectional",
+      "label": "sectional.mjs",
+      "_origin": "ast",
+      "community": 18,
+      "community_name": "sectional.mjs",
+      "file_type": "code",
+      "norm_label": "sectional.mjs",
+      "source_file": "sim/sectional.mjs",
+      "source_location": "L1"
+    },
+    {
+      "id": "sim_sectional_rejoin_defaults",
+      "label": "REJOIN_DEFAULTS",
+      "_origin": "ast",
+      "community": 18,
+      "community_name": "sectional.mjs",
+      "file_type": "code",
+      "norm_label": "rejoin_defaults",
+      "source_file": "sim/sectional.mjs",
+      "source_location": "L99"
     },
     {
       "id": "scripts_train_block_specialist",
@@ -3088,6 +3655,28 @@
       "source_location": "L31"
     },
     {
+      "id": "scripts_bench_step",
+      "label": "bench_step.mjs",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "Env",
+      "file_type": "code",
+      "norm_label": "bench_step.mjs",
+      "source_file": "scripts/bench_step.mjs",
+      "source_location": "L1"
+    },
+    {
+      "id": "scripts_bench_step_track",
+      "label": "track",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "Env",
+      "file_type": "code",
+      "norm_label": "track",
+      "source_file": "scripts/bench_step.mjs",
+      "source_location": "L6"
+    },
+    {
       "id": "scripts_determinism_test",
       "label": "determinism_test.mjs",
       "_origin": "ast",
@@ -3198,26 +3787,60 @@
       "source_location": "L38"
     },
     {
-      "id": "scripts_setup",
-      "label": "setup.mjs",
+      "id": "sim_eval_child",
+      "label": "eval_child.mjs",
       "_origin": "ast",
       "community": 2,
       "community_name": "Env",
       "file_type": "code",
-      "norm_label": "setup.mjs",
-      "source_file": "scripts/setup.mjs",
+      "norm_label": "eval_child.mjs",
+      "source_file": "sim/eval_child.mjs",
       "source_location": "L1"
     },
     {
-      "id": "scripts_setup_hashes",
-      "label": "HASHES",
+      "id": "sim_section_child",
+      "label": "section_child.mjs",
       "_origin": "ast",
       "community": 2,
       "community_name": "Env",
       "file_type": "code",
-      "norm_label": "hashes",
-      "source_file": "scripts/setup.mjs",
-      "source_location": "L9"
+      "norm_label": "section_child.mjs",
+      "source_file": "sim/section_child.mjs",
+      "source_location": "L1"
+    },
+    {
+      "id": "sim_state",
+      "label": "state.mjs",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "Env",
+      "file_type": "code",
+      "norm_label": "state.mjs",
+      "source_file": "sim/state.mjs",
+      "source_location": "L1"
+    },
+    {
+      "id": "sim_state_state_bytes",
+      "label": "STATE_BYTES",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "Env",
+      "file_type": "code",
+      "norm_label": "state_bytes",
+      "source_file": "sim/state.mjs",
+      "source_location": "L7"
+    },
+    {
+      "id": "readme",
+      "label": "README.md",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "Env",
+      "file_type": "document",
+      "node_kind": "page",
+      "norm_label": "readme.md",
+      "source_file": "README.md",
+      "source_location": "L1"
     },
     {
       "id": "readme_acceptance_tests",
@@ -3232,6 +3855,54 @@
       "source_location": "L32"
     },
     {
+      "id": "readme_driving_and_watching_a_lap",
+      "label": "Driving and watching a lap",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "Env",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "driving and watching a lap",
+      "source_file": "README.md",
+      "source_location": "L40"
+    },
+    {
+      "id": "readme_layout",
+      "label": "Layout",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "Env",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "layout",
+      "source_file": "README.md",
+      "source_location": "L17"
+    },
+    {
+      "id": "readme_polytrack_ml",
+      "label": "Polytrack-ML",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "Env",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "polytrack-ml",
+      "source_file": "README.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "readme_setup",
+      "label": "Setup",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "Env",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "setup",
+      "source_file": "README.md",
+      "source_location": "L7"
+    },
+    {
       "id": "readme_things_that_were_not_obvious",
       "label": "Things that were not obvious",
       "_origin": "ast",
@@ -3244,240 +3915,37 @@
       "source_location": "L63"
     },
     {
-      "id": "scripts_fetch_laps",
-      "label": "fetch_laps.mjs",
+      "id": "sim_search",
+      "label": "search.mjs",
       "_origin": "ast",
       "community": 20,
-      "community_name": "fetch_laps.mjs",
+      "community_name": "search.mjs",
       "file_type": "code",
-      "norm_label": "fetch_laps.mjs",
-      "source_file": "scripts/fetch_laps.mjs",
+      "norm_label": "search.mjs",
+      "source_file": "sim/search.mjs",
       "source_location": "L1"
     },
     {
-      "id": "scripts_fetch_laps_allofficial",
-      "label": "allOfficial",
+      "id": "sim_search_mutable",
+      "label": "MUTABLE",
       "_origin": "ast",
       "community": 20,
-      "community_name": "fetch_laps.mjs",
+      "community_name": "search.mjs",
       "file_type": "code",
-      "norm_label": "allofficial",
-      "source_file": "scripts/fetch_laps.mjs",
-      "source_location": "L41"
-    },
-    {
-      "id": "scripts_fetch_laps_amount",
-      "label": "amount",
-      "_origin": "ast",
-      "community": 20,
-      "community_name": "fetch_laps.mjs",
-      "file_type": "code",
-      "norm_label": "amount",
-      "source_file": "scripts/fetch_laps.mjs",
-      "source_location": "L38"
-    },
-    {
-      "id": "scripts_fetch_laps_args",
-      "label": "args",
-      "_origin": "ast",
-      "community": 20,
-      "community_name": "fetch_laps.mjs",
-      "file_type": "code",
-      "norm_label": "args",
-      "source_file": "scripts/fetch_laps.mjs",
-      "source_location": "L36"
-    },
-    {
-      "id": "scripts_fetch_laps_officialdir",
-      "label": "officialDir",
-      "_origin": "ast",
-      "community": 20,
-      "community_name": "fetch_laps.mjs",
-      "file_type": "code",
-      "norm_label": "officialdir",
-      "source_file": "scripts/fetch_laps.mjs",
-      "source_location": "L39"
-    },
-    {
-      "id": "scripts_fetch_laps_opt",
-      "label": "opt",
-      "_origin": "ast",
-      "community": 20,
-      "community_name": "fetch_laps.mjs",
-      "file_type": "code",
-      "norm_label": "opt",
-      "source_file": "scripts/fetch_laps.mjs",
+      "norm_label": "mutable",
+      "source_file": "sim/search.mjs",
       "source_location": "L37"
     },
     {
-      "id": "scripts_fetch_laps_outdir",
-      "label": "outDir",
+      "id": "sim_search_mutate_defaults",
+      "label": "MUTATE_DEFAULTS",
       "_origin": "ast",
       "community": 20,
-      "community_name": "fetch_laps.mjs",
+      "community_name": "search.mjs",
       "file_type": "code",
-      "norm_label": "outdir",
-      "source_file": "scripts/fetch_laps.mjs",
-      "source_location": "L44"
-    },
-    {
-      "id": "scripts_fetch_laps_summary",
-      "label": "summary",
-      "_origin": "ast",
-      "community": 20,
-      "community_name": "fetch_laps.mjs",
-      "file_type": "code",
-      "norm_label": "summary",
-      "source_file": "scripts/fetch_laps.mjs",
-      "source_location": "L58"
-    },
-    {
-      "id": "sim_host",
-      "label": "host.mjs",
-      "_origin": "ast",
-      "community": 21,
-      "community_name": "host.mjs",
-      "file_type": "code",
-      "norm_label": "host.mjs",
-      "source_file": "sim/host.mjs",
-      "source_location": "L1"
-    },
-    {
-      "id": "sim_host_data",
-      "label": "DATA",
-      "_origin": "ast",
-      "community": 21,
-      "community_name": "host.mjs",
-      "file_type": "code",
-      "norm_label": "data",
-      "source_file": "sim/host.mjs",
-      "source_location": "L12"
-    },
-    {
-      "id": "readme",
-      "label": "README.md",
-      "_origin": "ast",
-      "community": 22,
-      "community_name": "Polytrack-ML",
-      "file_type": "document",
-      "node_kind": "page",
-      "norm_label": "readme.md",
-      "source_file": "README.md",
-      "source_location": "L1"
-    },
-    {
-      "id": "readme_driving_and_watching_a_lap",
-      "label": "Driving and watching a lap",
-      "_origin": "ast",
-      "community": 22,
-      "community_name": "Polytrack-ML",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "driving and watching a lap",
-      "source_file": "README.md",
+      "norm_label": "mutate_defaults",
+      "source_file": "sim/search.mjs",
       "source_location": "L40"
-    },
-    {
-      "id": "readme_layout",
-      "label": "Layout",
-      "_origin": "ast",
-      "community": 22,
-      "community_name": "Polytrack-ML",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "layout",
-      "source_file": "README.md",
-      "source_location": "L17"
-    },
-    {
-      "id": "readme_polytrack_ml",
-      "label": "Polytrack-ML",
-      "_origin": "ast",
-      "community": 22,
-      "community_name": "Polytrack-ML",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "polytrack-ml",
-      "source_file": "README.md",
-      "source_location": "L1"
-    },
-    {
-      "id": "readme_setup",
-      "label": "Setup",
-      "_origin": "ast",
-      "community": 22,
-      "community_name": "Polytrack-ML",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "setup",
-      "source_file": "README.md",
-      "source_location": "L7"
-    },
-    {
-      "id": "scripts_watch_ghost",
-      "label": "watch_ghost.mjs",
-      "_origin": "ast",
-      "community": 23,
-      "community_name": "watch_ghost.mjs",
-      "file_type": "code",
-      "norm_label": "watch_ghost.mjs",
-      "source_file": "scripts/watch_ghost.mjs",
-      "source_location": "L1"
-    },
-    {
-      "id": "scripts_watch_ghost_args",
-      "label": "args",
-      "_origin": "ast",
-      "community": 23,
-      "community_name": "watch_ghost.mjs",
-      "file_type": "code",
-      "norm_label": "args",
-      "source_file": "scripts/watch_ghost.mjs",
-      "source_location": "L37"
-    },
-    {
-      "id": "scripts_watch_ghost_checkonly",
-      "label": "checkOnly",
-      "_origin": "ast",
-      "community": 23,
-      "community_name": "watch_ghost.mjs",
-      "file_type": "code",
-      "norm_label": "checkonly",
-      "source_file": "scripts/watch_ghost.mjs",
-      "source_location": "L38"
-    },
-    {
-      "id": "scripts_watch_ghost_name_summer1_run_baseline",
-      "label": "[name = 'summer1', run = 'baseline']",
-      "_origin": "ast",
-      "community": 23,
-      "community_name": "watch_ghost.mjs",
-      "file_type": "code",
-      "norm_label": "[name = 'summer1', run = 'baseline']",
-      "source_file": "scripts/watch_ghost.mjs",
-      "source_location": "L39"
-    },
-    {
-      "id": "scripts_watch_ghost_recordvalue",
-      "label": "recordValue",
-      "_origin": "ast",
-      "community": 23,
-      "community_name": "watch_ghost.mjs",
-      "file_type": "code",
-      "norm_label": "recordvalue",
-      "source_file": "scripts/watch_ghost.mjs",
-      "source_location": "L88"
-    },
-    {
-      "id": "scripts_watch_ghost_trackid",
-      "label": "trackId",
-      "_origin": "ast",
-      "community": 23,
-      "community_name": "watch_ghost.mjs",
-      "file_type": "code",
-      "norm_label": "trackid",
-      "source_file": "scripts/watch_ghost.mjs",
-      "source_location": "L52"
     },
     {
       "id": "scripts_eval_block_specialist",
@@ -3658,11 +4126,22 @@
       "source_location": "L75"
     },
     {
+      "id": "sim_recording",
+      "label": "recording.mjs",
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "export_recording.mjs",
+      "file_type": "code",
+      "norm_label": "recording.mjs",
+      "source_file": "sim/recording.mjs",
+      "source_location": "L1"
+    },
+    {
       "id": "scripts_check_track",
       "label": "check_track.mjs",
       "_origin": "ast",
       "community": 28,
-      "community_name": "check_track.mjs",
+      "community_name": "search_rollout.mjs",
       "file_type": "code",
       "norm_label": "check_track.mjs",
       "source_file": "scripts/check_track.mjs",
@@ -3673,7 +4152,7 @@
       "label": "args",
       "_origin": "ast",
       "community": 28,
-      "community_name": "check_track.mjs",
+      "community_name": "search_rollout.mjs",
       "file_type": "code",
       "norm_label": "args",
       "source_file": "scripts/check_track.mjs",
@@ -3684,7 +4163,7 @@
       "label": "checkpoint",
       "_origin": "ast",
       "community": 28,
-      "community_name": "check_track.mjs",
+      "community_name": "search_rollout.mjs",
       "file_type": "code",
       "norm_label": "checkpoint",
       "source_file": "scripts/check_track.mjs",
@@ -3695,7 +4174,7 @@
       "label": "driven",
       "_origin": "ast",
       "community": 28,
-      "community_name": "check_track.mjs",
+      "community_name": "search_rollout.mjs",
       "file_type": "code",
       "norm_label": "driven",
       "source_file": "scripts/check_track.mjs",
@@ -3706,11 +4185,253 @@
       "label": "positional",
       "_origin": "ast",
       "community": 28,
-      "community_name": "check_track.mjs",
+      "community_name": "search_rollout.mjs",
       "file_type": "code",
       "norm_label": "positional",
       "source_file": "scripts/check_track.mjs",
       "source_location": "L25"
+    },
+    {
+      "id": "scripts_search_rollout",
+      "label": "search_rollout.mjs",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "search_rollout.mjs",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L1"
+    },
+    {
+      "id": "scripts_search_rollout_args",
+      "label": "args",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "args",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L68"
+    },
+    {
+      "id": "scripts_search_rollout_exported",
+      "label": "exported",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "exported",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L215"
+    },
+    {
+      "id": "scripts_search_rollout_name",
+      "label": "name",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "name",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L69"
+    },
+    {
+      "id": "scripts_search_rollout_opt",
+      "label": "opt",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "opt",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L70"
+    },
+    {
+      "id": "scripts_search_rollout_passes",
+      "label": "passes",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "passes",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L73"
+    },
+    {
+      "id": "scripts_search_rollout_rng",
+      "label": "rng",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "rng",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L77"
+    },
+    {
+      "id": "scripts_search_rollout_seconds",
+      "label": "seconds",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "seconds",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L73"
+    },
+    {
+      "id": "scripts_search_rollout_section",
+      "label": "SECTION",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "section",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L74"
+    },
+    {
+      "id": "scripts_search_rollout_step",
+      "label": "STEP",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "step",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L74"
+    },
+    {
+      "id": "scripts_search_rollout_t0",
+      "label": "t0",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "t0",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L160"
+    },
+    {
+      "id": "scripts_search_rollout_temperature",
+      "label": "temperature",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "temperature",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L75"
+    },
+    {
+      "id": "scripts_search_rollout_workers",
+      "label": "workers",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "workers",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L73"
+    },
+    {
+      "id": "scripts_setup",
+      "label": "setup.mjs",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "setup.mjs",
+      "source_file": "scripts/setup.mjs",
+      "source_location": "L1"
+    },
+    {
+      "id": "scripts_setup_hashes",
+      "label": "HASHES",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "hashes",
+      "source_file": "scripts/setup.mjs",
+      "source_location": "L9"
+    },
+    {
+      "id": "scripts_watch_ghost",
+      "label": "watch_ghost.mjs",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "watch_ghost.mjs",
+      "source_file": "scripts/watch_ghost.mjs",
+      "source_location": "L1"
+    },
+    {
+      "id": "scripts_watch_ghost_args",
+      "label": "args",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "args",
+      "source_file": "scripts/watch_ghost.mjs",
+      "source_location": "L37"
+    },
+    {
+      "id": "scripts_watch_ghost_checkonly",
+      "label": "checkOnly",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "checkonly",
+      "source_file": "scripts/watch_ghost.mjs",
+      "source_location": "L38"
+    },
+    {
+      "id": "scripts_watch_ghost_name_summer1_run_baseline",
+      "label": "[name = 'summer1', run = 'baseline']",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "[name = 'summer1', run = 'baseline']",
+      "source_file": "scripts/watch_ghost.mjs",
+      "source_location": "L39"
+    },
+    {
+      "id": "scripts_watch_ghost_recordvalue",
+      "label": "recordValue",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "recordvalue",
+      "source_file": "scripts/watch_ghost.mjs",
+      "source_location": "L88"
+    },
+    {
+      "id": "scripts_watch_ghost_trackid",
+      "label": "trackId",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "trackid",
+      "source_file": "scripts/watch_ghost.mjs",
+      "source_location": "L52"
+    },
+    {
+      "id": "sim_pool",
+      "label": "pool.mjs",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
+      "file_type": "code",
+      "norm_label": "pool.mjs",
+      "source_file": "sim/pool.mjs",
+      "source_location": "L1"
     },
     {
       "id": "scripts_set3_round2",
@@ -3740,7 +4461,7 @@
       },
       "norm_label": "run_tests()",
       "source_file": "scripts/set3_round2.sh",
-      "source_location": "L33"
+      "source_location": "L34"
     },
     {
       "id": "scripts_set3_round2_sh__entry",
@@ -3909,6 +4630,17 @@
       "norm_label": "a single polytrack environment with the gymnasium interface.",
       "source_file": "rl/polytrack_env.py",
       "source_location": "L131"
+    },
+    {
+      "id": "rl_polytrack_env_rationale_136",
+      "label": "track 'summer1' or 'winter1' ticks physics ticks (milliseconds) each action is\u2026",
+      "_origin": "ast",
+      "community": 3,
+      "community_name": "PolytrackVecEnv",
+      "file_type": "rationale",
+      "norm_label": "track 'summer1' or 'winter1' ticks physics ticks (milliseconds) each action is...",
+      "source_file": "rl/polytrack_env.py",
+      "source_location": "L136"
     },
     {
       "id": "rl_polytrack_env_rationale_151",
@@ -4329,6 +5061,28 @@
       "source_location": "L32"
     },
     {
+      "id": "sim_controller",
+      "label": "controller.mjs",
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "key_usage.mjs",
+      "file_type": "code",
+      "norm_label": "controller.mjs",
+      "source_file": "sim/controller.mjs",
+      "source_location": "L1"
+    },
+    {
+      "id": "sim_controller_defaults",
+      "label": "DEFAULTS",
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "key_usage.mjs",
+      "file_type": "code",
+      "norm_label": "defaults",
+      "source_file": "sim/controller.mjs",
+      "source_location": "L29"
+    },
+    {
       "id": "sim_drive",
       "label": "drive.mjs",
       "_origin": "ast",
@@ -4382,28 +5136,6 @@
       "norm_label": "spacing",
       "source_file": "sim/line.mjs",
       "source_location": "L12"
-    },
-    {
-      "id": "sim_state",
-      "label": "state.mjs",
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "key_usage.mjs",
-      "file_type": "code",
-      "norm_label": "state.mjs",
-      "source_file": "sim/state.mjs",
-      "source_location": "L1"
-    },
-    {
-      "id": "sim_state_state_bytes",
-      "label": "STATE_BYTES",
-      "_origin": "ast",
-      "community": 4,
-      "community_name": "key_usage.mjs",
-      "file_type": "code",
-      "norm_label": "state_bytes",
-      "source_file": "sim/state.mjs",
-      "source_location": "L7"
     },
     {
       "id": "scripts_search_timeline",
@@ -4549,66 +5281,209 @@
       "source_location": "L48"
     },
     {
-      "id": "sim_recording",
-      "label": "recording.mjs",
+      "id": "scripts_check_path",
+      "label": "check_path.mjs",
       "_origin": "ast",
-      "community": 5,
-      "community_name": "search_timeline.mjs",
+      "community": 6,
+      "community_name": "env.mjs",
       "file_type": "code",
-      "norm_label": "recording.mjs",
-      "source_file": "sim/recording.mjs",
+      "norm_label": "check_path.mjs",
+      "source_file": "scripts/check_path.mjs",
       "source_location": "L1"
     },
     {
-      "id": "sim_recording_channels",
-      "label": "CHANNELS",
+      "id": "scripts_diff_capture",
+      "label": "diff_capture.mjs",
       "_origin": "ast",
-      "community": 5,
-      "community_name": "search_timeline.mjs",
+      "community": 6,
+      "community_name": "env.mjs",
       "file_type": "code",
-      "norm_label": "channels",
-      "source_file": "sim/recording.mjs",
-      "source_location": "L7"
-    },
-    {
-      "id": "sim_search",
-      "label": "search.mjs",
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "search_timeline.mjs",
-      "file_type": "code",
-      "norm_label": "search.mjs",
-      "source_file": "sim/search.mjs",
+      "norm_label": "diff_capture.mjs",
+      "source_file": "scripts/diff_capture.mjs",
       "source_location": "L1"
     },
     {
-      "id": "sim_search_mutable",
-      "label": "MUTABLE",
+      "id": "scripts_diff_capture_byid",
+      "label": "byId",
       "_origin": "ast",
-      "community": 5,
-      "community_name": "search_timeline.mjs",
+      "community": 6,
+      "community_name": "env.mjs",
       "file_type": "code",
-      "norm_label": "mutable",
-      "source_file": "sim/search.mjs",
+      "norm_label": "byid",
+      "source_file": "scripts/diff_capture.mjs",
+      "source_location": "L17"
+    },
+    {
+      "id": "scripts_diff_capture_cap",
+      "label": "cap",
+      "_origin": "ast",
+      "community": 6,
+      "community_name": "env.mjs",
+      "file_type": "code",
+      "norm_label": "cap",
+      "source_file": "scripts/diff_capture.mjs",
+      "source_location": "L6"
+    },
+    {
+      "id": "scripts_diff_capture_ours",
+      "label": "ours",
+      "_origin": "ast",
+      "community": 6,
+      "community_name": "env.mjs",
+      "file_type": "code",
+      "norm_label": "ours",
+      "source_file": "scripts/diff_capture.mjs",
+      "source_location": "L10"
+    },
+    {
+      "id": "scripts_fetch_laps",
+      "label": "fetch_laps.mjs",
+      "_origin": "ast",
+      "community": 6,
+      "community_name": "env.mjs",
+      "file_type": "code",
+      "norm_label": "fetch_laps.mjs",
+      "source_file": "scripts/fetch_laps.mjs",
+      "source_location": "L1"
+    },
+    {
+      "id": "scripts_fetch_laps_allofficial",
+      "label": "allOfficial",
+      "_origin": "ast",
+      "community": 6,
+      "community_name": "env.mjs",
+      "file_type": "code",
+      "norm_label": "allofficial",
+      "source_file": "scripts/fetch_laps.mjs",
+      "source_location": "L41"
+    },
+    {
+      "id": "scripts_fetch_laps_amount",
+      "label": "amount",
+      "_origin": "ast",
+      "community": 6,
+      "community_name": "env.mjs",
+      "file_type": "code",
+      "norm_label": "amount",
+      "source_file": "scripts/fetch_laps.mjs",
+      "source_location": "L38"
+    },
+    {
+      "id": "scripts_fetch_laps_args",
+      "label": "args",
+      "_origin": "ast",
+      "community": 6,
+      "community_name": "env.mjs",
+      "file_type": "code",
+      "norm_label": "args",
+      "source_file": "scripts/fetch_laps.mjs",
+      "source_location": "L36"
+    },
+    {
+      "id": "scripts_fetch_laps_officialdir",
+      "label": "officialDir",
+      "_origin": "ast",
+      "community": 6,
+      "community_name": "env.mjs",
+      "file_type": "code",
+      "norm_label": "officialdir",
+      "source_file": "scripts/fetch_laps.mjs",
+      "source_location": "L39"
+    },
+    {
+      "id": "scripts_fetch_laps_opt",
+      "label": "opt",
+      "_origin": "ast",
+      "community": 6,
+      "community_name": "env.mjs",
+      "file_type": "code",
+      "norm_label": "opt",
+      "source_file": "scripts/fetch_laps.mjs",
       "source_location": "L37"
     },
     {
-      "id": "sim_search_mutate_defaults",
-      "label": "MUTATE_DEFAULTS",
+      "id": "scripts_fetch_laps_outdir",
+      "label": "outDir",
       "_origin": "ast",
-      "community": 5,
-      "community_name": "search_timeline.mjs",
+      "community": 6,
+      "community_name": "env.mjs",
       "file_type": "code",
-      "norm_label": "mutate_defaults",
-      "source_file": "sim/search.mjs",
-      "source_location": "L40"
+      "norm_label": "outdir",
+      "source_file": "scripts/fetch_laps.mjs",
+      "source_location": "L44"
+    },
+    {
+      "id": "scripts_fetch_laps_summary",
+      "label": "summary",
+      "_origin": "ast",
+      "community": 6,
+      "community_name": "env.mjs",
+      "file_type": "code",
+      "norm_label": "summary",
+      "source_file": "scripts/fetch_laps.mjs",
+      "source_location": "L58"
+    },
+    {
+      "id": "scripts_verify_fixtures",
+      "label": "verify_fixtures.mjs",
+      "_origin": "ast",
+      "community": 6,
+      "community_name": "env.mjs",
+      "file_type": "code",
+      "norm_label": "verify_fixtures.mjs",
+      "source_file": "scripts/verify_fixtures.mjs",
+      "source_location": "L1"
+    },
+    {
+      "id": "scripts_verify_fixtures_fix",
+      "label": "FIX",
+      "_origin": "ast",
+      "community": 6,
+      "community_name": "env.mjs",
+      "file_type": "code",
+      "norm_label": "fix",
+      "source_file": "scripts/verify_fixtures.mjs",
+      "source_location": "L8"
+    },
+    {
+      "id": "sim_env",
+      "label": "env.mjs",
+      "_origin": "ast",
+      "community": 6,
+      "community_name": "env.mjs",
+      "file_type": "code",
+      "norm_label": "env.mjs",
+      "source_file": "sim/env.mjs",
+      "source_location": "L1"
+    },
+    {
+      "id": "sim_host",
+      "label": "host.mjs",
+      "_origin": "ast",
+      "community": 6,
+      "community_name": "env.mjs",
+      "file_type": "code",
+      "norm_label": "host.mjs",
+      "source_file": "sim/host.mjs",
+      "source_location": "L1"
+    },
+    {
+      "id": "sim_host_data",
+      "label": "DATA",
+      "_origin": "ast",
+      "community": 6,
+      "community_name": "env.mjs",
+      "file_type": "code",
+      "norm_label": "data",
+      "source_file": "sim/host.mjs",
+      "source_location": "L12"
     },
     {
       "id": "sim_track",
       "label": "track.mjs",
       "_origin": "ast",
       "community": 6,
-      "community_name": "track.mjs",
+      "community_name": "env.mjs",
       "file_type": "code",
       "norm_label": "track.mjs",
       "source_file": "sim/track.mjs",
@@ -4619,7 +5494,7 @@
       "label": "DETECTOR_CHECKPOINT",
       "_origin": "ast",
       "community": 6,
-      "community_name": "track.mjs",
+      "community_name": "env.mjs",
       "file_type": "code",
       "norm_label": "detector_checkpoint",
       "source_file": "sim/track.mjs",
@@ -4630,7 +5505,7 @@
       "label": "DETECTOR_FINISH",
       "_origin": "ast",
       "community": 6,
-      "community_name": "track.mjs",
+      "community_name": "env.mjs",
       "file_type": "code",
       "norm_label": "detector_finish",
       "source_file": "sim/track.mjs",
@@ -4641,7 +5516,7 @@
       "label": "PART_SIZE",
       "_origin": "ast",
       "community": 6,
-      "community_name": "track.mjs",
+      "community_name": "env.mjs",
       "file_type": "code",
       "norm_label": "part_size",
       "source_file": "sim/track.mjs",
@@ -4652,7 +5527,7 @@
       "label": "ROTATIONS",
       "_origin": "ast",
       "community": 6,
-      "community_name": "track.mjs",
+      "community_name": "env.mjs",
       "file_type": "code",
       "norm_label": "rotations",
       "source_file": "sim/track.mjs",
@@ -4663,7 +5538,7 @@
       "label": "trackmesh.mjs",
       "_origin": "ast",
       "community": 6,
-      "community_name": "track.mjs",
+      "community_name": "env.mjs",
       "file_type": "code",
       "norm_label": "trackmesh.mjs",
       "source_file": "sim/trackmesh.mjs",
@@ -4674,7 +5549,7 @@
       "label": "MAX_CLEARANCE",
       "_origin": "ast",
       "community": 6,
-      "community_name": "track.mjs",
+      "community_name": "env.mjs",
       "file_type": "code",
       "norm_label": "max_clearance",
       "source_file": "sim/trackmesh.mjs",
@@ -4866,17 +5741,6 @@
       "norm_label": "workers",
       "source_file": "scripts/search_settings.mjs",
       "source_location": "L92"
-    },
-    {
-      "id": "sim_pool",
-      "label": "pool.mjs",
-      "_origin": "ast",
-      "community": 7,
-      "community_name": "search_settings.mjs",
-      "file_type": "code",
-      "norm_label": "pool.mjs",
-      "source_file": "sim/pool.mjs",
-      "source_location": "L1"
     },
     {
       "id": "package",
@@ -5099,155 +5963,6 @@
       "source_location": "L344"
     },
     {
-      "id": "rl_racing_env_num_actions",
-      "label": "NUM_ACTIONS",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "env_server.mjs",
-      "file_type": "code",
-      "norm_label": "num_actions",
-      "source_file": "rl/racing_env.mjs",
-      "source_location": "L273"
-    },
-    {
-      "id": "rl_racing_env_obs_size",
-      "label": "OBS_SIZE",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "env_server.mjs",
-      "file_type": "code",
-      "norm_label": "obs_size",
-      "source_file": "rl/racing_env.mjs",
-      "source_location": "L317"
-    },
-    {
-      "id": "rl_smoke_test",
-      "label": "smoke_test.mjs",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "env_server.mjs",
-      "file_type": "code",
-      "norm_label": "smoke_test.mjs",
-      "source_file": "rl/smoke_test.mjs",
-      "source_location": "L1"
-    },
-    {
-      "id": "rl_smoke_test_laps",
-      "label": "laps",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "env_server.mjs",
-      "file_type": "code",
-      "norm_label": "laps",
-      "source_file": "rl/smoke_test.mjs",
-      "source_location": "L94"
-    },
-    {
-      "id": "rl_smoke_test_ticks",
-      "label": "ticks",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "env_server.mjs",
-      "file_type": "code",
-      "norm_label": "ticks",
-      "source_file": "rl/smoke_test.mjs",
-      "source_location": "L32"
-    },
-    {
-      "id": "sim_controller",
-      "label": "controller.mjs",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "env_server.mjs",
-      "file_type": "code",
-      "norm_label": "controller.mjs",
-      "source_file": "sim/controller.mjs",
-      "source_location": "L1"
-    },
-    {
-      "id": "sim_controller_defaults",
-      "label": "DEFAULTS",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "env_server.mjs",
-      "file_type": "code",
-      "norm_label": "defaults",
-      "source_file": "sim/controller.mjs",
-      "source_location": "L29"
-    },
-    {
-      "id": "vendor_polyrl_node_mountains",
-      "label": "vendor_polyrl_node_mountains",
-      "_origin": "semantic",
-      "community": 0,
-      "community_name": "diff_capture.mjs",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "vendor_polyrl_node_mountains",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "vendor_polyrl_node_mountains_createmountainvertices",
-      "label": "vendor_polyrl_node_mountains_createmountainvertices",
-      "_origin": "semantic",
-      "community": 0,
-      "community_name": "diff_capture.mjs",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "vendor_polyrl_node_mountains_createmountainvertices",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "vendor_polyrl_node_sim_host_initpayload",
-      "label": "vendor_polyrl_node_sim_host_initpayload",
-      "_origin": "semantic",
-      "community": 0,
-      "community_name": "diff_capture.mjs",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "vendor_polyrl_node_sim_host_initpayload",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "vendor_polyrl_node_sim_host_loadphysicsassets",
-      "label": "vendor_polyrl_node_sim_host_loadphysicsassets",
-      "_origin": "semantic",
-      "community": 0,
-      "community_name": "diff_capture.mjs",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "vendor_polyrl_node_sim_host_loadphysicsassets",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "vendor_polyrl_node_sim_host_loadtracksavestring",
-      "label": "vendor_polyrl_node_sim_host_loadtracksavestring",
-      "_origin": "semantic",
-      "community": 0,
-      "community_name": "diff_capture.mjs",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "vendor_polyrl_node_sim_host_loadtracksavestring",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "base64",
-      "label": "base64",
-      "_origin": "semantic",
-      "community": 10,
-      "community_name": "polytrack_env.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "base64",
-      "source_file": "",
-      "type": "external"
-    },
-    {
       "id": "gymnasium",
       "label": "gymnasium",
       "_origin": "semantic",
@@ -5284,18 +5999,6 @@
       "type": "external"
     },
     {
-      "id": "pathlib",
-      "label": "pathlib",
-      "_origin": "semantic",
-      "community": 10,
-      "community_name": "polytrack_env.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "pathlib",
-      "source_file": "",
-      "type": "external"
-    },
-    {
       "id": "queue",
       "label": "queue",
       "_origin": "semantic",
@@ -5304,6 +6007,18 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "queue",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "shutil",
+      "label": "shutil",
+      "_origin": "semantic",
+      "community": 10,
+      "community_name": "polytrack_env.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "shutil",
       "source_file": "",
       "type": "external"
     },
@@ -5344,6 +6059,30 @@
       "type": "external"
     },
     {
+      "id": "time",
+      "label": "time",
+      "_origin": "semantic",
+      "community": 10,
+      "community_name": "polytrack_env.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "time",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "torch",
+      "label": "torch",
+      "_origin": "semantic",
+      "community": 10,
+      "community_name": "polytrack_env.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "torch",
+      "source_file": "",
+      "type": "external"
+    },
+    {
       "id": "collections",
       "label": "collections",
       "_origin": "semantic",
@@ -5352,30 +6091,6 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "collections",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "shutil",
-      "label": "shutil",
-      "_origin": "semantic",
-      "community": 11,
-      "community_name": "train_ppo.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "shutil",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "time",
-      "label": "time",
-      "_origin": "semantic",
-      "community": 11,
-      "community_name": "train_ppo.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "time",
       "source_file": "",
       "type": "external"
     },
@@ -5392,26 +6107,14 @@
       "type": "external"
     },
     {
-      "id": "argparse",
-      "label": "argparse",
+      "id": "base64",
+      "label": "base64",
       "_origin": "semantic",
-      "community": 12,
-      "community_name": "Agent",
+      "community": 13,
+      "community_name": "pretrain_bc.py",
       "external": true,
       "file_type": "concept",
-      "norm_label": "argparse",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "torch",
-      "label": "torch",
-      "_origin": "semantic",
-      "community": 12,
-      "community_name": "Agent",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "torch",
+      "norm_label": "base64",
       "source_file": "",
       "type": "external"
     },
@@ -5464,26 +6167,26 @@
       "type": "external"
     },
     {
-      "id": "ref_node_fs",
-      "label": "ref_node_fs",
+      "id": "argparse",
+      "label": "argparse",
       "_origin": "semantic",
       "community": 17,
-      "community_name": "env.mjs",
+      "community_name": "evaluate.py",
       "external": true,
       "file_type": "concept",
-      "norm_label": "ref_node_fs",
+      "norm_label": "argparse",
       "source_file": "",
       "type": "external"
     },
     {
-      "id": "sim_host_ki",
-      "label": "sim_host_ki",
+      "id": "pathlib",
+      "label": "pathlib",
       "_origin": "semantic",
       "community": 17,
-      "community_name": "env.mjs",
+      "community_name": "evaluate.py",
       "external": true,
       "file_type": "concept",
-      "norm_label": "sim_host_ki",
+      "norm_label": "pathlib",
       "source_file": "",
       "type": "external"
     },
@@ -5491,8 +6194,8 @@
       "id": "ref_node_child_process",
       "label": "ref_node_child_process",
       "_origin": "semantic",
-      "community": 2,
-      "community_name": "Env",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
       "external": true,
       "file_type": "concept",
       "norm_label": "ref_node_child_process",
@@ -5503,8 +6206,8 @@
       "id": "ref_node_crypto",
       "label": "ref_node_crypto",
       "_origin": "semantic",
-      "community": 2,
-      "community_name": "Env",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
       "external": true,
       "file_type": "concept",
       "norm_label": "ref_node_crypto",
@@ -5512,38 +6215,26 @@
       "type": "external"
     },
     {
-      "id": "vendor_polyrl_node_sim_host",
-      "label": "vendor_polyrl_node_sim_host",
+      "id": "ref_node_url",
+      "label": "ref_node_url",
       "_origin": "semantic",
-      "community": 21,
-      "community_name": "host.mjs",
+      "community": 28,
+      "community_name": "search_rollout.mjs",
       "external": true,
       "file_type": "concept",
-      "norm_label": "vendor_polyrl_node_sim_host",
+      "norm_label": "ref_node_url",
       "source_file": "",
       "type": "external"
     },
     {
-      "id": "vendor_polyrl_node_sim_host_ki",
-      "label": "vendor_polyrl_node_sim_host_ki",
+      "id": "ref_node_fs",
+      "label": "ref_node_fs",
       "_origin": "semantic",
-      "community": 21,
-      "community_name": "host.mjs",
+      "community": 6,
+      "community_name": "env.mjs",
       "external": true,
       "file_type": "concept",
-      "norm_label": "vendor_polyrl_node_sim_host_ki",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "vendor_polyrl_node_sim_host_simworker",
-      "label": "vendor_polyrl_node_sim_host_simworker",
-      "_origin": "semantic",
-      "community": 21,
-      "community_name": "host.mjs",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "vendor_polyrl_node_sim_host_simworker",
+      "norm_label": "ref_node_fs",
       "source_file": "",
       "type": "external"
     },
@@ -5551,11 +6242,119 @@
       "id": "ref_node_zlib",
       "label": "ref_node_zlib",
       "_origin": "semantic",
-      "community": 5,
-      "community_name": "search_timeline.mjs",
+      "community": 6,
+      "community_name": "env.mjs",
       "external": true,
       "file_type": "concept",
       "norm_label": "ref_node_zlib",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "sim_host_ki",
+      "label": "sim_host_ki",
+      "_origin": "semantic",
+      "community": 6,
+      "community_name": "env.mjs",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "sim_host_ki",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "vendor_polyrl_node_mountains",
+      "label": "vendor_polyrl_node_mountains",
+      "_origin": "semantic",
+      "community": 6,
+      "community_name": "env.mjs",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "vendor_polyrl_node_mountains",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "vendor_polyrl_node_mountains_createmountainvertices",
+      "label": "vendor_polyrl_node_mountains_createmountainvertices",
+      "_origin": "semantic",
+      "community": 6,
+      "community_name": "env.mjs",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "vendor_polyrl_node_mountains_createmountainvertices",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "vendor_polyrl_node_sim_host",
+      "label": "vendor_polyrl_node_sim_host",
+      "_origin": "semantic",
+      "community": 6,
+      "community_name": "env.mjs",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "vendor_polyrl_node_sim_host",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "vendor_polyrl_node_sim_host_initpayload",
+      "label": "vendor_polyrl_node_sim_host_initpayload",
+      "_origin": "semantic",
+      "community": 6,
+      "community_name": "env.mjs",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "vendor_polyrl_node_sim_host_initpayload",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "vendor_polyrl_node_sim_host_ki",
+      "label": "vendor_polyrl_node_sim_host_ki",
+      "_origin": "semantic",
+      "community": 6,
+      "community_name": "env.mjs",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "vendor_polyrl_node_sim_host_ki",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "vendor_polyrl_node_sim_host_loadphysicsassets",
+      "label": "vendor_polyrl_node_sim_host_loadphysicsassets",
+      "_origin": "semantic",
+      "community": 6,
+      "community_name": "env.mjs",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "vendor_polyrl_node_sim_host_loadphysicsassets",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "vendor_polyrl_node_sim_host_loadtracksavestring",
+      "label": "vendor_polyrl_node_sim_host_loadtracksavestring",
+      "_origin": "semantic",
+      "community": 6,
+      "community_name": "env.mjs",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "vendor_polyrl_node_sim_host_loadtracksavestring",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "vendor_polyrl_node_sim_host_simworker",
+      "label": "vendor_polyrl_node_sim_host_simworker",
+      "_origin": "semantic",
+      "community": 6,
+      "community_name": "env.mjs",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "vendor_polyrl_node_sim_host_simworker",
       "source_file": "",
       "type": "external"
     },
@@ -5564,7 +6363,7 @@
       "label": "vendor_polyrl_node_track_codec",
       "_origin": "semantic",
       "community": 6,
-      "community_name": "track.mjs",
+      "community_name": "env.mjs",
       "external": true,
       "file_type": "concept",
       "norm_label": "vendor_polyrl_node_track_codec",
@@ -5576,22 +6375,10 @@
       "label": "vendor_polyrl_node_track_codec_decodebits",
       "_origin": "semantic",
       "community": 6,
-      "community_name": "track.mjs",
+      "community_name": "env.mjs",
       "external": true,
       "file_type": "concept",
       "norm_label": "vendor_polyrl_node_track_codec_decodebits",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "ref_node_url",
-      "label": "ref_node_url",
-      "_origin": "semantic",
-      "community": 7,
-      "community_name": "search_settings.mjs",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "ref_node_url",
       "source_file": "",
       "type": "external"
     },
@@ -6086,7 +6873,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L967",
+      "source_location": "L1011",
       "weight": 1.0
     },
     {
@@ -6098,7 +6885,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L972",
+      "source_location": "L1016",
       "weight": 1.0
     },
     {
@@ -6110,7 +6897,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L975",
+      "source_location": "L1019",
       "weight": 1.0
     },
     {
@@ -6194,7 +6981,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L856",
+      "source_location": "L900",
       "weight": 1.0
     },
     {
@@ -6206,7 +6993,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L856",
+      "source_location": "L900",
       "weight": 1.0
     },
     {
@@ -6218,7 +7005,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L857",
+      "source_location": "L901",
       "weight": 1.0
     },
     {
@@ -6230,7 +7017,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L860",
+      "source_location": "L904",
       "weight": 1.0
     },
     {
@@ -6242,7 +7029,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L861",
+      "source_location": "L905",
       "weight": 1.0
     },
     {
@@ -6254,7 +7041,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L867",
+      "source_location": "L911",
       "weight": 1.0
     },
     {
@@ -6266,7 +7053,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L884",
+      "source_location": "L928",
       "weight": 1.0
     },
     {
@@ -6278,7 +7065,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L885",
+      "source_location": "L929",
       "weight": 1.0
     },
     {
@@ -6290,7 +7077,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L887",
+      "source_location": "L931",
       "weight": 1.0
     },
     {
@@ -6331,6 +7118,18 @@
     },
     {
       "source": "rl_racing_env_racingenv_locate",
+      "target": "sim_line_nearestindex",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "rl/racing_env.mjs",
+      "source_location": "L1041",
+      "weight": 1.0
+    },
+    {
+      "source": "rl_racing_env_racingenv_locate",
       "target": "rl_racing_env_sub",
       "relation": "calls",
       "_origin": "ast",
@@ -6338,7 +7137,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1006",
+      "source_location": "L1050",
       "weight": 1.0
     },
     {
@@ -6350,19 +7149,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1008",
-      "weight": 1.0
-    },
-    {
-      "source": "rl_racing_env_racingenv_locate",
-      "target": "sim_line_nearestindex",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "rl/racing_env.mjs",
-      "source_location": "L997",
+      "source_location": "L1052",
       "weight": 1.0
     },
     {
@@ -6374,7 +7161,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1035",
+      "source_location": "L1079",
       "weight": 1.0
     },
     {
@@ -6386,7 +7173,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1035",
+      "source_location": "L1079",
       "weight": 1.0
     },
     {
@@ -6398,7 +7185,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1036",
+      "source_location": "L1080",
       "weight": 1.0
     },
     {
@@ -6410,7 +7197,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1046",
+      "source_location": "L1090",
       "weight": 1.0
     },
     {
@@ -6422,7 +7209,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1058",
+      "source_location": "L1102",
       "weight": 1.0
     },
     {
@@ -6434,7 +7221,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1107",
+      "source_location": "L1151",
       "weight": 1.0
     },
     {
@@ -6446,7 +7233,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L827",
+      "source_location": "L871",
       "weight": 1.0
     },
     {
@@ -6458,7 +7245,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L828",
+      "source_location": "L872",
       "weight": 1.0
     },
     {
@@ -6555,6 +7342,18 @@
       "context": "call",
       "source_file": "rl/racing_env.mjs",
       "source_location": "L733",
+      "weight": 1.0
+    },
+    {
+      "source": "rl_racing_env_racingenv_rewind",
+      "target": "rl_racing_env_racingenv_beginepisode",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "rl/racing_env.mjs",
+      "source_location": "L858",
       "weight": 1.0
     },
     {
@@ -6674,7 +7473,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1146",
+      "source_location": "L1190",
       "weight": 1.0
     },
     {
@@ -6686,7 +7485,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1151",
+      "source_location": "L1195",
       "weight": 1.0
     },
     {
@@ -6698,7 +7497,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1153",
+      "source_location": "L1197",
       "weight": 1.0
     },
     {
@@ -6710,7 +7509,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1175",
+      "source_location": "L1219",
       "weight": 1.0
     },
     {
@@ -6722,7 +7521,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1209",
+      "source_location": "L1253",
       "weight": 1.0
     },
     {
@@ -6734,7 +7533,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1212",
+      "source_location": "L1256",
       "weight": 1.0
     },
     {
@@ -6746,7 +7545,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1217",
+      "source_location": "L1261",
       "weight": 1.0
     },
     {
@@ -6758,7 +7557,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1242",
+      "source_location": "L1286",
       "weight": 1.0
     },
     {
@@ -6770,7 +7569,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1246",
+      "source_location": "L1290",
       "weight": 1.0
     },
     {
@@ -6783,6 +7582,42 @@
       "context": "call",
       "source_file": "rl/racing_env.mjs",
       "source_location": "L463",
+      "weight": 1.0
+    },
+    {
+      "source": "rl_rollout_child",
+      "target": "rl_racing_env_racingenv_create",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "rl/rollout_child.mjs",
+      "source_location": "L146",
+      "weight": 1.0
+    },
+    {
+      "source": "rl_rollout_child_decide",
+      "target": "rl_rollout_child_scoresfor",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "rl/rollout_child.mjs",
+      "source_location": "L114",
+      "weight": 1.0
+    },
+    {
+      "source": "rl_rollout_child_scoresfor",
+      "target": "rl_rollout_child_layertanh",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "rl/rollout_child.mjs",
+      "source_location": "L85",
       "weight": 1.0
     },
     {
@@ -7122,6 +7957,78 @@
       "weight": 1.0
     },
     {
+      "source": "scripts_search_rollout_alter",
+      "target": "scripts_search_rollout_randint",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L96",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_rollout_randint",
+      "target": "scripts_search_rollout_rng",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L78",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_rollout_variant",
+      "target": "scripts_search_rollout_randint",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L113",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_rollout_variant",
+      "target": "scripts_search_rollout_rng",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L114",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_rollout_variant",
+      "target": "scripts_search_rollout_alter",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L118",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections_save",
+      "target": "sim_recording_encoderecording",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L135",
+      "weight": 1.0
+    },
+    {
       "source": "scripts_search_settings_gaussian",
       "target": "scripts_search_settings_rng",
       "relation": "calls",
@@ -7190,7 +8097,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/set3_round2.sh",
-      "source_location": "L48",
+      "source_location": "L49",
       "weight": 1.0
     },
     {
@@ -7542,6 +8449,66 @@
       "weight": 1.0
     },
     {
+      "source": "sim_section_child_drive",
+      "target": "sim_sectional_nextflipafter",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "sim/section_child.mjs",
+      "source_location": "L68",
+      "weight": 1.0
+    },
+    {
+      "source": "sim_section_child_drive",
+      "target": "sim_sectional_controlsat",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "sim/section_child.mjs",
+      "source_location": "L69",
+      "weight": 1.0
+    },
+    {
+      "source": "sim_section_child_prepare",
+      "target": "sim_section_child_drive",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "sim/section_child.mjs",
+      "source_location": "L50",
+      "weight": 1.0
+    },
+    {
+      "source": "sim_sectional_controlsat",
+      "target": "sim_sectional_heldat",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "sim/sectional.mjs",
+      "source_location": "L43",
+      "weight": 1.0
+    },
+    {
+      "source": "sim_sectional_rejoin",
+      "target": "sim_sectional_anglebetween",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "sim/sectional.mjs",
+      "source_location": "L140",
+      "weight": 1.0
+    },
+    {
       "source": "sim_state_decodestate",
       "target": "sim_state_stateframes",
       "relation": "calls",
@@ -7818,6 +8785,54 @@
       "weight": 1.0
     },
     {
+      "source": "rl_rollout_child",
+      "target": "rl_rollout_child_decide",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "rl/rollout_child.mjs",
+      "source_location": "L113",
+      "weight": 1.0
+    },
+    {
+      "source": "rl_rollout_child",
+      "target": "rl_rollout_child_prepare",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "rl/rollout_child.mjs",
+      "source_location": "L130",
+      "weight": 1.0
+    },
+    {
+      "source": "rl_rollout_child",
+      "target": "rl_rollout_child_loadactor",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "rl/rollout_child.mjs",
+      "source_location": "L57",
+      "weight": 1.0
+    },
+    {
+      "source": "rl_rollout_child",
+      "target": "rl_rollout_child_makerng",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "rl/rollout_child.mjs",
+      "source_location": "L97",
+      "weight": 1.0
+    },
+    {
       "source": "rl_train_ppo_main",
       "target": "rl_train_ppo_main_save_checkpoint",
       "relation": "contains",
@@ -7851,6 +8866,42 @@
       "context": "call",
       "source_file": "scripts/check_path.mjs",
       "source_location": "L19",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_rollout",
+      "target": "scripts_search_rollout_consider",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L143",
+      "weight": 1.0
+    },
+    {
+      "source": "sim_section_child",
+      "target": "sim_section_child_prepare",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "sim/section_child.mjs",
+      "source_location": "L46",
+      "weight": 1.0
+    },
+    {
+      "source": "sim_section_child",
+      "target": "sim_section_child_drive",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "sim/section_child.mjs",
+      "source_location": "L65",
       "weight": 1.0
     },
     {
@@ -8007,6 +9058,42 @@
       "context": "import",
       "source_file": "rl/evaluate.py",
       "source_location": "L66",
+      "weight": 1.0
+    },
+    {
+      "source": "rl_export_actor",
+      "target": "sys",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "rl/export_actor.py",
+      "source_location": "L15",
+      "weight": 1.0
+    },
+    {
+      "source": "rl_export_actor",
+      "target": "numpy",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "rl/export_actor.py",
+      "source_location": "L18",
+      "weight": 1.0
+    },
+    {
+      "source": "rl_export_actor",
+      "target": "torch",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "rl/export_actor.py",
+      "source_location": "L19",
       "weight": 1.0
     },
     {
@@ -8511,6 +9598,30 @@
       "context": "import",
       "source_file": "rl/racing_env.mjs",
       "source_location": "L269",
+      "weight": 1.0
+    },
+    {
+      "source": "rl_rollout_child",
+      "target": "rl_racing_env_obs_size",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "rl/rollout_child.mjs",
+      "source_location": "L42",
+      "weight": 1.0
+    },
+    {
+      "source": "rl_rollout_child",
+      "target": "rl_racing_env_racingenv",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "rl/rollout_child.mjs",
+      "source_location": "L42",
       "weight": 1.0
     },
     {
@@ -9402,6 +10513,162 @@
       "weight": 1.0
     },
     {
+      "source": "scripts_search_rollout",
+      "target": "sim_pool_createpool",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L64",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_rollout",
+      "target": "sim_search_createrng",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L65",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "sim_host_bootworker",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L56",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "sim_env_loadtrack",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L57",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "sim_pool_createpool",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L58",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "sim_recording_decoderecording",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L59",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "sim_recording_encoderecording",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L59",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "sim_search_countflips",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L60",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "sim_search_createrng",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L60",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "sim_search_mutate",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L60",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "sim_sectional_rejoin",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L61",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "sim_sectional_rejoin_defaults",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L61",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "sim_sectional_splice",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L61",
+      "weight": 1.0
+    },
+    {
       "source": "scripts_search_settings",
       "target": "sim_env_env",
       "relation": "imports",
@@ -9894,6 +11161,90 @@
       "weight": 1.0
     },
     {
+      "source": "sim_section_child",
+      "target": "sim_env_env",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "sim/section_child.mjs",
+      "source_location": "L28",
+      "weight": 1.0
+    },
+    {
+      "source": "sim_section_child",
+      "target": "sim_env_loadtrack",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "sim/section_child.mjs",
+      "source_location": "L28",
+      "weight": 1.0
+    },
+    {
+      "source": "sim_section_child",
+      "target": "sim_state_decodestate",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "sim/section_child.mjs",
+      "source_location": "L29",
+      "weight": 1.0
+    },
+    {
+      "source": "sim_section_child",
+      "target": "sim_state_statefinished",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "sim/section_child.mjs",
+      "source_location": "L29",
+      "weight": 1.0
+    },
+    {
+      "source": "sim_section_child",
+      "target": "sim_sectional_controlsat",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "sim/section_child.mjs",
+      "source_location": "L30",
+      "weight": 1.0
+    },
+    {
+      "source": "sim_section_child",
+      "target": "sim_sectional_nextflipafter",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "sim/section_child.mjs",
+      "source_location": "L30",
+      "weight": 1.0
+    },
+    {
+      "source": "sim_sectional",
+      "target": "sim_recording_channels",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "sim/sectional.mjs",
+      "source_location": "L29",
+      "weight": 1.0
+    },
+    {
       "source": "sim_track",
       "target": "vendor_polyrl_node_track_codec_decodebits",
       "relation": "imports",
@@ -10059,6 +11410,18 @@
       "context": "import",
       "source_file": "rl/evaluate.py",
       "source_location": "L28",
+      "weight": 1.0
+    },
+    {
+      "source": "rl_export_actor",
+      "target": "pathlib",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "rl/export_actor.py",
+      "source_location": "L16",
       "weight": 1.0
     },
     {
@@ -10287,6 +11650,30 @@
       "context": "import",
       "source_file": "rl/racing_env.mjs",
       "source_location": "L269",
+      "weight": 1.0
+    },
+    {
+      "source": "rl_rollout_child",
+      "target": "ref_node_fs",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "rl/rollout_child.mjs",
+      "source_location": "L41",
+      "weight": 1.0
+    },
+    {
+      "source": "rl_rollout_child",
+      "target": "rl_racing_env",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "rl/rollout_child.mjs",
+      "source_location": "L42",
       "weight": 1.0
     },
     {
@@ -10926,6 +12313,138 @@
       "weight": 1.0
     },
     {
+      "source": "scripts_search_rollout",
+      "target": "ref_node_child_process",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L62",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_rollout",
+      "target": "ref_node_url",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L63",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_rollout",
+      "target": "sim_pool",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L64",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_rollout",
+      "target": "sim_search",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L65",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "ref_node_fs",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L55",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "sim_host",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L56",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "sim_env",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L57",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "sim_pool",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L58",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "sim_recording",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L59",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "sim_search",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L60",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "sim_sectional",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L61",
+      "weight": 1.0
+    },
+    {
       "source": "scripts_search_settings",
       "target": "ref_node_fs",
       "relation": "imports_from",
@@ -11463,6 +12982,54 @@
       "context": "import",
       "source_file": "sim/search.mjs",
       "source_location": "L13",
+      "weight": 1.0
+    },
+    {
+      "source": "sim_section_child",
+      "target": "sim_env",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "sim/section_child.mjs",
+      "source_location": "L28",
+      "weight": 1.0
+    },
+    {
+      "source": "sim_section_child",
+      "target": "sim_state",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "sim/section_child.mjs",
+      "source_location": "L29",
+      "weight": 1.0
+    },
+    {
+      "source": "sim_section_child",
+      "target": "sim_sectional",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "sim/section_child.mjs",
+      "source_location": "L30",
+      "weight": 1.0
+    },
+    {
+      "source": "sim_sectional",
+      "target": "sim_recording",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "sim/sectional.mjs",
+      "source_location": "L29",
       "weight": 1.0
     },
     {
@@ -12566,6 +14133,50 @@
       "weight": 1.0
     },
     {
+      "source": "rl_rollout_child",
+      "target": "rl_rollout_child_groups",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "rl/rollout_child.mjs",
+      "source_location": "L46",
+      "weight": 1.0
+    },
+    {
+      "source": "rl_rollout_child",
+      "target": "rl_rollout_child_prefix",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "rl/rollout_child.mjs",
+      "source_location": "L52",
+      "weight": 1.0
+    },
+    {
+      "source": "rl_rollout_child",
+      "target": "rl_rollout_child_layertanh",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "rl/rollout_child.mjs",
+      "source_location": "L74",
+      "weight": 1.0
+    },
+    {
+      "source": "rl_rollout_child",
+      "target": "rl_rollout_child_scoresfor",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "rl/rollout_child.mjs",
+      "source_location": "L84",
+      "weight": 1.0
+    },
+    {
       "source": "rl_smoke_test",
       "target": "rl_smoke_test_check",
       "relation": "contains",
@@ -13644,6 +15255,457 @@
       "weight": 1.0
     },
     {
+      "source": "scripts_search_rollout",
+      "target": "scripts_search_rollout_variant",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L112",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_rollout",
+      "target": "scripts_search_rollout_t0",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L160",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_rollout",
+      "target": "scripts_search_rollout_elapsed",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L161",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_rollout",
+      "target": "scripts_search_rollout_exported",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L215",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_rollout",
+      "target": "scripts_search_rollout_args",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L68",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_rollout",
+      "target": "scripts_search_rollout_name",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L69",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_rollout",
+      "target": "scripts_search_rollout_opt",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L70",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_rollout",
+      "target": "scripts_search_rollout_num",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L72",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_rollout",
+      "target": "scripts_search_rollout_passes",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L73",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_rollout",
+      "target": "scripts_search_rollout_seconds",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L73",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_rollout",
+      "target": "scripts_search_rollout_workers",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L73",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_rollout",
+      "target": "scripts_search_rollout_section",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L74",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_rollout",
+      "target": "scripts_search_rollout_step",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L74",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_rollout",
+      "target": "scripts_search_rollout_temperature",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L75",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_rollout",
+      "target": "scripts_search_rollout_rng",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L77",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_rollout",
+      "target": "scripts_search_rollout_randint",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L78",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_rollout",
+      "target": "scripts_search_rollout_all",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L88",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_rollout",
+      "target": "scripts_search_rollout_alter",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_rollout.mjs",
+      "source_location": "L94",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "scripts_search_sections_best",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L101",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "scripts_search_sections_path",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L105",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "scripts_search_sections_refreshpath",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L113",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "scripts_search_sections_outfile",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L134",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "scripts_search_sections_save",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L135",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "scripts_search_sections_t0",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L138",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "scripts_search_sections_elapsed",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L139",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "scripts_search_sections_sectionsperpass",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L142",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "scripts_search_sections_finalstring",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L214",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "scripts_search_sections_args",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L64",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "scripts_search_sections_opt",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L66",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "scripts_search_sections_seconds",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L68",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "scripts_search_sections_workers",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L69",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "scripts_search_sections_rng",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L70",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "scripts_search_sections_sectionticks",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L72",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "scripts_search_sections_stepticks",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L73",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "scripts_search_sections_passes",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L74",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "scripts_search_sections_minscore",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L75",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "scripts_search_sections_mutateoptions",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L77",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "scripts_search_sections_rejoinoptions",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L77",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "scripts_search_sections_runsdir",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L84",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "scripts_search_sections_track",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L96",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_search_sections",
+      "target": "scripts_search_sections_all",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/search_sections.mjs",
+      "source_location": "L99",
+      "weight": 1.0
+    },
+    {
       "source": "scripts_search_settings",
       "target": "scripts_search_settings_outfile",
       "relation": "contains",
@@ -14377,7 +16439,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "sim/pool.mjs",
-      "source_location": "L23",
+      "source_location": "L24",
       "weight": 1.0
     },
     {
@@ -14499,6 +16561,83 @@
       "confidence_score": 1.0,
       "source_file": "sim/search.mjs",
       "source_location": "L67",
+      "weight": 1.0
+    },
+    {
+      "source": "sim_sectional",
+      "target": "sim_sectional_rejoin",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "sim/sectional.mjs",
+      "source_location": "L125",
+      "weight": 1.0
+    },
+    {
+      "source": "sim_sectional",
+      "target": "sim_sectional_heldat",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "sim/sectional.mjs",
+      "source_location": "L34",
+      "weight": 1.0
+    },
+    {
+      "source": "sim_sectional",
+      "target": "sim_sectional_controlsat",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "sim/sectional.mjs",
+      "source_location": "L41",
+      "weight": 1.0
+    },
+    {
+      "source": "sim_sectional",
+      "target": "sim_sectional_nextflipafter",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "sim/sectional.mjs",
+      "source_location": "L48",
+      "weight": 1.0
+    },
+    {
+      "source": "sim_sectional",
+      "target": "sim_sectional_splice",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "sim/sectional.mjs",
+      "source_location": "L70",
+      "weight": 1.0
+    },
+    {
+      "source": "sim_sectional",
+      "target": "sim_sectional_anglebetween",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "sim/sectional.mjs",
+      "source_location": "L90",
+      "weight": 1.0
+    },
+    {
+      "source": "sim_sectional",
+      "target": "sim_sectional_rejoin_defaults",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "sim/sectional.mjs",
+      "source_location": "L99",
       "weight": 1.0
     },
     {
@@ -14795,7 +16934,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "scripts/set3_round2.sh",
-      "source_location": "L33",
+      "source_location": "L34",
       "weight": 1.0
     },
     {
@@ -14987,13 +17126,35 @@
     },
     {
       "source": "rl_racing_env_racingenv",
+      "target": "rl_racing_env_racingenv_restore",
+      "relation": "method",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "rl/racing_env.mjs",
+      "source_location": "L1027",
+      "weight": 1.0
+    },
+    {
+      "source": "rl_racing_env_racingenv",
+      "target": "rl_racing_env_racingenv_locate",
+      "relation": "method",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "rl/racing_env.mjs",
+      "source_location": "L1039",
+      "weight": 1.0
+    },
+    {
+      "source": "rl_racing_env_racingenv",
       "target": "rl_racing_env_racingenv_observe",
       "relation": "method",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1022",
+      "source_location": "L1066",
       "weight": 1.0
     },
     {
@@ -15004,7 +17165,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1116",
+      "source_location": "L1160",
       "weight": 1.0
     },
     {
@@ -15015,7 +17176,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1136",
+      "source_location": "L1180",
       "weight": 1.0
     },
     {
@@ -15026,7 +17187,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1232",
+      "source_location": "L1276",
       "weight": 1.0
     },
     {
@@ -15037,7 +17198,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1262",
+      "source_location": "L1306",
       "weight": 1.0
     },
     {
@@ -15048,7 +17209,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1290",
+      "source_location": "L1334",
       "weight": 1.0
     },
     {
@@ -15059,7 +17220,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L1312",
+      "source_location": "L1356",
       "weight": 1.0
     },
     {
@@ -15141,13 +17302,46 @@
     },
     {
       "source": "rl_racing_env_racingenv",
+      "target": "rl_racing_env_racingenv_mark",
+      "relation": "method",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "rl/racing_env.mjs",
+      "source_location": "L837",
+      "weight": 1.0
+    },
+    {
+      "source": "rl_racing_env_racingenv",
+      "target": "rl_racing_env_racingenv_rewind",
+      "relation": "method",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "rl/racing_env.mjs",
+      "source_location": "L849",
+      "weight": 1.0
+    },
+    {
+      "source": "rl_racing_env_racingenv",
+      "target": "rl_racing_env_racingenv_dropmark",
+      "relation": "method",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "rl/racing_env.mjs",
+      "source_location": "L862",
+      "weight": 1.0
+    },
+    {
+      "source": "rl_racing_env_racingenv",
       "target": "rl_racing_env_racingenv_replayhuman",
       "relation": "method",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L824",
+      "source_location": "L868",
       "weight": 1.0
     },
     {
@@ -15158,7 +17352,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L854",
+      "source_location": "L898",
       "weight": 1.0
     },
     {
@@ -15169,29 +17363,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "rl/racing_env.mjs",
-      "source_location": "L946",
-      "weight": 1.0
-    },
-    {
-      "source": "rl_racing_env_racingenv",
-      "target": "rl_racing_env_racingenv_restore",
-      "relation": "method",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "rl/racing_env.mjs",
-      "source_location": "L983",
-      "weight": 1.0
-    },
-    {
-      "source": "rl_racing_env_racingenv",
-      "target": "rl_racing_env_racingenv_locate",
-      "relation": "method",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "rl/racing_env.mjs",
-      "source_location": "L995",
+      "source_location": "L990",
       "weight": 1.0
     },
     {
@@ -15367,6 +17539,17 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "rl/evaluate.py",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "rl_export_actor_rationale_1",
+      "target": "rl_export_actor",
+      "relation": "rationale_for",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "rl/export_actor.py",
       "source_location": "L1",
       "weight": 1.0
     },
@@ -15833,6 +18016,30 @@
       "weight": 1.0
     },
     {
+      "source": "rl_rollout_child",
+      "target": "rl_racing_env_racingenv_mark",
+      "relation": "indirect_call",
+      "_origin": "ast",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "context": "argument",
+      "source_file": "rl/rollout_child.mjs",
+      "source_location": "L159",
+      "weight": 1.0
+    },
+    {
+      "source": "rl_rollout_child_prepare",
+      "target": "rl_racing_env_racingenv_mark",
+      "relation": "indirect_call",
+      "_origin": "ast",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "context": "argument",
+      "source_file": "rl/rollout_child.mjs",
+      "source_location": "L131",
+      "weight": 1.0
+    },
+    {
       "source": "scripts_search_timeline",
       "target": "sim_recording_encoderecording",
       "relation": "indirect_call",
@@ -15842,6 +18049,18 @@
       "context": "argument",
       "source_file": "scripts/search_timeline.mjs",
       "source_location": "L92",
+      "weight": 1.0
+    },
+    {
+      "source": "sim_section_child_drive",
+      "target": "sim_state_statefinished",
+      "relation": "indirect_call",
+      "_origin": "ast",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "context": "argument",
+      "source_file": "sim/section_child.mjs",
+      "source_location": "L74",
       "weight": 1.0
     },
     {
@@ -16158,5 +18377,5 @@
       "source_file": "rl/README.md"
     }
   ],
-  "built_at_commit": "309d7d4ea062703a17f5e5b7cdbd80e593cb6aa1"
+  "built_at_commit": "e61cb7369e7a953bf522d2c9a0e9550aba657153"
 }
