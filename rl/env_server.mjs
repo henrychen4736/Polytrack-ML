@@ -269,10 +269,19 @@ async function handle(msg) {
       return { obs: round(r.obs), reward: r.reward, terminated: r.terminated, truncated: r.truncated, info: r.info };
     }
     case 'demo': {
-      const laps = JSON.parse(readFileSync(new URL(`../data/laps/${renv.cfg.track}.json`, import.meta.url), 'utf8'));
-      if (!laps[msg.lap]) throw new Error(`no lap ${msg.lap} for ${renv.cfg.track}`);
+      // The lap to label: human lap number `lap`, or with `file` a lap from a
+      // JSON file holding { frames, recording } (path from the project root),
+      // which is how a lap found by a search becomes imitation examples.
+      let lap;
+      if (msg.file) {
+        lap = JSON.parse(readFileSync(new URL(`../${msg.file}`, import.meta.url), 'utf8'));
+      } else {
+        const laps = JSON.parse(readFileSync(new URL(`../data/laps/${renv.cfg.track}.json`, import.meta.url), 'utf8'));
+        if (!laps[msg.lap]) throw new Error(`no lap ${msg.lap} for ${renv.cfg.track}`);
+        lap = laps[msg.lap];
+      }
       if (msg.ref != null) await renv.setReference(msg.ref);
-      const demo = await renv.demo(laps[msg.lap]);
+      const demo = await renv.demo(lap);
       currentObs = null; // a rollout after this starts a fresh episode
       return { obs: b64(demo.obs), actions: b64(demo.actions), count: demo.count };
     }
