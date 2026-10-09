@@ -408,9 +408,15 @@
     "semantic_hash": ""
   },
   "scripts/train_block_specialist_from.sh": {
-    "mtime": 1791400998.201195,
-    "seen": 1791402411.294436,
-    "ast_hash": "1d313e06ca30fe1de50e95a6e515cffe",
+    "mtime": 1791425839.857466,
+    "seen": 1791444191.6532683,
+    "ast_hash": "ee18af47e0dacac4b5342d55a18e2078",
+    "semantic_hash": ""
+  },
+  "scripts/set3_round2.sh": {
+    "mtime": 1791444173.187889,
+    "seen": 1791444191.650752,
+    "ast_hash": "d911269a338ea31cbc9fe0a9c628394e",
     "semantic_hash": ""
   }
 }

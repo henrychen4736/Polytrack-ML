@@ -17,10 +17,11 @@ import { fileURLToPath } from 'node:url';
  * `childFile` picks what the children do with a request:
  *   eval_child.mjs   (default) replay a recording and score it
  *   drive_child.mjs  drive a lap with the controller under given settings
- * Both follow the same protocol: a { track } message to set up, then numbered
+ *   section_child.mjs, ../rl/rollout_child.mjs   the two sectional searches
+ * All follow the same protocol: a { track } message to set up, then numbered
  * requests answered by numbered replies.
  */
-export async function createPool(trackName, size, childFile = 'eval_child.mjs') {
+export async function createPool(trackName, size, childFile = 'eval_child.mjs', setup = {}) {
   const CHILD = fileURLToPath(new URL(`./${childFile}`, import.meta.url));
   // Start the children and wait until each has booted its simulator.
   const children = await Promise.all(Array.from({ length: size }, () => new Promise((resolve, reject) => {
@@ -29,7 +30,8 @@ export async function createPool(trackName, size, childFile = 'eval_child.mjs') 
     const child = fork(CHILD, { stdio: ['ignore', 'inherit', 'ignore', 'ipc'] });
     child.once('error', reject);
     child.once('message', (msg) => (msg.ready ? resolve(child) : reject(new Error('child did not start'))));
-    child.send({ track: trackName });
+    // `setup`: anything else a child needs to know before it reports ready.
+    child.send({ track: trackName, ...setup });
   })));
 
   // Each request gets a number; the reply carries it back so we can match
