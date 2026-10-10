@@ -1,0 +1,12 @@
+winter4, rl/checkpoints/ppo_blkgen.best2.actor.bin: lazy lookahead, horizon 40, every 10, force 4/10, 6 samples, score reward; reference lap 19.311 s
+  seed 10: FINISHED 19.819 s; 37 replans, policy failed at 2, rescued 2, dead ends 0, backed up 0; picks {"policy":35,"sample":1,"force":1}; 21.3 s wall, 1.07x real time, 8.7x the lap's ticks
+finished 1 of 1; mean share of the line 100.0%; 1.07x real time, 8.7x the laps' ticks, 8.1k ticks per wall second
+verified: 19.819 s (human 19.311 s), saved runs/g2-4-gen_winter4.json, runs/g2-4-gen_winter4.recording.json
+desert3, rl/checkpoints/ppo_blkgen.best2.actor.bin: lazy lookahead, horizon 40, every 10, force 4/10, 6 samples, score reward; reference lap 20.302 s
+  seed 11: FINISHED 20.793 s; 44 replans, policy failed at 5, rescued 3, dead ends 2, backed up 2; picks {"policy":39,"sample":2,"force":3}; 63.6 s wall, 3.06x real time, 31.8x the lap's ticks
+finished 1 of 1; mean share of the line 100.0%; 3.06x real time, 31.8x the laps' ticks, 10.4k ticks per wall second
+verified: 20.793 s (human 20.302 s), saved runs/g2-4-gen_desert3.json, runs/g2-4-gen_desert3.recording.json
+summer3, rl/checkpoints/ppo_blkgen.best2.actor.bin: lazy lookahead, horizon 40, every 10, force 4/10, 6 samples, score reward; reference lap 20.276 s
+  seed 10: FINISHED 21.503 s; 41 replans, policy failed at 2, rescued 2, dead ends 0, backed up 0; picks {"policy":39,"sample":1,"force":1}; 22.6 s wall, 1.05x real time, 9.3x the lap's ticks
+finished 1 of 1; mean share of the line 100.0%; 1.05x real time, 9.3x the laps' ticks, 8.8k ticks per wall second
+verified: 21.503 s (human 20.276 s), saved runs/g2-4-gen_summer3.json, runs/g2-4-gen_summer3.recording.json

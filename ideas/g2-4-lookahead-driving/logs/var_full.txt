@@ -1,0 +1,4 @@
+winter4, rl/checkpoints/ppo_blkgen.best2.actor.bin: full lookahead, horizon 40, every 10, force 4, 2 samples, score reward; reference lap 19.311 s
+  seed 10: FINISHED 22.773 s; 49 replans, policy failed at 4, rescued 2, dead ends 2, backed up 1; picks {"policy":25,"sample":8,"force":16}; 168.5 s wall, 7.40x real time, 73.0x the lap's ticks
+finished 1 of 1; mean share of the line 100.0%; 7.40x real time, 73.0x the laps' ticks, 9.9k ticks per wall second
+verified: 22.773 s (human 19.311 s)

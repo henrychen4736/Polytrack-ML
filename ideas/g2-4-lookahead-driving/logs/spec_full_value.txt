@@ -1,0 +1,4 @@
+desert4, rl/checkpoints/ppo_sr1_desert4.u800.actor.bin: full lookahead, horizon 40, every 10, force , 4 samples, score value; reference lap 21.750 s
+  seed 1: FINISHED 22.042 s; 42 replans, policy failed at 0, rescued 0, dead ends 0, backed up 0; picks {"policy":21,"sample":21}; 50.2 s wall, 2.28x real time, 19.9x the lap's ticks
+finished 1 of 1; mean share of the line 100.0%; 2.28x real time, 19.9x the laps' ticks, 8.8k ticks per wall second
+verified: 22.042 s (human 21.750 s)

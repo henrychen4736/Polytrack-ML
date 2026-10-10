@@ -1,0 +1,4 @@
+desert4, rl/checkpoints/ppo_sr1_desert4.u800.actor.bin: lazy lookahead, horizon 40, every 10, force 4/10, 6 samples, score reward; reference lap 21.750 s
+  seed 1: FINISHED 22.061 s; 42 replans, policy failed at 0, rescued 0, dead ends 0, backed up 0; picks {"policy":42}; 15.8 s wall, 0.72x real time, 4.8x the lap's ticks
+finished 1 of 1; mean share of the line 100.0%; 0.72x real time, 4.8x the laps' ticks, 6.7k ticks per wall second
+verified: 22.061 s (human 21.750 s), saved runs/g2-4-spec-lazy_desert4.json, runs/g2-4-spec-lazy_desert4.recording.json

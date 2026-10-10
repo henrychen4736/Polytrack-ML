@@ -1,0 +1,8 @@
+desert4: the policy's own lap 22.061 s
+  starting from runs/rollout_desert4.json: 21.907 s
+beam 8, 2 samples + 3 alternatives per member, rank by value, 2 processes
+    22 s  decision 420: 8 members, along 1769.4..1769.8 (policy 1753.07), across 1.78..4.13, incumbent 21.907 s, 0.08 M ticks
+
+1283 candidates, 6 mid-lap rollouts (6 finished), 0.11 M ticks in 32 s (4 k ticks per second)
+21.907 s -> 21.907 s (0 ms faster; policy's own lap 22.061 s)
+verified: 21.907 s, runs/g1-4-end_desert4.json, runs/g1-4-end_desert4.recording.json

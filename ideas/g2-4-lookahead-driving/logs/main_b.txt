@@ -1,0 +1,22 @@
+desert3, rl/checkpoints/ppo_blkgen.best2.actor.bin: lazy lookahead, horizon 40, every 10, force 4/10, 6 samples, score reward; reference lap 20.302 s
+  seed 13: FINISHED 21.030 s; 43 replans, policy failed at 4, rescued 3, dead ends 1, backed up 1; picks {"policy":39,"force":1,"sample":3}; 83.7 s wall, 3.98x real time, 22.3x the lap's ticks
+finished 1 of 1; mean share of the line 100.0%; 3.98x real time, 22.3x the laps' ticks, 5.6k ticks per wall second
+verified: 21.030 s (human 20.302 s)
+summer3, rl/checkpoints/ppo_blkgen.best2.actor.bin: lazy lookahead, horizon 40, every 10, force 4/10, 6 samples, score reward; reference lap 20.276 s
+  seed 10: FINISHED 21.503 s; 41 replans, policy failed at 2, rescued 2, dead ends 0, backed up 0; picks {"policy":39,"sample":1,"force":1}; 36.6 s wall, 1.70x real time, 9.3x the lap's ticks
+  seed 11: FINISHED 21.502 s; 41 replans, policy failed at 2, rescued 2, dead ends 0, backed up 0; picks {"policy":39,"sample":1,"force":1}; 35.3 s wall, 1.64x real time, 9.3x the lap's ticks
+finished 2 of 2; mean share of the line 100.0%; 1.67x real time, 9.3x the laps' ticks, 5.5k ticks per wall second
+verified: 21.502 s (human 20.276 s)
+winter4, rl/checkpoints/ppo_blkgen.best2.actor.bin: lazy lookahead, horizon 40, every 10, force 4/10, 6 samples, score reward; reference lap 19.311 s
+  seed 10: FINISHED 19.819 s; 37 replans, policy failed at 2, rescued 2, dead ends 0, backed up 0; picks {"policy":35,"sample":1,"force":1}; 32.4 s wall, 1.63x real time, 8.7x the lap's ticks
+  seed 11: FINISHED 25.069 s; 54 replans, policy failed at 11, rescued 7, dead ends 4, backed up 4; picks {"policy":43,"sample":1,"force":10}; 147.0 s wall, 5.86x real time, 38.9x the lap's ticks
+finished 2 of 2; mean share of the line 100.0%; 4.00x real time, 25.5x the laps' ticks, 6.4k ticks per wall second
+verified: 19.819 s (human 19.311 s)
+summer3, rl/checkpoints/ppo_blkgen.best2.actor.bin: lazy lookahead, horizon 40, every 10, force 4/10, 6 samples, score reward; reference lap 20.276 s
+  seed 14: FINISHED 21.502 s; 41 replans, policy failed at 2, rescued 2, dead ends 0, backed up 0; picks {"policy":39,"sample":1,"force":1}; 27.6 s wall, 1.28x real time, 9.3x the lap's ticks
+finished 1 of 1; mean share of the line 100.0%; 1.28x real time, 9.3x the laps' ticks, 7.2k ticks per wall second
+verified: 21.502 s (human 20.276 s)
+desert3, rl/checkpoints/ppo_blkgen.best2.actor.bin: lazy lookahead, horizon 40, every 10, force 4/10, 6 samples, score reward; reference lap 20.302 s
+  seed 15: FINISHED 21.233 s; 40 replans, policy failed at 7, rescued 7, dead ends 0, backed up 0; picks {"policy":33,"sample":5,"force":2}; 58.3 s wall, 2.75x real time, 17.8x the lap's ticks
+finished 1 of 1; mean share of the line 100.0%; 2.75x real time, 17.8x the laps' ticks, 6.5k ticks per wall second
+verified: 21.233 s (human 20.302 s)

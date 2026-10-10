@@ -1,0 +1,15 @@
+import { openBlockEnv, fromStart, roll } from '../../shared/block_rollout.mjs';
+import { loadPolicy } from '../../shared/policy.mjs';
+const t = () => performance.now();
+let a = t();
+const renv = await openBlockEnv('desert4'); console.log('open', (t() - a).toFixed(0)); a = t();
+const policy = loadPolicy('rl/checkpoints/ppo_sr1_desert4.u800.actor.bin');
+let obs = await fromStart(renv); console.log('fromStart', (t() - a).toFixed(0)); a = t();
+let r = await roll(renv, obs, { policy, horizon: 100 }); console.log('100 decisions', (t() - a).toFixed(0)); a = t();
+const marks = []; for (let i = 0; i < 50; i++) marks.push(await renv.mark()); console.log('50 marks', (t() - a).toFixed(0), marks[0].handle.bytes); a = t();
+for (let i = 0; i < 50; i++) await renv.rewind(marks[i]); console.log('50 rewinds', (t() - a).toFixed(0)); a = t();
+for (let i = 0; i < 50; i++) { await renv.rewind(marks[0]); await renv.stepBlock(policy.decide(r.obs)); } console.log('50 rewind+step', (t() - a).toFixed(0)); a = t();
+for (let i = 0; i < 50; i++) { await renv.rewind(marks[0]); await renv.stepBlock(policy.decide(r.obs)); marks.push(await renv.mark()); } console.log('50 rewind+step+mark', (t() - a).toFixed(0)); a = t();
+for (let i = 0; i < 50; i++) renv._observe(); console.log('50 observe', (t() - a).toFixed(0)); a = t();
+await renv.rewind(marks[0]); r = await roll(renv, r.obs, { policy, horizon: 100000 }); console.log('to finish', r.finishFrames, (t() - a).toFixed(0));
+await renv.env.close?.(); process.exit(0);

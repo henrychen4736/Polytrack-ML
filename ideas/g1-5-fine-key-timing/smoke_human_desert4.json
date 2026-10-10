@@ -1,0 +1,99 @@
+{
+ "track": "desert4",
+ "input": "human:0",
+ "inputFrames": 21750,
+ "frames": 21722,
+ "verified": true,
+ "window": 10,
+ "moves": [
+  "nudge",
+  "shift"
+ ],
+ "order": "back",
+ "workers": 2,
+ "seconds": 93.6436605,
+ "drives": 1174,
+ "accepted": [
+  {
+   "pass": 1,
+   "key": "left",
+   "tick": 21194,
+   "move": "shift",
+   "d": -10,
+   "before": 21750,
+   "after": 21749
+  },
+  {
+   "pass": 1,
+   "key": "left",
+   "tick": 21120,
+   "move": "nudge",
+   "d": -10,
+   "before": 21749,
+   "after": 21748
+  },
+  {
+   "pass": 1,
+   "key": "left",
+   "tick": 21053,
+   "move": "nudge",
+   "d": 9,
+   "before": 21748,
+   "after": 21747
+  },
+  {
+   "pass": 1,
+   "key": "left",
+   "tick": 19204,
+   "move": "shift",
+   "d": -10,
+   "before": 21747,
+   "after": 21746
+  },
+  {
+   "pass": 1,
+   "key": "left",
+   "tick": 19103,
+   "move": "shift",
+   "d": -10,
+   "before": 21746,
+   "after": 21745
+  },
+  {
+   "pass": 1,
+   "key": "left",
+   "tick": 19042,
+   "move": "shift",
+   "d": -10,
+   "before": 21745,
+   "after": 21744
+  },
+  {
+   "pass": 1,
+   "key": "left",
+   "tick": 18986,
+   "move": "shift",
+   "d": -7,
+   "before": 21744,
+   "after": 21743
+  },
+  {
+   "pass": 1,
+   "key": "right",
+   "tick": 18638,
+   "move": "shift",
+   "d": -10,
+   "before": 21743,
+   "after": 21723
+  },
+  {
+   "pass": 1,
+   "key": "right",
+   "tick": 18335,
+   "move": "shift",
+   "d": 7,
+   "before": 21723,
+   "after": 21722
+  }
+ ]
+}
