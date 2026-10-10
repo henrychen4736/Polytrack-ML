@@ -2694,9 +2694,9 @@
     "semantic_hash": ""
   },
   "ideas/README.md": {
-    "mtime": 1791627779.0284958,
-    "seen": 1791627834.3645854,
-    "ast_hash": "38f29b40b27796e2d2d26cb73c1bf8fc",
+    "mtime": 1791638864.3664577,
+    "seen": 1791638878.676141,
+    "ast_hash": "abcf78d495b511c7141e704f9f4f5fc4",
     "semantic_hash": ""
   },
   "ideas/g1-1-human-seed-search/tests/TESTING.md": {
@@ -2787,6 +2787,54 @@
     "mtime": 1791627779.0284958,
     "seen": 1791627834.3705847,
     "ast_hash": "be32fbcf3baa3687360f5ea60fb04b8b",
+    "semantic_hash": ""
+  },
+  "ideas/g1-1-human-seed-search/out/g1-1-full2_desert4.recording.json": {
+    "mtime": 1791632823.8383534,
+    "seen": 1791638878.602004,
+    "ast_hash": "5ffd0bc4456fbfbd637556c9992c4553",
+    "semantic_hash": ""
+  },
+  "ideas/g1-1-human-seed-search/out/g1-1-full2_summer1.recording.json": {
+    "mtime": 1791635845.511748,
+    "seen": 1791638878.602004,
+    "ast_hash": "4b4c795042084b9c5e52f06994c0272d",
+    "semantic_hash": ""
+  },
+  "ideas/g1-1-human-seed-search/out/g1-1-full2_summer4.recording.json": {
+    "mtime": 1791636971.0183156,
+    "seen": 1791638878.602004,
+    "ast_hash": "9c88c686e128812b6bb32b1f49a124e0",
+    "semantic_hash": ""
+  },
+  "ideas/g1-1-human-seed-search/out/g1-1-full2_winter2.recording.json": {
+    "mtime": 1791634461.2894294,
+    "seen": 1791638878.602004,
+    "ast_hash": "4610b1d84b4e05be83415be30bb97100",
+    "semantic_hash": ""
+  },
+  "ideas/g1-1-human-seed-search/out/g1-1-full_desert4.recording.json": {
+    "mtime": 1791628139.5737343,
+    "seen": 1791638878.602004,
+    "ast_hash": "b5190d7c74f2834e1ef4d4d572f4e7cd",
+    "semantic_hash": ""
+  },
+  "ideas/g1-1-human-seed-search/out/g1-1-full_summer1.recording.json": {
+    "mtime": 1791630897.315673,
+    "seen": 1791638878.602004,
+    "ast_hash": "efc2e444a0db7fa4c462b898ce410172",
+    "semantic_hash": ""
+  },
+  "ideas/g1-1-human-seed-search/out/g1-1-full_summer4.recording.json": {
+    "mtime": 1791632018.7810676,
+    "seen": 1791638878.602004,
+    "ast_hash": "ddd180de16c72f9ecc7d32a29574c842",
+    "semantic_hash": ""
+  },
+  "ideas/g1-1-human-seed-search/out/g1-1-full_winter2.recording.json": {
+    "mtime": 1791629710.2913022,
+    "seen": 1791638878.602004,
+    "ast_hash": "891d3d55f9a16af00104dbf0e1675a45",
     "semantic_hash": ""
   }
 }
