@@ -1,0 +1,106 @@
+
+== test_logic.mjs (0 s) ==
+PASS the grid is as the README says: cells of 20 units by 2, 4 side cells each way, an offer every 5 decisions, a frontier move is more than 5 units
+PASS cellKey: 17 hand-worked positions land in the right cell
+PASS cellKey: a car 4 units left of the line is a different cell from the line's own, and shares one with a car 3.2 units left 19 units on
+PASS offer: an empty cell takes the state, with a save state and zero tries
+PASS offer: the cell holds its own copy of the decisions (later decisions of the attempt do not leak in)
+PASS offer: a later arrival in the same cell is not kept (and no save state is taken for it)
+PASS offer: an arrival on the same tick does not replace the cell
+PASS offer: an arrival one tick sooner replaces it, and the old save state is dropped
+PASS offer: one unit further left is a cell of its own, however late
+PASS offer: a save state of an earlier car is not dropped on the new car
+PASS backMin defaults to 0.5 s
+PASS chooseCell: an empty archive gives the start line (null)
+PASS chooseCell: only cells 0.5 to 1.5 s behind the frontier, picked with weight 1 / (1 + tries) (boundaries at 1/1.75 and 1.5/1.75)
+PASS chooseCell: over evenly spread draws the shares are 4 : 2 : 1 (4000, 2000, 1000)
+PASS chooseCell: a shorter window (0.6 s) leaves only the nearest cell
+PASS chooseCell: a window with no cell in it gives the start line
+PASS chooseCell: cells that keep failing give way to an untried neighbour
+PASS the level is floor(attempts without a new frontier / 4), going round the levels 1.5, 3, 5 s (checked against the logs below)
+PASS analyze: finished runs and mean furthest point by budget match the hand-worked table (a lap finished at 10.01 laps does not count within 10)
+PASS analyze: restarts are counted in the right "seconds behind the frontier" row (1.5 s in the first, 1.51 s in the second), start-line attempts left out
+PASS analyze: the tables by kind and by sideways position of the starting cell are right
+PASS README table, winter4 explore: 8 runs, finished 0 0 3 3 7 8, furthest 36 36 75 79 96 100 % is what the logs give
+PASS README table, winter4 plain: 8 runs, finished 0 0 0 0 0 0, furthest 36 52 67 67 67 67 % is what the logs give
+PASS README table, desert3 explore: 5 runs, finished 0 1 3 4 5 5, furthest 31 48 86 91 100 100 % is what the logs give
+PASS README table, desert3 plain: 5 runs, finished 0 0 2 2 2 3, furthest 18 44 88 88 90 94 % is what the logs give
+PASS README table, summer3 explore: 5 runs, finished 0 5 5 5 5 5, furthest 66 100 100 100 100 100 % is what the logs give
+PASS README table, summer3 plain: 5 runs, finished 0 2 4 5 5 5, furthest 66 80 93 100 100 100 % is what the logs give
+PASS README: winter4 explore found a lap after 2.7 to 9.4 laps (median 5.5), 9 to 62 attempts (logs: 2.664 to 9.368, median 5.51, 9 to 62)
+PASS README: winter4 laps of 19.920 to 25.539 s (logs: 19920 to 25539)
+PASS README: desert3 laps 20.976 to 25.781 s, summer3 21.678 to 21.749 s
+PASS README: winter4 plain, 0 of 8 runs finished, all stopped at 66.7 to 67.2% (logs: 66.82 to 67.20%)
+PASS README: "about 105" plain attempts on winter4 in all (logs: 107)
+PASS every finished lap in the logs (52) is marked as verified, with its two files
+PASS winter4: explore and plain used the same seeds (1,2,3,4,5,6,7,8), the same policy file and the same unit of budget
+PASS winter4: no unfinished run stopped before 10 laps of simulated time (the wall-clock limit never cut one short)
+PASS winter4: attempt 1 is the same top-choice attempt in both modes
+PASS desert3: explore and plain used the same seeds (1,2,3,4,5), the same policy file and the same unit of budget
+PASS desert3: no unfinished run stopped before 10 laps of simulated time (the wall-clock limit never cut one short)
+PASS desert3: attempt 1 is the same top-choice attempt in both modes
+PASS summer3: explore and plain used the same seeds (1,2,3,4,5), the same policy file and the same unit of budget
+PASS summer3: no unfinished run stopped before 10 laps of simulated time (the wall-clock limit never cut one short)
+PASS summer3: attempt 1 is the same top-choice attempt in both modes
+PASS plain mode (20 logs): every attempt starts on the line and is charged its own driven ticks, rounded up to a whole decision
+PASS explore logs with the final settings (26 runs, 510 restarts): levels, restart windows (0.5 s to 1.5 / 3 / 5 s behind the frontier), frontier and "moved" all follow the stated rules
+PASS finetune_plan.sh runs nothing: no training log and no g2-3-adapt checkpoint appear
+PASS finetune_plan.sh: every option in the printed commands is one the target script defines
+PASS finetune_plan.sh: training writes to a g2-3- checkpoint (a copy), never to the generalist's own file
+
+== test_sim.mjs (118 s) ==
+     g2-3-test-e1: 11 attempts, 2.848 laps, finished 19920, 11 s wall
+     g2-3-test-p1: 13 attempts, 10.867 laps, stopped at 66.9%, 20 s wall
+     g2-3-test-e1b: 11 attempts, 2.848 laps, finished 19920, 11 s wall
+     g2-3-test-e1c: 11 attempts, 5.101 laps, finished 19920, 15 s wall
+     g2-3-test-e2: 62 attempts, 9.368 laps, finished 25539, 20 s wall
+     g2-3-test-p2: 13 attempts, 10.75 laps, stopped at 66.9%, 18 s wall
+PASS all six runs of explore.mjs exited with code 0 and wrote their logs
+PASS explore, seed 1, twice: the same run, attempt for attempt (kind, start, end, tick, cost)
+PASS explore, seed 1, twice: the same lap to the tick (19920)
+PASS another seed gives another run
+PASS g2-3-test-e1: reports a finished, verified lap of 19920 ticks and saved it
+PASS g2-3-test-e1: the saved lap is, key for key, the simulator's actual history after all its rewinds (10 rewinds, 399 decisions)
+PASS g2-3-test-e1: both saved files state 19920 ticks and hold the same lap
+PASS g2-3-test-e1: the saved lap played from the start line on the bare simulator finishes on tick 19920; Verify passes there and rejects 19919
+PASS g2-3-test-e1c: reports a finished, verified lap of 19920 ticks and saved it
+PASS g2-3-test-e1c: the saved lap is, key for key, the simulator's actual history after all its rewinds (5 rewinds, 399 decisions)
+PASS g2-3-test-e1c: both saved files state 19920 ticks and hold the same lap
+PASS g2-3-test-e1c: the saved lap played from the start line on the bare simulator finishes on tick 19920; Verify passes there and rejects 19919
+PASS g2-3-test-e2: reports a finished, verified lap of 25539 ticks and saved it
+PASS g2-3-test-e2: the saved lap is, key for key, the simulator's actual history after all its rewinds (61 rewinds, 511 decisions)
+PASS g2-3-test-e2: both saved files state 25539 ticks and hold the same lap
+PASS g2-3-test-e2: the saved lap played from the start line on the bare simulator finishes on tick 25539; Verify passes there and rejects 25538
+PASS README table, winter4: all 8 saved laps of the explore runs finish on the tick their log states and pass Verify
+PASS README table, desert3: all 5 saved laps of the explore runs finish on the tick their log states and pass Verify
+PASS README table, summer3: all 5 saved laps of the explore runs finish on the tick their log states and pass Verify
+PASS g2-3-test-e1: reported cost 2.848 laps = 1100 decisions x 50 ticks; really stepped 54700 ticks = 2.833 laps (short by under one decision per attempt)
+PASS g2-3-test-e1: 11 attempts logged, 11 episodes ended in the simulator
+PASS g2-3-test-p1: reported cost 10.867 laps = 4197 decisions x 50 ticks; really stepped 209600 ticks = 10.854 laps (short by under one decision per attempt)
+PASS g2-3-test-p1: 13 attempts logged, 13 episodes ended in the simulator
+PASS g2-3-test-e1b: reported cost 2.848 laps = 1100 decisions x 50 ticks; really stepped 54700 ticks = 2.833 laps (short by under one decision per attempt)
+PASS g2-3-test-e1b: 11 attempts logged, 11 episodes ended in the simulator
+PASS g2-3-test-e1c: reported cost 5.101 laps = 1970 decisions x 50 ticks; really stepped 98200 ticks = 5.085 laps (short by under one decision per attempt)
+PASS g2-3-test-e1c: 11 attempts logged, 11 episodes ended in the simulator
+PASS g2-3-test-e2: reported cost 9.368 laps = 3618 decisions x 50 ticks; really stepped 179570 ticks = 9.299 laps (short by under one decision per attempt)
+PASS g2-3-test-e2: 62 attempts logged, 62 episodes ended in the simulator
+PASS g2-3-test-p2: reported cost 10.75 laps = 4152 decisions x 50 ticks; really stepped 207250 ticks = 10.732 laps (short by under one decision per attempt)
+PASS g2-3-test-p2: 13 attempts logged, 13 episodes ended in the simulator
+PASS fresh car: a second car was built after attempt 3 (2 cars)
+PASS fresh car: every attempt starts and ends as it did on one car, and the lap found is the same
+PASS fresh car: the replays are charged to the budget (5.101 laps against 2.848)
+PASS g2-3-test-p1: every attempt starts on the line, no save state is taken or restored
+PASS seed 1: attempt 1 is the same top-choice attempt in both modes (ends at tick 13111, 36.4%)
+PASS seed 1: plain samples the same policy with the same seed, and its budget is in the same unit
+PASS seed 1: plain ran its whole budget (10.867 laps), neither run was ended by the wall-clock limit
+PASS g2-3-test-p2: every attempt starts on the line, no save state is taken or restored
+PASS seed 2: attempt 1 is the same top-choice attempt in both modes (ends at tick 13111, 36.4%)
+PASS seed 2: plain samples the same policy with the same seed, and its budget is in the same unit
+PASS seed 2: plain ran its whole budget (10.75 laps), neither run was ended by the wall-clock limit
+PASS README: explore finishes winter4 inside 10 laps of simulated time (seed 1 after 2.848, seed 2 after 9.368)
+PASS README: plain attempts do not finish and stop near 67% (seed 1 at 66.9%, seed 2 at 66.9%, 13 and 13 attempts)
+PASS README smoke test: seed 1 finishes on attempt 11 after 2.85 laps in 19.920 s (got attempt 11, 2.848, 19920)
+PASS README: seed 2 is the slowest search, 62 attempts, 9.4 laps, 25.539 s (got 62, 9.368, 25539)
+PASS the archive holds more than one line of cells (93 and 127 cells)
+
+94 passed, 0 failed, 118 s

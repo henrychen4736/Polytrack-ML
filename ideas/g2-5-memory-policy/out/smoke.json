@@ -1,0 +1,37 @@
+{
+ "track": "desert3",
+ "rows": 239,
+ "row": 513,
+ "obsSize": 482,
+ "baseObsSize": 352,
+ "memSize": 130,
+ "scores": 22,
+ "report": [
+  {
+   "session": 1,
+   "attempt": 1,
+   "reason": "off track",
+   "finished": false,
+   "seconds": null,
+   "lapShare": 0.0785,
+   "crashAt": 118,
+   "doomedBins": 57,
+   "passBins": 3,
+   "memoryPeak": 0,
+   "crashAheadPeak": 0
+  },
+  {
+   "session": 1,
+   "attempt": 2,
+   "reason": "stalled",
+   "finished": false,
+   "seconds": null,
+   "lapShare": 0.1771,
+   "crashAt": 268,
+   "doomedBins": 93,
+   "passBins": 42,
+   "memoryPeak": 1.195,
+   "crashAheadPeak": 0.333
+  }
+ ]
+}

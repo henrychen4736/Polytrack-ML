@@ -1,0 +1,154 @@
+
+== test_track_memory.mjs (0 s) ==
+PASS constants: bins of 2 units, 3 s doom window, 21 stretches x 6 + 4 globals = 130 inputs
+PASS bin count is ceil(length / 2) + 1
+PASS bin(): [0, 2) is bin 0, 2 opens bin 1, past the end and before the start are clamped
+PASS crash at 40 units: commit reports crash bin 20, 21 doomed bins, no proven pass
+PASS crash at 40 units: one crash, in bin 20 and nowhere else
+PASS bins 0..20 visited once, nothing beyond
+PASS each bin takes the speed and lateral offset of the first sample that reached it
+PASS no surviving speed anywhere; 1 attempt, 0 finishes, furthest 40
+PASS a crash at 39.99 units is in bin 19, at 40 in bin 20
+PASS boundary: 2 proven bins, 3 doomed, crash in bin 4
+PASS boundary: a sample 3001 ms before the stop is a pass, one exactly 3000 ms before it is doomed
+PASS the pass keeps its lap clock and lateral offset, the doomed pass its lateral offset
+PASS stalled: 2 s of standing still after the stop do not move the doom window
+PASS a car that slid back after the impact: crash in the bin of the furthest point, and the bins it slid through are not counted again
+PASS time limit: bins of the last 3 s are visited only, nothing doomed, no crash
+PASS finished: every bin driven is a proven pass; one finish with its lap time
+PASS the fastest lap time is kept; attempts and visits add up
+PASS a faster finish replaces the lap time
+PASS an empty trace changes nothing
+PASS pass: the highest surviving speed is kept, with the lateral offset and clock of that attempt
+PASS fail: the lowest doomed speed is kept, with its lateral offset; the pass is untouched; 3 crashes
+PASS a doomed pass at a standstill is stored as 1 km/h, not as "none known"
+PASS a start at 10 units does not count the road before it as driven
+PASS stretch over bins 10..12: most visits, summed crashes, highest pass and lowest fail with their own lateral offsets, clipped
+PASS every other stretch is exactly zero (also where the output array held something before)
+PASS a stretch ends where the next begins: bin 12 is read by the second stretch only
+PASS edges between bin borders: the same split
+PASS visits read n / 4 and crashes n / 3 below their caps; unknown speeds read 0
+PASS features() writes at the given offset and leaves the 352 numbers before it alone
+PASS a single crash in any of the bins 50..116 ahead shows in exactly one stretch, and bins outside show in none
+PASS stretches beyond the end of the track are all zero
+PASS globals: 3 attempts = 0.375, no finish, 2 s behind the best pass = +1, 100 units known ahead = 1
+PASS ahead of the best pass is negative; clipped to +-3
+PASS in a bin with no surviving pass the ahead / behind input is 0
+PASS 8 attempts = 1, a finish = 1, on its best pass = 0, nothing known ahead = 0 (not negative)
+PASS attempts capped at 8, distance known ahead capped at 300 units
+PASS a memory with no attempt in it: all 130 inputs are exactly 0, at the start, mid-lap and at the end of the track
+PASS after two attempts the inputs are not zero
+PASS clear(): every array, the counters, the lap time and the furthest point are reset, and the inputs are all 0 again
+
+== test_memory_env.mjs (17 s) ==
+PASS every observation is 352 + 130 = 482 long
+PASS the first 352 numbers are exactly RacingEnv's own observation
+PASS attempt 1 (76 decisions, off track): every memory input of every observation is exactly 0, the one after the crash included
+PASS attempt 1's crash is recorded in the bin of the furthest point reached (119.5 units, bin 59)
+PASS with sessionMax 0 an attempt never ends the session
+PASS attempt 2 starts with "attempts so far" at 1/8 and "has finished" at 0
+PASS attempt 2 (163 decisions, stalled): all 130 memory inputs of every observation equal the reference (largest difference 2.5e-8)
+PASS attempt 2 sees attempt 1's crash ahead on 41 of its 164 observations
+PASS attempt 2: the first 352 numbers are still RacingEnv's own
+PASS attempts 3 and 4 count on (3/8 shown on the fourth)
+PASS attempts 3 and 4: every memory input equals the reference with two and three attempts in the map (largest difference 2.5e-8)
+PASS memory = 0: a fifth attempt of the same session sees 130 zeros in a 482-long observation
+PASS newSession(): the next attempt is attempt 1 with every memory input 0
+     attempts: 1| 1 2 3| 1| 1 2| 1| 1 2|   (| = session end); lengths drawn here: 1, 3, 1, 2, 1, 2
+PASS sessionMax 3: sessions have exactly the lengths the seed gives, and sessionEnd is set on the last attempt of each and on no other
+PASS the memory inputs are all zero at the start of attempt 1 of a session and never at the start of a later one
+PASS inside a session the attempt count and every memory input follow the reference
+PASS session lengths vary within 1..3 (1, 3, 1, 2, 1, 2)
+PASS setReference(): the next attempt is attempt 1 on a new, empty map sized for the new line
+     refLaps run: 1 2 3 4| 1 (new line) 1 2
+PASS refLaps: each of the 1 reference changes starts attempt 1 with an empty memory
+PASS refLaps: the memory is empty exactly on attempt 1, and attempts count up in between
+FAIL (known defect) refLaps: every attempt that is followed by a cleared memory was flagged sessionEnd
+       1 attempt(s) were followed by attempt 1 of a new session without info.sessionEnd (memory_env.mjs stepBlock: sessionEnd looks only at attemptsLeft). With carry > 0, session_advantages would pass value across that boundary.
+
+== test_agent.py (15 s) ==
+PASS session_advantages by hand, carry 0.25, session goes on: advantages -1.625, -10.5, -7 and returns 8.375, 9.5, 23
+PASS by hand, carry 0.25, the attempt was the session's last: nothing is carried (-3.5, -18, -7)
+PASS by hand, carry 0: the same as a session end
+PASS by hand: an attempt ending on the rollout's last step is carried the value after the rollout (-17)
+PASS by hand, carry 1: the ending step gets the next attempt's first value in full (12)
+PASS session_advantages equals the slow reference on 60 x 5 random steps, carry 0.0 (largest difference 5.3e-15; 38 attempt ends, 16 session ends)
+PASS session_advantages equals the slow reference on 60 x 5 random steps, carry 0.3 (largest difference 5.3e-15; 38 attempt ends, 16 session ends)
+PASS session_advantages equals the slow reference on 60 x 5 random steps, carry 1.0 (largest difference 5.3e-15; 38 attempt ends, 16 session ends)
+PASS carry 0: identical to train_ppo.py's compute_advantages, whatever the session flags
+PASS carry 0.3: each attempt end inside a session gains exactly 0.3 x the next attempt's first value; session ends gain nothing
+PASS a session flag on a step that did not end an attempt changes nothing
+PASS the generalist checkpoint has 352 inputs and 256 hidden units; the memory adds 130
+PASS the checkpoint's own track list has 14 tracks and not desert3, summer3 or winter4 (desert1, desert2, desert4, desert5, summer1, summer2, summer4, summer5, summer6, summer7, winter1, winter2, winter3, winter5)
+PASS warm start: the first layers are the checkpoint's 352 columns, bit for bit, followed by 130 columns of zeros
+PASS warm start: every other weight and bias is the checkpoint's, bit for bit
+PASS warm start: same 22 scores and same value as the checkpoint on 4096 random inputs, memory part random too (largest differences 5.2e-06, 2.3e-05)
+PASS warm start: the top-choice decision is the same on all 4096
+PASS from_checkpoint on a missing file raises
+PASS write_actor: three layers of float32, 780376 bytes for 482 inputs
+PASS write_actor on the 352-input agent gives the same file as rl/export_actor.py did
+PASS attempts.mjs: two attempts on desert3 with the warm-started 482-input actor ran
+PASS attempts.mjs rows: 482 inputs, 6 decision numbers, reward, two flags, 22 scores
+PASS two attempts recorded, 76 and 163 decisions, the last row ends the second
+PASS the session-end flag is on the last decision of the last attempt only
+PASS attempt 1 (off track at 118 units): every memory input of every recorded observation is exactly 0
+PASS attempt 2: 'attempts so far' reads 1/8 and the crash of attempt 1 shows ahead
+PASS sabotage=60: W + left from decision 60 of attempt 1 to its end, and not before
+PASS Node and PyTorch agree on the 22 scores for all 239 recorded 482-number observations (largest difference 4.8e-06)
+PASS and both agree with the 352-input checkpoint on the first 352 numbers: the warm start drives as the generalist does
+PASS the decisions attempts.mjs drove are PyTorch's top choices for the same observations
+PASS act() on 482 inputs gives the checkpoint's log-probabilities, entropies and values (the keys-held inputs it reads are in the first 352)
+PASS node_scores.mjs ran
+PASS with random memory weights Node and PyTorch still agree on every score (largest difference 4.8e-06)
+PASS those weights change the scores on attempt 2 (by up to 1.30) and not at all on attempt 1, where the memory inputs are zero
+PASS ppo_loss equals the clipped objective + 0.5 x value error - 0.01 x entropy written out here (53.2023)
+PASS (the test case has ratios outside the clip range, so the clipping is exercised)
+PASS the zero memory weights of the warm start receive gradient (actor 2.1e-03, critic 4.6e-01)
+PASS toy_probe.py prints the README's table (tries 1, 2, 3, 5 and the sum, three drivers)
+PASS toy, no memory, by brute force: best fixed speed 0.50, score 0.359 per try, through 72%
+PASS toy, memory used for each attempt alone, by brute force: 0.359, 0.444, 0.444, 0.444, 0.444, sum 2.134
+PASS toy, best over the session, by an independent search: 2.412 over 5 attempts (README 2.412)
+PASS README: using the memory without exploring gets 55% of the possible gain (here 54.8%)
+
+== test_attempts.mjs (24 s) ==
+PASS attempts.mjs ran with memory=1 and memory=0
+     session 1 attempt 1: off track at 17.8% of the lap (progress 270 units); memory inputs during it: largest 0, crash-ahead 0
+     session 1 attempt 2: off track at 80.3% of the lap (progress 1220 units); memory inputs during it: largest 2.71, crash-ahead 0.333
+     session 1 attempt 3: off track at 18.2% of the lap (progress 276 units); memory inputs during it: largest 3, crash-ahead 0.333
+     session 1 attempt 4: stalled at 20.4% of the lap (progress 310 units); memory inputs during it: largest 3, crash-ahead 0.667
+     session 1 attempt 5: off track at 77.4% of the lap (progress 1176 units); memory inputs during it: largest 3, crash-ahead 0.667
+     session 2 attempt 1: stalled at 49.2% of the lap (progress 748 units); memory inputs during it: largest 0, crash-ahead 0
+     session 2 attempt 2: off track at 53.4% of the lap (progress 812 units); memory inputs during it: largest 3, crash-ahead 0.333
+     session 2 attempt 3: stalled at 21.3% of the lap (progress 322 units); memory inputs during it: largest 3, crash-ahead 0
+     session 2 attempt 4: off track at 18.1% of the lap (progress 276 units); memory inputs during it: largest 3, crash-ahead 0.333
+     session 2 attempt 5: stalled at 17.7% of the lap (progress 268 units); memory inputs during it: largest 3, crash-ahead 0.333
+     session 3 attempt 1: stalled at 17.7% of the lap (progress 270 units); memory inputs during it: largest 0, crash-ahead 0
+     session 3 attempt 2: off track at 17.7% of the lap (progress 268 units); memory inputs during it: largest 2.701, crash-ahead 0.333
+     session 3 attempt 3: off track at 76.1% of the lap (progress 1158 units); memory inputs during it: largest 2.701, crash-ahead 0.667
+     session 3 attempt 4: off track at 76.0% of the lap (progress 1156 units); memory inputs during it: largest 3, crash-ahead 0.667
+     session 3 attempt 5: off track at 78.0% of the lap (progress 1186 units); memory inputs during it: largest 3, crash-ahead 0.667
+     attempt 1: finished 0/3, mean share of the lap 28.2%
+     attempt 2: finished 0/3, mean share of the lap 50.5%
+     attempt 3: finished 0/3, mean share of the lap 38.5%
+     attempt 4: finished 0/3, mean share of the lap 38.2%
+     attempt 5: finished 0/3, mean share of the lap 57.7%
+     crashes after attempt 1 that ended within 20 units of an earlier crash of the same session: 4/12
+     3972 decisions in 21.5 s (185 per second)
+PASS 3 sessions of 5 attempts each are reported, in order
+PASS a 352-input policy drives the same 15 attempts whether the memory inputs are filled in or held at zero (the runs repeat, and the wrapper does not disturb the driving)
+PASS memory=1: the memory inputs are all zero during attempt 1 of every session and non-zero during every later attempt
+PASS memory=0: the memory inputs stay at zero on all 15 attempts
+PASS memory=1: an earlier crash shows ahead during most later attempts (11 of 12)
+PASS README (seed 2): 15 of 15 attempts crashed (15 crashed, 0 finished)
+PASS README (seed 2): all at three places, 268 to 322 units (8), 748 to 812 (2), 1156 to 1220 (5); got 8, 2, 5
+PASS the table by attempt number (finished n / 3, mean share of the lap) is what the 15 lines give
+PASS the crash-repeat count printed (4/12) is what the lines give (4/12)
+PASS README (seed 2): the script's own count is 4 of 12 on desert3 (got 4 of 12)
+
+== ../memory_test.mjs (the author's test) (7 s) ==
+PASS ../memory_test.mjs (the author's test) passes (21 of its own checks ok)
+
+== ../smoke_test.py (the author's test) (15 s) ==
+PASS ../smoke_test.py (the author's test) passes (16 of its own checks ok)
+
+114 passed, 1 failed (1 of the failures are known defects, see TESTING.md), 56 s

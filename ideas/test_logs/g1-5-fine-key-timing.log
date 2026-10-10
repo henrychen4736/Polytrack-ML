@@ -1,0 +1,118 @@
+
+== test_fine.mjs
+PASS MOVABLE: the four driving keys, not reset
+PASS listFlips: every flip of the four keys in order of tick, with its key and its index in that key's list; reset left out
+PASS listFlips of an empty lap: none
+PASS nudge(+7): that one flip moves 7 ticks later, nothing else
+PASS nudge(-49): may come to within one tick of the flip before it
+PASS nudge that would reach or pass the flip before it on the same key: null
+PASS nudge towards the flip after it: one tick short is fine, reaching it is null
+PASS nudge of the first flip: tick 0 is allowed, before tick 0 is null
+PASS nudge of the last flip of a key is not limited upwards
+PASS nudge by 0 is the same lap
+PASS nudge does not modify its input (the result shares no list with it)
+PASS shiftTail(from 150, -10): every flip of the four keys at or after tick 150 moves 10 earlier; flips before 150 (149!) and reset stay
+PASS shiftTail(+25): the same, later
+PASS shiftTail(-49): the first shifted flip may come to within one tick of the unshifted one before it
+PASS shiftTail that would bring a shifted flip onto an unshifted one of the same key: null
+PASS shiftTail: flips that both move keep their distance (no false refusal)
+PASS shiftTail that would move a flip before tick 0: null
+PASS shiftTail from beyond the last flip changes nothing
+PASS shiftTail(from 0): the whole lap moves
+PASS shiftTail does not modify its input
+PASS shiftTail from the last flip of the lap equals the nudge of that flip
+PASS shiftTail(-10) in per-tick keys: ticks 0..139 unchanged, and from tick 150 on the keys are the old keys of 10 ticks later
+PASS nudge and shiftTail on 400 random timelines: all 535 results have strictly increasing flips, the same number of flips, and survive timeline -> keys -> timeline
+PASS makePlane: the reference car's finish position and its unit direction of travel
+PASS subTick: a car on the plane on its finish tick scores exactly its finish tick
+PASS subTick: 0.025 units past the plane at 50 units/s is half a tick sooner (21906.5); sideways position and speed do not count
+PASS subTick: 0.01 units short of the plane is 0.2 ticks later
+PASS subTick: a lap that did not finish (or has no velocity) is Infinity
+PASS subTick: a car not moving forwards through the plane falls back to the whole tick
+PASS makePlane normalises the direction (3-4-5)
+PASS better: fewer whole ticks wins whatever the sub-tick value says
+PASS better: on the same tick the smaller sub-tick time wins; equal is not better (so with ties off, the same finish tick is never accepted)
+PASS parseArgs: bare words and key=value
+PASS parseArgs([]): nothing
+PASS smoothness data: in every row the unmoved lap (d = 0), driven from the save state, finishes on the input's own tick
+PASS README: searched lap 21907, 16 flips at d = -20..20, 58.5% of candidates lost the lap, no flip with a gain
+PASS README table: lost laps per flip of the searched lap (40, 0, 40, 40, 40, 40, 39, 39, 35, 31, 26, 4, 0, 9, 0, 0)
+PASS README: finish tick against d for flip 18581 of the searched lap
+PASS README: the same for flip 20691
+PASS README: human lap, 10 flips; the six before 12.2 s lose the lap on 19 or 20 of 20 moves, 13534 and 17103 about half
+PASS README: finish tick against d for flip 18578 of the human lap (the one slope, with a 13 ms cliff at d = -5)
+PASS README: best d of -2 (6.9 ms) at 13534 and +1 (4.4 ms) at 17103 (data: 6.85 and 4.40 ms by the sub-tick measure)
+   (test_fine.mjs: 0 s)
+
+== test_headline.mjs
+PASS runs/g1-5-smoke-human_desert4.recording.json exists
+PASS runs/g1-5-smoke-human_desert4.recording.json: says 21722 ticks on desert4 (claimed 21722)
+PASS g1-5-smoke-human desert4: replayed from the start line it finishes on tick 21722 (claimed 21722)
+PASS g1-5-smoke-human desert4: stopped at tick 21721 it has NOT finished
+PASS g1-5-smoke-human desert4: the game's Verify accepts 21722 (true) and rejects 21721 (true)
+PASS runs/g1-5-smoke-human_desert4.json: 21722 ticks and the same keys as the recording
+PASS desert4: lap 0 of data/laps replays to its stated 21750 ticks (got 21750) and is the fastest of the 10
+PASS g1-5-smoke-human desert4: 21722 is 28 ms FASTER than the best human lap (21750)
+PASS smoke_human_desert4.json: 21750 -> 21722, verified, 9 accepted changes
+PASS README: seven of the nine were tail shifts, five of them at the window edge (-10 ms)
+PASS the nine logged moves, applied to the human lap by hand with fine.mjs, give exactly the saved 21.722 s lap
+PASS every key flip before tick 17740 is the human's (only the last 4 s were re-timed)
+     g1-1's desert4 lap is also 21722 ticks; it is a different lap (different key timings), so the equal time is a coincidence
+PASS smoke_desert4.json: searched lap 21907 -> 21907, no accepted change in 821 drives (README: 820 candidates + the input)
+PASS runs/g1-5-smoke_desert4 is the input lap key for key ("Verify PASS (the input, unchanged)")
+PASS it replays to tick 21907; Verify accepts 21907 and rejects 21906
+   (test_headline.mjs: 6 s)
+
+== test_child.mjs
+PASS prepare(lap, 0): one reply per worker, tick 0
+PASS try from the start line: finishes on 21750, no contact, no samples asked for
+PASS the reply carries the car's position and velocity on the finish tick (508 km/h)
+PASS prepare(lap, 18000): the car is put at tick 18000
+PASS try from the save state at 18000: the same finish tick, and twice gives the identical reply
+PASS and the car is in the identical place on the finish tick as when driven from the start line
+PASS try with maxFrames one tick short of the finish: not finished
+PASS try with maxFrames exactly the finish tick: finished
+PASS sims.tries counts the timelines tried (5 so far)
+PASS samples: one report per requested tick on the way; a tick beyond maxFrames is skipped
+PASS and the sampled positions are exactly the car's positions on those ticks in a plain replay
+PASS each sample has a quaternion and a velocity
+PASS samples at or before the prepared tick are skipped
+PASS flip left at 21194 moved by -10, -6, -3, -1, 1, 3, 6, 10: finish ticks from the save state = finish ticks replayed from the start line
+     those finish ticks, minus 21750: 0, 0, 0, 0, 0, 0, 0, 1
+PASS and the moves really change the finish tick (the comparison is not of eight equal numbers)
+PASS tryAll with several timelines on one worker returns the results in order
+     changed lap: left flip at 9026 moved by 5; replayed from the start line it does not finish within 300 ticks of the human time
+PASS found an early key change that alters the outcome of the lap (needed for the next checks)
+PASS prepare(changed lap, 17000) after the ladder was built with the unchanged lap: the try gives the changed lap's own result, not the old lap's
+PASS and back to the unchanged lap: its own result again (21750)
+PASS a 30 ms brake tap starting on tick 16500 (exactly a ladder tick): same result as from the start line (21777)
+PASS a 30 ms brake tap starting on tick 16499 (one tick before a ladder tick): same result as from the start line (21781)
+PASS prepare at 20000 and then at 12345 (a tick that is not a ladder tick): the try from 12345 finishes on 21750
+PASS child.mjs reads sim.keys only to ask "has a car been made yet"; the laps it scores come from the parent's timeline, so wrong CONTENT in sim.keys after load() could not change a result
+   (test_child.mjs: 19 s)
+
+== test_scripts.mjs
+PASS refine.mjs with no lap: exit code 1 (want 1) and a usage line
+PASS refine.mjs on a lap that does not finish: exit code 1 (want 1) and it says so
+PASS and nothing is written to runs/
+PASS refine.mjs human:0 from=21000 window=10 passes=1: exit code 0; the input is driven and finishes on 21750 (14 s)
+PASS it reports PASS Verify (tick 21747) and wrote the two runs/ files and the log
+PASS the recording file, the log and the printed line agree on the result
+PASS the result (21747) is not slower than the input (21750)
+PASS the 3 accepted changes form a chain from 21750 down to 21747, each strictly faster than the one before
+PASS the logged moves, applied to the human lap by hand, give exactly the saved lap
+PASS deterministic: the changes accepted here are the README log's own changes at flips after 21.0 s (left@21194 shift -10 -> 21749; left@21120 nudge -10 -> 21748; left@21053 nudge 9 -> 21747)
+PASS independently: the saved lap replays from the start line to tick 21747; Verify accepts 21747 and rejects 21746
+PASS smoothness.mjs with no lap: exit code 1 (want 1) and a usage line
+PASS smoothness.mjs on a lap that does not finish: exit code 1 (want 1)
+PASS smoothness.mjs human:0 flips=2 window=3 from=21000: exit code 0, output file written (3 s)
+PASS the file: track, the input's finish tick, 2 flips, window 3
+PASS each flip was moved by every d from -3 to 3
+PASS d = 0 (the lap unmoved, from the save state) finishes on the input's tick in every row
+PASS `lost` counts the points without a finish tick; the best gain is never negative (d = 0 is among the points)
+PASS the two sampled flips are different flips (first and last in range)
+PASS smoothness.mjs flips=1: exit code 0 (want 0), one flip measured
+     refine.mjs writes its lap even when nothing was gained (then it is the input lap); this run gained, so that case is not exercised here
+   (test_scripts.mjs: 30 s)
+
+100 passed, 0 failed, 55 s

@@ -1,0 +1,12 @@
+desert4: the policy's own lap 22.061 s
+beam 8, 2 samples + 3 alternatives per member, rank by progress, 2 processes
+    33 s  7.00 s into the lap: 22.048 s  (-13 ms)
+    33 s  decision 140: 8 members, along 289.2..289.2 (policy 289.19), across -1.20..-0.65, incumbent 22.048 s, 0.09 M ticks
+    47 s  8.00 s into the lap: 22.013 s  (-35 ms)
+    47 s  decision 160: 8 members, along 367.2..367.6 (policy 367.21), across 0.08..1.14, incumbent 22.013 s, 0.13 M ticks
+stopped at decision 160 (8.00 s): the beam is at 367.2..367.6 units, the policy's own lap was at 367.21
+  4 of 7 members finish when the policy drives on: best 22.033 s, mean 22.053 s, worst 22.073 s
+
+1324 candidates, 4 mid-lap rollouts (3 finished), 0.20 M ticks in 63 s (3 k ticks per second)
+22.061 s -> 22.013 s (48 ms faster; policy's own lap 22.061 s)
+verified: 22.013 s, runs/g1-4-smoke_desert4.json, runs/g1-4-smoke_desert4.recording.json

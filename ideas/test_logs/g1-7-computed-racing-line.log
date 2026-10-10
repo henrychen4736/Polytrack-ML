@@ -1,0 +1,258 @@
+
+=== test_1_raceline.mjs
+PASS curvature: a straight line has curvature exactly 0 at every point
+PASS curvature: circle of radius 100 turning left gives +1/R within 0.1% | got 0.010003, expected 0.010000
+PASS curvature: radius 100 circle is uniform away from the ends | largest difference 1.32e-15
+PASS curvature: circle of radius 100 turning right gives -1/R within 0.1% | got -0.010003, expected -0.010000
+PASS curvature: radius 100 circle is uniform away from the ends | largest difference 1.32e-15
+PASS curvature: circle of radius 240 turning left gives +1/R within 0.1% | got 0.004167, expected 0.004167
+PASS curvature: radius 240 circle is uniform away from the ends | largest difference 2.37e-15
+PASS curvature: circle of radius 25 turning left gives +1/R within 1% | got 0.040171, expected 0.040000
+PASS curvature: radius 25 circle is uniform away from the ends | largest difference 1.53e-16
+PASS curvature: points 1..7 of a circle (short window before) still give 1/R within 1% | k[1]=0.01000 k[4]=0.01000
+PASS curvature: first and last point report 0 (no neighbour on one side)
+PASS curvature: a crest (bend in the vertical plane) counts as 0
+PASS curvature: circle on a 30-degree banked plane, with the plane normal as up, still gives +1/R | got 0.010003
+PASS curvature: the sign follows the up vector (up reversed gives -1/R)
+PASS curvature: straight-arc-straight is 0 on the straights and 1/50 in the arc | straight 0, arc 0.02002
+PASS curvature: the corner entry is smeared over exactly the 8-point window | k[91]=0 k[93]=0.00016 k[108]=0.02002
+PASS shiftedPoints: point + left * shift, worked by hand for three points | [[2,0,0],[0,0,4],[8,2,6]]
+PASS left = up x forward is +x for up = +y, forward = +z (car frame x = left)
+PASS profile: straight at constant acceleration follows v^2 = v0^2 + 2 a s at every point | largest error 7.11e-14 units/s
+PASS profile: straight lap time is (v_end - v0) / a = 12.28286 s | got 12.282857
+PASS profile: length of a 500-unit straight is 500
+PASS profile: time[] starts at 0, rises strictly, ends at seconds
+PASS profile: a standing start begins at the 0.1 units/s floor and reaches sqrt(0.01 + 2 a s) | v[500]=70.7107
+PASS profile: speed on a straight never exceeds the car's top speed | max 40
+PASS profile: rolling down a 10% slope gains v^2 = 2 g h (gravity along the road, downhill speeds up) | v^2 = 386.000, expected 386.000
+PASS profile: climbing the same slope loses the same v^2 | v^2 = 9714.000
+PASS profile: in a constant-radius corner the speed equals the car's limit for that radius (20 units/s for R = 50) | got 19.9787
+PASS profile: that speed is held all the way round once reached
+PASS profile: limit[] in the corner is speedFor(curvature)
+PASS profile: share is 1 while cornering at the limit | share 1.000000
+PASS profile: the default tolerance (0.03) lets the car go exactly 3% over the limit here (c/v model) | ratio 1.03000
+PASS profile: braking point before the corner is where the hand calculation puts it (s = 243, +-7 for the curvature window) | braking starts at s = 247, top speed there 70.99 (hand: 70.4)
+PASS profile: before the braking point it is flat out (v^2 = 100 + 20 s)
+PASS profile: from the braking point the car brakes at exactly b (v^2 falls 2 b per unit)
+PASS profile: through the corner it holds the corner limit (20 units/s) | v[340] = 19.979
+PASS profile: after the corner it accelerates at a again | acceleration 10.0000
+PASS profile: nowhere above the cornering limit | largest excess 0.00e+0
+PASS profile: never accelerates harder than a nor brakes harder than b | most 10.0000, least -40.0000
+PASS profile: agrees with an independently written forward-backward pass over the same limits | largest difference 0.00e+0
+PASS profile: a start speed too high for the first corner is cut back by the backward pass | v[0] = 49.41 (reference said 100)
+PASS profile: a pinned stretch entered at the reference speed copies the reference speeds exactly | largest difference 8.53e-14 km/h
+PASS profile: and so costs the reference's time
+PASS profile: arriving slower than the reference at a pinned stretch, the car keeps its ratio (constant reference: constant speed) | v[99] = 45.607, v[200] = 45.607
+PASS profile: within reach of a jump the speed is capped at the reference speed | v[99] = 10.000, v[100] = 10.000 (reference 10)
+PASS profile: and the free road before it is braked for, from the hand-worked point (s = 79.2) | braking starts at s = 79; v[90]^2 = 820.00 (hand: 820)
+PASS profile (fitted car): radius 125 is taken at the model's limit, which the README gives as 300 km/h | profile holds 300.0 km/h
+PASS profile (fitted car): radius 200 is taken at the model's limit, which the README gives as 400 km/h | profile holds 400.0 km/h
+PASS profile (fitted car): standing start reaches 100 km/h in about 1.5 s and 300 km/h in about 5.6 s (README section 1) | 100 km/h at 1.52 s, 300 at 5.47 s, 500 at 12.47 s
+PASS profile (fitted car): 500 km/h in about 12.6 s | 12.47 s
+PASS profile (fitted car): a hairpin tighter than the car's tightest turn still gives a finite lap time | seconds = 123.94485571787003, slowest 0.1
+PASS optimiseLine: a straight centre line is left where it is
+PASS optimiseLine: a wavy centre in a wide corridor is straightened (sum of squared curvature falls by over 95%) | 4.40e-3 -> 1.75e-5; sharpest bend 0.00476 -> 0.00041
+PASS optimiseLine: the cost the solver minimises (bends between every 4th point) falls by over 90% | 2.88e-1 -> 1.59e-2
+PASS optimiseLine: every shift is inside its bounds
+PASS optimiseLine: first and last point stay on the lap | 0, 0
+PASS optimiseLine: with 1 unit of room no shift exceeds 1 unit, and the room is used | largest 1.000
+PASS optimiseLine: the narrow corridor still improves on the centre | 4.40e-3 -> 1.99e-3
+PASS optimiseLine: pinned points are not shifted | largest shift at a pinned point 0
+PASS optimiseTime: the reported time is the speed profile's time for the returned line | 7.6242 vs 7.6242
+PASS optimiseTime: startSeconds is the profile of the unshifted line
+PASS optimiseTime: finds a faster line through a corner with room to cut it | 9.732 -> 7.624 s in 1605 tries
+PASS optimiseTime: every shift is inside its bounds and pinned points are not moved
+PASS optimiseTime: on a straight nothing is gained and the line is not moved
+--- test_1_raceline.mjs: 1.3 s
+
+=== test_2_car_model.mjs
+PASS car model (made-up table): top speed 108 km/h is 30 units/s | got 30.000000, expected 30
+PASS car model (made-up table): accel at 5 units/s interpolates 10 -> (filled) 8: 9 | got 9.000000, expected 9
+PASS car model (made-up table): accel at 15 units/s interpolates (filled) 8 -> 6: 7 | got 7.000000, expected 7
+PASS car model (made-up table): accel at 25 units/s: the missing last entry is carried from 6 | got 6.000000, expected 6
+PASS car model (made-up table): accel above the table is clamped to the last entry | got 6.000000, expected 6
+PASS car model (made-up table): accel below 0 is clamped to the first entry | got 10.000000, expected 10
+PASS car model (made-up table): accel at full lock (share 1) at 25 units/s interpolates 4 -> 2: 3 | got 3.000000, expected 3
+PASS car model (made-up table): accel at half lock is halfway between straight (6) and full lock (3): 4.5 | got 4.500000, expected 4.5
+PASS car model (made-up table): share above 1 is clamped to 1 | got 3.000000, expected 3
+PASS car model (made-up table): share below 0 is clamped to 0 | got 6.000000, expected 6
+PASS car model (made-up table): full-lock accel at 5 units/s: the missing first entry is carried back from 4 | got 4.000000, expected 4
+PASS car model (made-up table): brake at 15 units/s: -35 | got -35.000000, expected -35
+PASS car model (made-up table): brake at half lock at 15 units/s: halfway between -35 and (carried) -10: -22.5 | got -22.500000, expected -22.5
+PASS car model (made-up table): coast at 5 units/s: -0.5 | got -0.500000, expected -0.5
+PASS car model (made-up table): coast at 30 units/s: carried -2 | got -2.000000, expected -2
+PASS car model (made-up table): kappaMax at 0: carried back from 0.1 | got 0.100000, expected 0.1
+PASS car model (made-up table): kappaMax at 15 units/s: 0.075 | got 0.075000, expected 0.075
+PASS car model (made-up table): kappaMax at 30 units/s: 0.025 | got 0.025000, expected 0.025
+PASS car model (made-up table): speedFor(0.075) = 15 units/s | 15.000000
+PASS car model (made-up table): speedFor(0.05) = 20 units/s | 20.000000
+PASS car model (made-up table): speedFor of a bend the car takes at top speed is top speed | got 30.000000, expected 30
+PASS car model (made-up table): speedFor of a straight (curvature 0) is top speed | got 30.000000, expected 30
+PASS car model (made-up table): speedFor of a bend tighter than the tightest measured is 0 (cannot be followed) | got 0.000000, expected 0
+PASS car_model.json: speed bins are evenly spaced from 0 (the lookup assumes it) | 28 bins of 25 km/h
+PASS car_model.json: every table has one entry per speed bin
+PASS car_model.json: kappaMax never rises with speed (speedFor's bisection needs this) | 0 rising steps
+PASS car_model.json: kappaMax strictly falls between 25 and 575 km/h (the measured range) | 0 flat steps
+PASS car_model.json: speedFor(kappaMax(v)) returns v across 30..570 km/h | largest error 6.19e-7 km/h
+PASS car_model.json: W speeds up, S and coasting slow down, at every speed
+PASS car_model.json: full lock never helps (accel no higher, braking no stronger), and S < coast < W
+KNOWN FAIL car_model.json: the turning limit is stored finely enough to be good to 0.5% at 500 km/h | stored as 0.0035: 4 decimals is +-1.4% at 500 km/h (and +-0.6% at 300)
+PASS GRAVITY is the documented 14.3
+PASS README: the car table has 13 rows of 11 columns | 13 rows
+PASS README: every number in the car table matches car_model.json (112 cells, to the last printed digit)
+PASS README: "drag proportional to speed (0.029 units/s^2 per km/h)" | 0.0295
+PASS README: W thrust is "about 20 units/s^2 that does not depend on speed" (accel minus coast) | 20.00, 20.07, 20.08, 20.03
+PASS README: "600 km/h to a stop in 1.78 s"
+PASS README: "75% of its straight-line acceleration at 300 km/h" at full lock | 0.749
+PASS README: "wheels reach their limit 100 ms after the key goes down, at every speed" | 100,100,100,100,100,100,100,100,100,100,100,100
+--- test_2_car_model.mjs: 0.1 s
+
+=== test_3_testpad_sim.mjs
+PASS pad: parseTrack reads back wide x long = 18 parts | 18 parts
+PASS pad: exactly one start part, at grid cell (0, 0, 0) | [[0,0,0]]
+PASS pad: every other part is one and the same type, unrotated, on one level
+PASS pad: no checkpoint and no finish (the car can drive for ever)
+PASS pad: the plates fill the whole rectangle with no gap and no duplicate | 18 distinct cells, 0 missing
+PASS pad: bounds are worked out by hand for 3 x 6 plates, start row 1: x -30..30, z -90..30 | {"xMin":-30,"xMax":30,"zMin":-90,"zMax":30}
+PASS pad: widthUnits and lengthUnits are plates x 20
+PASS pad: a 5 x 40 pad (2-byte coordinates) reads back with matching bounds | {"xMin":-50,"xMax":50,"zMin":-730,"zMax":70}
+PASS pad: a ray straight down finds the surface at every one of the probe points (no holes) | 4278 probes, 0 holes
+PASS pad: the surface is at one height everywhere (flat to 1e-6) | heights 0.210000 .. 0.210000
+PASS pad: the surface height is the documented 0.21 | measured 0.2100
+PASS pad: the plates end exactly at the stated bounds (0.5 inside is plate, 0.5 outside is not) | 4 of 4 inside, 0 of 4 outside
+PASS pad: nothing sticks up from it (rays 0.05 above the surface cross the pad without a hit)
+wasm streaming compile failed: TypeError: Cannot read properties of undefined (reading 'FinalizationRegistry')
+falling back to ArrayBuffer instantiation
+PASS pad: the car starts on the centre line within 2 units of the origin | position 0.000, 0.350, -1.350 (the start plate is centred on the origin)
+PASS pad: with no keys the car stays put (under 0.001 units sideways or along in 2 s) | moved 8.41e-9 units
+PASS pad: and does not sink or rise (under 0.005 units in 2 s) | height 0.3456 -> 0.3441
+PASS pad: all four wheels are on the pad and the speedometer reads 0 | speed 0.0021 km/h
+PASS pad: the car sits level (its up is world up to 0.1 degree) | up = 0.00000, 1.00000, -0.00152
+PASS pad: the car rests ON the plates (its origin 0.05 to 0.3 above the measured surface, not on the ground plane below) | origin 0.134 above the surface
+PASS pad: nothing touches the car body while it rests
+PASS pad: the car faces -z (W moves it towards -z, under 0.01 units sideways) | after 2 s of W: x -0.0000, z -38.67
+PASS pad: still on the plates at the same ride height while driving (within 0.02) | origin 0.131 above the surface
+PASS ground plane: past the end of the pad (z < -90) the car is still on its wheels | z = -289.8, wheels 1111
+PASS ground plane: it is at y = 0 (the car rides lower by the plates' thickness) | origin at y = 0.134; on the plates it was 0.134 above them
+PASS ground plane: 6 s of W, mostly off the plates, gives about 314 km/h (README) | 313.2 km/h
+--- test_3_testpad_sim.mjs: 1.0 s
+
+=== test_4_car_vs_sim.mjs
+wasm streaming compile failed: TypeError: Cannot read properties of undefined (reading 'FinalizationRegistry')
+falling back to ArrayBuffer instantiation
+PASS straight: the whole W run stayed on the pad and on four wheels | ended at z = -606 of -1270
+PASS straight: the speedometer (km/h) is 3.6 x the speed measured from positions | speedometer 320.30, positions 320.32 km/h
+PASS straight: W acceleration at 50 km/h matches car.accel within 3% | measured 18.52, model 18.56 units/s^2 (0.2%)
+PASS straight: W acceleration at 100 km/h matches car.accel within 3% | measured 17.06, model 17.07 units/s^2 (0.0%)
+PASS straight: W acceleration at 200 km/h matches car.accel within 3% | measured 14.15, model 14.20 units/s^2 (0.4%)
+PASS straight: W acceleration at 300 km/h matches car.accel within 3% | measured 11.23, model 11.27 units/s^2 (0.4%)
+PASS straight: W acceleration at 400 km/h matches car.accel within 3% | measured 8.30, model 8.30 units/s^2 (-0.0%)
+PASS straight: from rest, 100 km/h in about 1.5 s and 300 km/h in about 5.6 s (README, within 0.15 s) | 100 at 1.51 s, 300 at 5.49 s
+PASS straight: 6 s of W on the plates gives about 320 km/h (README) | 320.3 km/h
+PASS straight: the model integrated over 8 s of W lands within 1% of the real speed and distance | speed 404.9 vs 404.5 km/h, distance 545.8 vs 545.3 units
+PASS straight: coasting deceleration at 387 km/h matches car.coast within 4% | measured -11.34, model -11.38 units/s^2
+PASS straight: S braking at 350 km/h (180 ms after S went down) matches car.brake within 10% | measured -100.9, model -108.7 units/s^2 (7.7%)
+PASS straight: S braking at 250 km/h (470 ms after S went down) matches car.brake within 5% | measured -92.2, model -93.8 units/s^2 (1.8%)
+PASS straight: S braking at 150 km/h (790 ms after S went down) matches car.brake within 5% | measured -80.1, model -79.9 units/s^2 (-0.2%)
+PASS straight: braking from about 400 to 100 km/h, the model's distance and time are within 4% of the real ones | distance 54.3 vs 55.8 units, time 851 vs 870 ms
+wasm streaming compile failed: TypeError: Cannot read properties of undefined (reading 'FinalizationRegistry')
+falling back to ArrayBuffer instantiation
+PASS turning: W+A from 100 km/h, the path's curvature at 134 km/h matches car.kappaMax within 4% | measured radius 37.2, model 37.5 units (-0.8%)
+PASS turning: the A key turns the car to its left (towards -x when heading -z) | x after 0.9 s: -13.90
+PASS turning: W+A from 100 km/h, the car still gains speed, at car.accel(v, 1) within 10% | measured 13.02, model 12.93 units/s^2; straight-line model 16.11
+PASS turning: at 100 km/h the wheels are at 95% of their limit 100 ms after the key goes down, and not yet at 50 ms | 50 ms 0.0584, 100 ms 0.1119, 500 ms 0.0854 rad
+PASS turning: W+A from 200 km/h, the path's curvature at 226 km/h matches car.kappaMax within 4% | measured radius 81.5, model 81.6 units (-0.1%)
+PASS turning: W+A from 200 km/h, the car still gains speed, at car.accel(v, 1) within 10% | measured 10.01, model 10.00 units/s^2; straight-line model 13.39
+PASS turning: W+A from 300 km/h, the path's curvature at 320 km/h matches car.kappaMax within 4% | measured radius 140.3, model 140.8 units (-0.3%)
+PASS turning: W+A from 300 km/h, the car still gains speed, at car.accel(v, 1) within 10% | measured 8.00, model 8.01 units/s^2; straight-line model 10.67
+PASS turning: at 300 km/h the wheels are at 95% of their limit 100 ms after the key goes down, and not yet at 50 ms | 50 ms 0.0111, 100 ms 0.0220, 500 ms 0.0207 rad
+PASS turning: at 300 km/h holding a steering key does not make the car slide (slip angle under 1 degree) | 0.51 degrees
+PASS turning: S+A from 300 km/h brakes far less than S alone (under 60% of the straight-line brake) | measured -31.1 at 216 km/h, straight-line model -89.2 units/s^2
+KNOWN FAIL turning: S+A from 300 km/h, the deceleration 0.5 to 0.8 s in matches car.brake(v, 1) within 15% | measured -31.1 at 216 km/h, model -21.6 units/s^2 (-31%)
+PASS turning: S+A is a slide, not a steady turn: the wheel angle reverses sign within 0.8 s (which is why one number per speed cannot describe it) | wheel angle 0.026 rad at 100 ms, -0.236 rad at 800 ms
+PASS turning: W+A from 400 km/h, the path's curvature at 416 km/h matches car.kappaMax within 4% | measured radius 211.0, model 210.9 units (0.0%)
+PASS turning: W+A from 400 km/h, the car still gains speed, at car.accel(v, 1) within 10% | measured 6.53, model 6.60 units/s^2; straight-line model 7.84
+PASS turning: at 400 km/h holding a steering key does not make the car slide (slip angle under 1 degree) | 0.33 degrees
+PASS turning: W+A from 500 km/h, the path's curvature at 512 km/h matches car.kappaMax within 4% | measured radius 292.7, model 293.7 units (-0.4%)
+PASS turning: W+A from 500 km/h, the car still gains speed, at car.accel(v, 1) within 10% | measured 4.90, model 4.87 units/s^2; straight-line model 4.97
+PASS turning: at 500 km/h holding a steering key does not make the car slide (slip angle under 1 degree) | 0.23 degrees
+--- test_4_car_vs_sim.mjs: 2.3 s
+
+=== test_5_corridor_sim.mjs
+wasm streaming compile failed: TypeError: Cannot read properties of undefined (reading 'FinalizationRegistry')
+falling back to ArrayBuffer instantiation
+PASS replay: the fastest human lap on desert4 finishes on its recorded tick | 21750 of 21750
+PASS corridor: README's summer1 row (57% / 17% / 8% / 18%, median width 24.4) | 57% / 17% / 8% / 18%, median 24.36
+PASS corridor: README's winter2 row (48% / 23% / 6% / 23%, median width 30.8) | 48% / 23% / 6% / 23%, median 30.84
+PASS corridor: every per-point array has one entry per point | 1884 points
+PASS corridor: frames is the lap's finish tick
+PASS corridor: consecutive points are 1.00 to 1.15 units apart | 1.000 .. 1.130
+PASS corridor: ticks rise strictly and each point is where the lap's car was on that tick
+PASS corridor: kmh is the car's speed on that tick
+PASS corridor: left and tangent are unit vectors; left is square to up and to the path | 2.2e-16, 1.7e-16
+PASS corridor: "left" points to the car's own left (its x axis) at every free point | smallest left . car-x = 1.000
+PASS corridor: grounded = any wheel touching on that tick | 0 wrong
+PASS corridor: nearAir = within 15 points of an airborne point | 0 wrong
+PASS corridor: free = grounded, not near air, road within 15 degrees of level | 0 wrong
+PASS corridor: lo / hi are the room minus the 1.7 margin, 0 where pinned, and never exclude 0 | 0 wrong
+PASS corridor: stats add up to the number of points
+PASS corridor: README's desert4 row (69% free, 5% air, 6% near a jump, 20% banked, median width 31.2) | 69% / 5% / 6% / 20%, median 31.21
+PASS corridor: no room is negative or beyond MAX_ROOM
+PASS corridor widths: enough level free points on desert4 to compare (over 300 sides with an edge nearer than 20 units) | 1156 level free points, 1082 sides compared, 1230 more read "20 or wider" in both
+PASS corridor widths: the median difference from our own measurement is under 0.15 units | median -0.002 (corridor minus ours), open edges 0.050 over 402, walls -0.003 over 680
+PASS corridor widths: 95% of sides agree with our own measurement within 0.5 units | 97.5% within 0.5, 96.3% within 0.3, worst 4.25
+PASS corridor widths: nowhere does the corridor overstate the road by more than the margin leaves spare (0.95 units beyond the car's half width) | 0 of 1082 sides; largest overstatement 0.50 units
+PASS corridor: a car placed at either bound still has road under its outer edge, at every free point | 0 of 2581 bounds have no road under the car's outer edge
+PASS corridor: and no wall between the lap's line and the car's outer edge at the bound | 0 of 2581
+PASS roomBeside: called again for a stored point, returns the stored roomLeft | 20.000 vs 20.000
+PASS roomBeside: with nothing around (500 units up) reports MAX_ROOM
+PASS human turning: enough steady full-lock moments on flat road to judge (over 50 samples, 10 ms apart) | 90 samples in 2 speed bands
+PASS human turning: median of (path curvature / car.kappaMax(speed)) is 1.00 +- 0.02 on desert4 (README: 1.00) | median 1.001, 10th 0.997, 90th 1.006
+PASS human turning: 90th percentile at most 1.05 (README: at most 1.04 by its own curvature) | 1.006
+PASS human turning: every 50 km/h band with 20+ samples has a median between 0.97 and 1.03 (README: 0.98 to 1.02) | 500 km/h: 1.002 (83)
+--- test_5_corridor_sim.mjs: 5.7 s
+
+=== test_6_scripts_sim.mjs
+PASS check_turn_limit.mjs (five tracks): runs and exits 0
+PASS check_turn_limit.mjs desert4: every speed band has a median of 0.98 to 1.02 and a 90th percentile of at most 1.04 (README) | 450 km/h: 47 points, median 1, 90th 1.04 | 500 km/h: 120 points, median 1, 90th 1.01
+PASS check_turn_limit.mjs summer1: every speed band has a median of 0.98 to 1.02 and a 90th percentile of at most 1.04 (README) | 200 km/h: 32 points, median 0.98, 90th 1 | 250 km/h: 114 points, median 1, 90th 1.01 | 300 km/h: 3 points, median 1, 90th 1
+PASS check_turn_limit.mjs summer4: every speed band has a median of 0.98 to 1.02 and a 90th percentile of at most 1.04 (README) | 200 km/h: 44 points, median 0.99, 90th 1 | 250 km/h: 106 points, median 1, 90th 1.01 | 300 km/h: 98 points, median 0.99, 90th 1.01 | 350 km/h: 46 points, median 1, 90th 1.01
+PASS check_turn_limit.mjs winter2: every speed band has a median of 0.98 to 1.02 and a 90th percentile of at most 1.04 (README) | 400 km/h: 16 points, median 1.01, 90th 1.01 | 500 km/h: 14 points, median 1.02, 90th 1.02
+PASS check_turn_limit.mjs desert1: every speed band has a median of 0.98 to 1.02 and a 90th percentile of at most 1.04 (README) | 200 km/h: 19 points, median 1, 90th 1.01 | 300 km/h: 76 points, median 1, 90th 1.01 | 350 km/h: 48 points, median 1, 90th 1.01
+PASS fit_car.mjs: runs and exits 0
+PASS fit_car.mjs: writes car_model.json byte for byte as it stands (the fit is repeatable and the file is its output)
+PASS fit_car.mjs: reports the top speed (668.9 km/h after 45 s) and stop from 600 km/h (1780 ms) the README gives | top speed with W after 45 s: 668.9 km/h; S from 600 km/h to a stop: 1780 ms
+PASS compare_human.mjs desert4: runs and exits 0
+PASS compare_human.mjs: calibration on the flat stretches is human 15.067 s, model 15.084 s (README) | free stretches in total: human 15.067 s, model 15.084 s
+PASS compare_human.mjs: the human's line is predicted at 21.919 s against 21.750 s real (README) | whole lap along the human's line, model's own speeds throughout: 21.919 s predicted against 21.750 s real (+0.169 s)
+PASS compare_human.mjs: the minimum-curvature line is predicted at 22.841 s, slower than the human's (README) | 0.000      22.841           0.922              1983.5        3.7            0.47
+PASS compare_human.mjs: the time search goes 21.919 -> 21.792 s, largest shift 2.2 units, length 1984.3 (README) | search on predicted time: 21.919 -> 21.792 s (-0.127 s), length 1984.3, largest shift 2.2, 5726 tries in 14 s
+PASS compare_human.mjs: "gravity" from the longest flight is 14.3 (README) | gravity from the longest flight (1.30 s, points 72..132): 14.32 units/s^2 (the profile uses 14.3)
+PASS compare_human.mjs: the four calibration stretches match the README's table | 0 56 2.488 2.486 | 147 492 4.829 4.903 | 706 1162 4.24 4.227 | 1407 1843 3.51 3.468
+PASS compare_human.mjs: rewrites out/line_desert4.json byte for byte (the computation is repeatable)
+PASS line file: human and computed lines have one point, one speed and one shift per corridor point | 1884 points
+PASS line file: each computed point is its human point moved by |shift| (to the 0.01 the file is rounded to) | largest mismatch 0.0059
+PASS line file: the computed line is the human's line wherever the corridor is pinned | 0 pinned points moved
+PASS line file: predicted times stored are the README's (21.919 and 21.792)
+PASS line file: no speed is NaN, negative or above the car's top speed
+KNOWN FAIL line file: the computed line starts where the car starts (shift 0 at the first point) | shift at point 0 is -0.59 units
+wasm streaming compile failed: TypeError: Cannot read properties of undefined (reading 'FinalizationRegistry')
+falling back to ArrayBuffer instantiation
+PASS saved lap "computed": replays to a finish on tick 22083 (22.083 s, README) and passes the game's Verify | finished true on tick 22083; Verify true, one tick early rejected true, round trip true
+PASS saved lap "computed": slower than the human's 21.750 s by the README's 0.333 s (the verdict "not faster" holds) | 333 ms
+PASS saved lap "model": replays to a finish on tick 22133 (22.133 s, README) and passes the game's Verify | finished true on tick 22133; Verify true, one tick early rejected true, round trip true
+PASS saved lap "human": replays to a finish on tick 22441 (22.441 s, README) and passes the game's Verify | finished true on tick 22441; Verify true, one tick early rejected true, round trip true
+PASS drive: the computed line, driven by sim/controller.mjs with the README's settings, finishes in 22.083 s | finished, tick 22083, furthest from the line 1.8 units
+PASS drive: and presses exactly the keys of the saved lap runs/g1-7-computed_desert4.json
+PASS drive_line.mjs desert4 human: runs and exits 0
+PASS drive_line.mjs desert4 human: at the default settings this line does not finish (README: only "model" does) | human     left the road at 78% of the line, tick 18781; furthest from its line 25.1 units; first 4 units off at point 1418 (tick 18206, 422 km/h)
+PASS drive_line.mjs: a lap that does not finish saves nothing
+PASS drive_line.mjs: a track with no line file exits non-zero
+--- test_6_scripts_sim.mjs: 52.0 s
+
+============================================================
+Failures:
+  test_2_car_model.mjs: KNOWN FAIL car_model.json: the turning limit is stored finely enough to be good to 0.5% at 500 km/h | stored as 0.0035: 4 decimals is +-1.4% at 500 km/h (and +-0.6% at 300)
+  test_4_car_vs_sim.mjs: KNOWN FAIL turning: S+A from 300 km/h, the deceleration 0.5 to 0.8 s in matches car.brake(v, 1) within 15% | measured -31.1 at 216 km/h, model -21.6 units/s^2 (-31%)
+  test_6_scripts_sim.mjs: KNOWN FAIL line file: the computed line starts where the car starts (shift 0 at the first point) | shift at point 0 is -0.59 units
+220 passed, 0 failed, 3 known failures (defects written up in TESTING.md), 6 test files, 62 s

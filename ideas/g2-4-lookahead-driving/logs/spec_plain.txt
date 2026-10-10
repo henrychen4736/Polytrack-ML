@@ -1,0 +1,4 @@
+desert4, rl/checkpoints/ppo_sr1_desert4.u800.actor.bin: plain policy (top choices); reference lap 21.750 s
+  seed 1: FINISHED 22.061 s; 4.6 s wall, 0.21x real time, 1.0x the lap's ticks
+finished 1 of 1; mean share of the line 100.0%; 0.21x real time, 1.0x the laps' ticks, 4.8k ticks per wall second
+verified: 22.061 s (human 21.750 s)

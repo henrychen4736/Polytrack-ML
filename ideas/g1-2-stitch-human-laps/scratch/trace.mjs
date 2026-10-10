@@ -1,0 +1,16 @@
+import { loadTrack } from '../../../sim/env.mjs';
+import { humanLaps } from '../../shared/laps.mjs';
+import { SimSession } from '../../shared/sim_session.mjs';
+import { recordPath, crossings } from '../paths.mjs';
+import { follow } from '../follow.mjs';
+const [name, join, opts='{}', every='5'] = process.argv.slice(2);
+const [i,j,k] = join.split(/[>@]/).map(Number);
+const sim = await SimSession.create(name); const track = loadTrack(name);
+const paths=[]; for (const lap of humanLaps(name)) paths.push(await recordPath(sim.env, track, lap));
+const { ticks } = crossings(paths, 250);
+await sim.restart(); await sim.drive(paths[i].keys.slice(0,ticks[i][k]));
+let n=0; const t0=performance.now();
+const trace=(tick, m)=>{ if(n++%Number(every)===0) console.log(tick, 'donor', m.tick, 'lag', (tick-ticks[i][k])-(m.tick-ticks[j][k]), 'cost', m.cost.toFixed(0), 'd', m.distance.toFixed(2), 'v', m.speedDiff.toFixed(1), 'a', m.angle.toFixed(2), 'spin', m.spinDiff.toFixed(2), 'wh', paths[j].wheels[m.tick], sim.state.speedKmh.toFixed(0)); };
+const r = await follow(sim, paths[j], ticks[j][k], Infinity, 'repair', {...JSON.parse(opts), trace});
+console.log(r.lost?'LOST':'', r.finished? 'finish '+(sim.state.finishFrames-(ticks[i][k]+paths[j].frames-ticks[j][k])):'', 'tried', r.tried, ((performance.now()-t0)/1000).toFixed(0)+'s');
+await sim.close();

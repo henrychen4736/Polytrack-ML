@@ -1,0 +1,164 @@
+
+=== test_1_pieces.mjs
+PASS derivePorts: a bare flat slab whose four edges are on grid planes has four ports | x=-5 out - width 20.00 pitch 0.000; x=5 out + width 20.00 pitch 0.000; z=-10 out - width 10.00 pitch 0.000; z=10 out + width 10.00 pitch 0.000
+PASS derivePorts: with walls on the long edges only the two ends are ports | z=-10 out - width 10.00 pitch 0.000; z=10 out + width 10.00 pitch 0.000
+PASS derivePorts: the end ports are on z = -10 (leading out towards -z) and z = +10 (towards +z)
+PASS derivePorts: width 10, centre on the centre line at the surface height, pitch 0 | [[0,1,-10],[0,1,10]]
+PASS derivePorts: a ramp has ports only at its two ends (its sides are not on grid planes) | z=-10 out - width 8.00 pitch 0.250; z=10 out + width 8.00 pitch -0.250
+PASS derivePorts: pitch is +0.25 leaving the top of a 5-in-20 ramp and -0.25 leaving the bottom | z=-10 out - width 8.00 pitch 0.250; z=10 out + width 8.00 pitch -0.250
+PASS derivePorts: a strip 2 units wide has no port (too narrow for a car)
+PASS derivePorts: an end at z = 7 (not a multiple of 5) is not a port; the end at z = -10 is | z=-10 out - width 8.00 pitch 0.000
+PASS derivePorts: the seam between two joined patches is not a port | z=-10 out - width 8.00 pitch 0.000; z=10 out + width 8.00 pitch 0.000
+PASS derivePorts: an end made of two edges in a line is one port of the full width | z=-10 out - width 8.00 pitch 0.000; z=10 out + width 8.00 pitch 0.000
+PASS derivePorts: a surface facing down has no ports
+PASS derivePorts: a lip 0.5 high on an edge closes it; one 0.2 high does not | 4 and 3 ports
+PASS worldPorts: unturned at cell (2, 1, -3) the ports are at (10, 6, -25) facing -z and (10, 6, -5) facing +z | [[[10,6,-25],2,-1,-25],[[10,6,-5],2,1,-5]]
+PASS worldPorts: after a half turn each port still leads out of the part (out = -1 at z = -25, +1 at z = -5)
+PASS worldPorts: quarter turn 1: ports on x = 0 (out -x) and x = 20 (out +x), at z = -15, height 6 | [[[-1.7763568394002505e-15,6,-14.999999999999998],0,-1,0],[[20,6,-15.000000000000002],0,1,20]]
+PASS worldPorts: quarter turn 3: ports on x = 0 (out -x) and x = 20 (out +x), at z = -15, height 6 | [[[-1.7763568394002505e-15,6,-15.000000000000002],0,-1,0],[[20,6,-14.999999999999998],0,1,20]]
+PASS worldPorts: width and pitch are carried over unchanged
+PASS worldTiles: unturned, cells (0,0,0) and (0,0,1) of a part at (2,1,-3) are (2,1,-3) and (2,1,-2) | 2,1,-2 2,1,-3
+PASS worldTiles: half turn, the same two cells become (1,1,-4) and (1,1,-5) | 1,1,-4 1,1,-5
+PASS worldTiles: quarter turn 1 puts the cells where the mesh transform puts the geometry | 2,1,-4 3,1,-4
+PASS worldTiles: quarter turn 3 puts the cells where the mesh transform puts the geometry | 0,1,-3 1,1,-3
+PASS worldTiles: for all 16 generator pieces in all 4 rotations, every bit of the collision shape is above or below a cell the piece claims | 69364 voxels checked
+PASS worldTiles: no generator piece claims a column of cells it has no geometry in | 0 of 591 claimed columns are empty
+PASS worldTiles: on the 17 official tracks no two road parts are given the same cell | 1111 placed road parts, 827 of them turned
+PASS README: the piece table has the 16 generator part types | 0,1,2,3,4,5,6,36,37,38,39,41,42,52,82,83
+PASS README: every row of the piece table (faces, centres, heights, width, pitch) matches the table computed from the triangles
+PASS README: the five turn pieces are quarter turns of radius 10, 30, 50, 70 and 90 units | 10.0, 30.0, 50.0, 70.0, 90.0
+PASS README: "S-bends move the road 20 units sideways over 60"
+PASS README: ramps climb 5 units (SlopeUp, SlopeDown) or 10 (Slope, SlopeUpLong, SlopeDownLong)
+PASS official tracks: check_pieces.mjs matePorts gives the README's 2863 of 3005 road ports mated | 2863 of 3005
+PASS official tracks: our own recount of the same rule (own port transform, own pairing) gives the same 2863 of 3005 (95%) | 2863 of 3005 (95.3%)
+PASS official tracks: 4 of 17 can be driven start to finish through mated ports alone: summer5, summer6, desert2, desert4 (README) | 4: desert2, desert4, summer5, summer6
+PASS official tracks: at 97% or more of the ports the table calls mated, a ray cast finds road surface continuing 0.6 units beyond the port | 2828 of 2863 (98.8%)
+PASS official tracks: "mated" and "surface continues beyond the port" agree for 95% or more of the road ports | 2899 of 2991 (96.9%); 35 mated ports with no surface found beyond, 57 of 128 open ports with surface beyond (mates the table misses)
+--- test_1_pieces.mjs: 19.4 s
+
+=== test_2_codec.mjs
+PASS partsToBytes: start + straight + checkpoint give exactly the 62 bytes worked out by hand | first difference at byte -1
+PASS partsToBytes: sim/track.mjs parseTrack reads those hand-written bytes back as the three parts, environment 1 | ["0,0,2,-2,0,0,null,null","5,0,2,2,2,0,null,0","52,-4,2,-6,1,0,3,null"]
+PASS partsToBytes: rotation 3 about axis 5 is stored as 3 | 5 << 2 = 23 | byte 23
+PASS partsToBytes: two parts of a type form one group (count 2), written in the order given | [0,2,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+PASS partsToBytes: an unknown part type throws
+PASS encodeSaveString: sim/track.mjs decodes it to the same 69 parts and environment | 69 parts
+PASS encodeSaveString: polyrl's decoder (decodeBits, inflate, decodeBits, inflate) gives back the exact bytes of partsToBytes | 665 bytes
+PASS encodeSaveString: and those bytes parse to the same parts
+PASS encodeSaveString: the string is plain letters and digits (base 62) | 4pdBBnsoDBDAAA8XqxSL
+PASS encodeSaveString: encoding the same parts twice gives the same string
+PASS encodeExportString: starts with "PolyTrack2"; polyrl reads back the name (non-ASCII included), no author, no date | name "tëst träck 1"
+PASS encodeExportString: its body is the same bytes as the save string's
+PASS encodeExportString: polyrl's exportToSaveString turns it into exactly encodeSaveString's string
+PASS codec: each of the 17 official tracks, decoded, re-encoded by codec.mjs and decoded again, comes back part for part | 35540 parts of 129 part types, rotation axes 0,1,2,3,4
+--- test_2_codec.mjs: 0.7 s
+
+=== test_3_generator.mjs
+PASS seed: the same options give the same track string
+PASS seed: and the same parts, route points, gates and export string
+PASS seed: generating other tracks in between does not change the result
+PASS seed: twelve different seeds give twelve different tracks | 12 distinct
+PASS seed: difficulty, length and slopes each change the track
+PASS options: slopes: false gives a track on one level
+PASS options: environment is written into the track and changes nothing else
+PASS track gen_s1_d0_l500: start, checkpoints in order, finish; no overlap; route continuous, on the surface, centred, through every gate | 9 pieces, 611 units, 2 checkpoints, steps 0.999..1.001, height error 0.000, off centre 0.00, lowest roof 3.9
+PASS track gen_s2_d25_l500: start, checkpoints in order, finish; no overlap; route continuous, on the surface, centred, through every gate | 8 pieces, 606 units, 1 checkpoints, steps 0.999..1.001, height error 0.000, off centre 0.00, lowest roof Infinity
+PASS track gen_s3_d50_l500: start, checkpoints in order, finish; no overlap; route continuous, on the surface, centred, through every gate | 9 pieces, 516 units, 1 checkpoints, steps 0.999..1.001, height error 0.001, off centre 0.00, lowest roof 3.9
+PASS track gen_s4_d75_l500: start, checkpoints in order, finish; no overlap; route continuous, on the surface, centred, through every gate | 9 pieces, 563 units, 1 checkpoints, steps 0.999..1.001, height error 0.000, off centre 0.00, lowest roof Infinity
+PASS track gen_s5_d100_l500: start, checkpoints in order, finish; no overlap; route continuous, on the surface, centred, through every gate | 11 pieces, 562 units, 1 checkpoints, steps 0.998..1.001, height error 0.012, off centre 0.00, lowest roof Infinity
+PASS track gen_s31_d100_l900: start, checkpoints in order, finish; no overlap; route continuous, on the surface, centred, through every gate | 19 pieces, 932 units, 3 checkpoints, steps 0.996..1.001, height error 0.005, off centre 0.00, lowest roof 3.9
+PASS track gen_s32_d60_l700_flat: start, checkpoints in order, finish; no overlap; route continuous, on the surface, centred, through every gate | 13 pieces, 701 units, 2 checkpoints, steps 0.999..1.001, height error 0.000, off centre 0.00, lowest roof 3.9
+PASS track gen_s301_d70_l2500: start, checkpoints in order, finish; no overlap; route continuous, on the surface, centred, through every gate | 54 pieces, 2570 units, 9 checkpoints, steps 0.979..1.001, height error 0.003, off centre 1.87, lowest roof 3.9
+PASS structure: at least one of the tracks examined has a road crossing over another (so the overlap and headroom checks met that case) | 1 of 8
+PASS overlap test: a good track has no overlapping pair
+PASS overlap test: a second piece one cell along inside another is caught
+PASS overlap test: the same piece copied onto itself is caught
+PASS overlap test: a road two levels up (the generator's minimum for a crossing) is not an overlap | 0 pairs
+PASS overlap test: two straights end to end, and side by side, are not an overlap
+PASS files: saveTrack writes <name>.track.json and <name>.route.json
+PASS files: loadGenerated gives back the same track string, name and route
+PASS files: createCar has the three fields the simulator takes (track string, no mountains)
+PASS files: the track file records how it was made (seed, difficulty, length wanted, slopes, environment, base level, parts, pieces)
+PASS generate.mjs --count 2 --seed 40: writes two tracks, seeds 40 and 41, identical to generateTrack with those options | gen_s40_d50_l300.track.json, gen_s41_d50_l300.track.json; 2 lines printed
+PASS files: all 20 saved sample tracks (seeds 500 to 519) come out identical when regenerated from their recorded options | 20 files, 0 differ
+PASS files: and their saved route files are the routes the generator computes now (not left over from older code) | 0 of 20 differ; 3 of the tracks have a TurnSharp
+PASS saved gen_s510_d53_l600: start, checkpoints in order, finish; no overlap; route continuous, on the surface, centred, through every gate | 13 pieces, 670 units, 2 checkpoints, steps 0.999..1.001, height error 0.000, off centre 0.00, lowest roof Infinity
+--- test_3_generator.mjs: 11.5 s
+
+=== test_4_sim.mjs
+wasm streaming compile failed: TypeError: Cannot read properties of undefined (reading 'FinalizationRegistry')
+falling back to ArrayBuffer instantiation
+PASS gen_s3_d50_l400: left alone for 2.5 s the car rests on the road: four wheels down, level, not moving or sinking, its origin 0.05 to 0.3 above the road surface, at the documented start pose | moved 0.0000, sank 0.0010 in the last second, origin 0.136 above the road, y = 10.35, wheels 1111
+PASS gen_s3_d50_l400: the follower finishes, at the first speed tried (README: "all at the first speed tried") | scale 1: finished at 98%, 1.1 off the line; 16.23 s
+PASS gen_s3_d50_l400: the lap has one set of keys per tick up to the finish
+PASS gen_s3_d50_l400: the keys, replayed as a recording, finish on the same tick | replay 16226, drive 16226
+PASS gen_s3_d50_l400: the replay passes every checkpoint in order (the game's counter rises 0 to 1 one at a time) | counter ended at 1 of 1
+PASS gen_s3_d50_l400: the car has the track's own surface under it on every sampled tick of the lap and never comes near the ground | 0 ticks with no road beneath, largest gap 0.18, lowest y 10.35
+PASS gen_s3_d50_l400: the game's own Verify accepts the lap at its finish tick and rejects it one tick earlier | true, false
+PASS gen_s3_d50_l400: the follower's average speed is in the README's range (80 to 140 km/h; "about 110") | 114 km/h
+PASS gen_s5_d100_l400: left alone for 2.5 s the car rests on the road: four wheels down, level, not moving or sinking, its origin 0.05 to 0.3 above the road surface, at the documented start pose | moved 0.0000, sank 0.0010 in the last second, origin 0.136 above the road, y = 10.35, wheels 1111
+PASS gen_s5_d100_l400: the follower finishes, at the first speed tried (README: "all at the first speed tried") | scale 1: finished at 97%, 0.6 off the line; 13.05 s
+PASS gen_s5_d100_l400: the lap has one set of keys per tick up to the finish
+PASS gen_s5_d100_l400: the keys, replayed as a recording, finish on the same tick | replay 13048, drive 13048
+PASS gen_s5_d100_l400: the replay passes every checkpoint in order (the game's counter rises 0 to 1 one at a time) | counter ended at 1 of 1
+PASS gen_s5_d100_l400: the car has the track's own surface under it on every sampled tick of the lap and never comes near the ground | 0 ticks with no road beneath, largest gap 0.18, lowest y 10.35
+PASS gen_s5_d100_l400: the game's own Verify accepts the lap at its finish tick and rejects it one tick earlier | true, false
+PASS gen_s5_d100_l400: the follower's average speed is in the README's range (80 to 140 km/h; "about 110") | 113 km/h
+PASS gen_s62_d80_l450: left alone for 2.5 s the car rests on the road: four wheels down, level, not moving or sinking, its origin 0.05 to 0.3 above the road surface, at the documented start pose | moved 0.0000, sank 0.0010 in the last second, origin 0.136 above the road, y = 10.35, wheels 1111
+PASS gen_s62_d80_l450: the follower finishes, at the first speed tried (README: "all at the first speed tried") | scale 1: finished at 98%, 1.7 off the line; 20.23 s
+PASS gen_s62_d80_l450: the lap has one set of keys per tick up to the finish
+PASS gen_s62_d80_l450: the keys, replayed as a recording, finish on the same tick | replay 20229, drive 20229
+PASS gen_s62_d80_l450: the replay passes every checkpoint in order (the game's counter rises 0 to 1 one at a time) | counter ended at 1 of 1
+PASS gen_s62_d80_l450: the car has the track's own surface under it on every sampled tick of the lap and never comes near the ground | 0 ticks with no road beneath, largest gap 0.22, lowest y 5.34
+PASS gen_s62_d80_l450: the game's own Verify accepts the lap at its finish tick and rejects it one tick earlier | true, false
+PASS gen_s62_d80_l450: the follower's average speed is in the README's range (80 to 140 km/h; "about 110") | 97 km/h
+PASS saved laps: all 20 laps in tracks/sample replay to a finish on their recorded tick, through every checkpoint in order, on the road throughout | 20 laps, 19.6 s on average, slowest 24.7 s
+PASS control: the intact track is finished by the follower | finished
+PASS control: with piece 3 (TurnSRight) removed, the route has a stretch with no road under it | 65 route points over the hole
+PASS control: the follower does not finish the broken track at any speed of its ladder | scale 1: left the road at 37%; scale 0.7: left the road at 37%; scale 0.45: left the road at 37%
+PASS control: and stops at the hole every time (within 15 route points of where the road ends) | hole begins at 36% of the route
+PASS control: the lap that finishes the intact track does not finish the broken one | finished false, checkpoints 0
+PASS control: a follower told the car has ten times the grip (600 km/h, side 200, brake 100) does not finish at full speed | left the road at 46%
+PASS control: the same track is finished with the default settings, so that failure was the driver | finished
+PASS control: the defaults are the README's (250 km/h, side 20, crest 5, brake 15; ladder 1 / 0.7 / 0.45)
+PASS grass: on raised tracks (the default) the bottom of every checkpoint and finish box is over 4 units above the ground plane | lowest gate box bottom at y = 5.30 over 22 gates
+PASS grass: a car that fell off a raised road and drove on underneath it reaches the spot under the finish (within 3 units in plan) | closest 0.4 units in plan, 100% of the route "covered", lowest y 0.11
+PASS grass: and is NOT given the finish, nor any checkpoint beyond the hole | finished false, checkpoint counter 0
+PASS grass: this file's watcher flags that drive as off the road | 2673 of 3722 watched states with no road beneath, from tick 5246
+PASS grass: baseLevel 0 gives the same layout as the default, 10 units lower (road surface at 0.21) | route height 0.21, name gen_s11_d30_l400_flat_b0
+PASS grass: an unguarded follower DOES finish a ground-level track with piece 3 (TurnSRight, 65 units of road) missing: the trap is real | finished true, checkpoint counter 1
+PASS grass: this file's watcher catches it: that "finishing" lap has no road under the car across the hole | 416 of 2732 watched states with no road beneath, from tick 5246
+PASS grass: driveTrack does not report the broken ground-level track as finished | scale 1: left the road at 37%; scale 0.7: left the road at 37%; scale 0.45: left the road at 37%
+PASS grass: driveTrack still finishes the intact ground-level track | scale 1: finished
+PASS grass: and that lap stays on the road surface (never on the grass beside it) | 0 ticks with no road beneath
+--- test_4_sim.mjs: 38.3 s
+
+=== test_5_scripts.mjs
+PASS check_pieces.mjs: runs and exits 0
+PASS check_pieces.mjs: one line per official track, adding up to the README's 2863 of 3005 road ports mated | 17 tracks, 2863 of 3005
+PASS check_pieces.mjs: "4 of 17 official tracks" reach every gate through mated ports (README) | 4 of 17 official tracks: every checkpoint and the finish reached from the start through mated ports alone.
+PASS check_pieces.mjs: 8 official tracks have parts stood on their side (README) | 8
+PASS check_pieces.mjs: lists the part types with no port the README names (WallTrackMiddleCorner 142, PlaneWallInnerCorner 85, BlockBridge 39)
+PASS check_pieces.mjs --table: prints the README's 74 road part types | 74 part types
+PASS bulk_check.mjs --count 40: exits 0 with 40 of 40 generated and 0 failing a structure check | 40 of 40 tracks generated; 0 failed a structure check; 14 have a road crossing over another
+PASS bulk_check.mjs: some of the tracks have a road crossing over another (README: 93 of 300) | 14 of 40
+PASS smoke_test.mjs: exits 0 | checks 1-7 and 9 passed on 8 of 8 tracks; the follower finished 8 of 8; 18 s
+PASS smoke_test.mjs: checks 1-7 and 9 pass on 8 of 8 tracks and the follower finishes 8 of 8 (README) | checks 1-7 and 9 passed on 8 of 8 tracks; the follower finished 8 of 8; 18 s
+PASS smoke_test.mjs: every track is finished at speed scale 1 with checks "ok" | 8 rows
+PASS smoke_test.mjs: the follower is never more than 2.5 units from the middle of the road (README: worst 1.9) | worst 2.2
+PASS smoke_test.mjs: writes a track, a route and a lap for each of the 8 tracks into tracks/smoke | 24 files
+PASS control_test.mjs: exits 0
+PASS control_test.mjs A: the broken track fails the chain check and the follower leaves the road at the hole at every speed | A broken track (piece 3, TurnSRight, removed): chain intact false; scale 1: left the road at 37% (TurnSRight); scale 0.7: left the road at 37% (TurnSRight); scale 0.45: left the road at 37% (TurnSRight)  -> as expected
+PASS control_test.mjs B: the over-confident follower fails at full speed and finishes once slowed (README: finishes at 0.3) | B weak driver (10x the grip assumed): chain intact true; scale 1: left the road at 46% (TurnSharp); scale 0.6: left the road at 71% (TurnSharp); scale 0.3: finished at 97% (Finish)  -> as expected
+PASS control_test.mjs C: the steep ramp is climbed at the bottom of the speed ladder | C steep climb on gen_s23_d100_l400 (Start TurnLong SlopeUp Slope SlopeDown Straight TurnSRight Checkpoint TurnSharp TurnLong2 TurnSRight Finish): scale 0.45: finished at 97% (Finish)  -> as expected
+PASS generate.mjs --count 3 --difficulty mixed: writes three tracks spread from difficulty 0 to 1, all 100% on the road | gen_s900_d0_l300.track.json, gen_s901_d50_l300.track.json, gen_s902_d100_l300.track.json
+PASS drive_folder.mjs --shard 0/2: drives every second track (the 1st and 3rd of three) and writes their laps | 2 of 2 tracks finished in 2 s (0 already had a lap)
+PASS drive_folder.mjs: a second run skips tracks that have a lap and drives only the one left | 1 of 1 tracks finished in 1 s (2 already had a lap)
+PASS drive_folder.mjs: a lap file has the documented fields (track, frames, recording, source, speedScale) | {"track":"gen_s901_d50_l300","frames":10626,"recording":"526 chars","source":"g2-2 scripted follower","speedScale":1}
+PASS compare_g21.mjs: runs and exits 0 (needs ideas/g2-1-reference-free-inputs/route.mjs)
+PASS compare_g21.mjs: on all three tracks g2-1 finds a route to the finish with no jumps, within 10 units of this folder's length | 610 against 611, 604 against 606, 615 against 622
+PASS compare_g21.mjs: the two routes lie 0.4 to 0.8 units apart on average and never more than 3 (README: 0.5 to 0.75, worst 2.9) | mean 0.57, worst 1.22; mean 0.49, worst 2.3; mean 0.72, worst 2.23
+--- test_5_scripts.mjs: 49.1 s
+
+============================================================
+144 passed, 0 failed, 0 known failures (defects written up in TESTING.md), 5 test files, 119 s

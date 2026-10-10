@@ -1,0 +1,17 @@
+{
+ "track": "desert4",
+ "input": "runs/rollout_desert4.recording.json",
+ "inputFrames": 21907,
+ "frames": 21907,
+ "verified": true,
+ "window": 10,
+ "moves": [
+  "nudge",
+  "shift"
+ ],
+ "order": "back",
+ "workers": 2,
+ "seconds": 93.19476669999999,
+ "drives": 821,
+ "accepted": []
+}

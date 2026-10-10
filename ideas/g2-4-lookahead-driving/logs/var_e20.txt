@@ -1,0 +1,10 @@
+winter4, rl/checkpoints/ppo_blkgen.best2.actor.bin: lazy lookahead, horizon 40, every 20, force 4/10, 6 samples, score reward; reference lap 19.311 s
+  seed 10: FINISHED 19.847 s; 19 replans, policy failed at 2, rescued 2, dead ends 0, backed up 0; picks {"policy":17,"sample":1,"force":1}; 18.7 s wall, 0.94x real time, 7.0x the lap's ticks
+  seed 12: FINISHED 19.996 s; 19 replans, policy failed at 2, rescued 2, dead ends 0, backed up 0; picks {"policy":17,"sample":1,"force":1}; 16.6 s wall, 0.83x real time, 7.0x the lap's ticks
+finished 2 of 2; mean share of the line 100.0%; 0.89x real time, 7.0x the laps' ticks, 7.9k ticks per wall second
+verified: 19.847 s (human 19.311 s)
+desert3, rl/checkpoints/ppo_blkgen.best2.actor.bin: lazy lookahead, horizon 40, every 20, force 4/10, 6 samples, score reward; reference lap 20.302 s
+  seed 10: FINISHED 21.403 s; 22 replans, policy failed at 3, rescued 2, dead ends 1, backed up 1; picks {"policy":19,"sample":2,"force":1}; 26.6 s wall, 1.24x real time, 11.5x the lap's ticks
+  seed 11: FINISHED 22.506 s; 24 replans, policy failed at 4, rescued 3, dead ends 1, backed up 1; picks {"policy":20,"sample":1,"force":3}; 37.5 s wall, 1.66x real time, 16.0x the lap's ticks
+finished 2 of 2; mean share of the line 100.0%; 1.46x real time, 13.8x the laps' ticks, 9.5k ticks per wall second
+verified: 21.403 s (human 20.302 s)

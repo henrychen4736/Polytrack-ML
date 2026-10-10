@@ -1,0 +1,23 @@
+ok     shared                          193 passed    0 failed   0 known    120 s
+ok     g1-1-human-seed-search           76 passed    0 failed   0 known     81 s
+ok     g1-2-stitch-human-laps           93 passed    0 failed   0 known    148 s
+ok     g1-3-search-train-rounds        220 passed    0 failed   0 known    318 s
+ok     g1-4-beam-search                147 passed    0 failed   0 known    165 s
+ok     g1-5-fine-key-timing            100 passed    0 failed   0 known     55 s
+ok     g1-6-offpolicy-rl               157 passed    0 failed   0 known    116 s
+KNOWN  g1-7-computed-racing-line       220 passed    0 failed   3 known     63 s
+KNOWN  g2-1-reference-free-inputs      156 passed    0 failed   1 known     65 s
+ok     g2-2-track-generator            144 passed    0 failed   0 known    119 s
+ok     g2-3-explore-and-adapt           94 passed    0 failed   0 known    119 s
+ok     g2-4-lookahead-driving          170 passed    0 failed   0 known     92 s
+KNOWN  g2-5-memory-policy              114 passed    0 failed   1 known     56 s
+
+13 folders: 1884 passed, 0 failed, 5 known failures, 25.3 minutes
+
+Known failures (written up in each folder's tests/TESTING.md, left in place):
+  g1-7-computed-racing-line: KNOWN FAIL car_model.json: the turning limit is stored finely enough to be good to 0.5% at 500 km/h | stored as 0.0035: 4 decimals is +-1.4% at 500 km/h (and +-0.6% at 300)
+  g1-7-computed-racing-line: KNOWN FAIL turning: S+A from 300 km/h, the deceleration 0.5 to 0.8 s in matches car.brake(v, 1) within 15% | measured -31.1 at 216 km/h, model -21.6 units/s^2 (-31%)
+  g1-7-computed-racing-line: KNOWN FAIL line file: the computed line starts where the car starts (shift 0 at the first point) | shift at point 0 is -0.59 units
+  g2-1-reference-free-inputs: KNOWN FAIL under the road: no progress is credited for distance driven on the ground beneath the road | 218 units of progress credited while under the road (progress reached 250 of 457); only the gate the game did not count stopped it
+  g2-5-memory-policy: FAIL (known defect) refLaps: every attempt that is followed by a cleared memory was flagged sessionEnd
+exit 1

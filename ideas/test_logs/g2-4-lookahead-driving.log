@@ -1,0 +1,188 @@
+
+== test_logic.mjs (0 s) ==
+PASS DEFAULTS are the settings the README reports (lazy, horizon 40, every 10, force 4 and 10, 6 samples, back 6)
+PASS A plain: 25 straight decisions, finished on tick 1230
+PASS A plain: costs exactly its own 1230 ticks
+PASS A plain: progress, fraction and tick are the end of the lap
+PASS A plain: the committed decisions are the simulator's actual history
+PASS A plain: the committed decisions driven again from the start end the same way (tick 1230, finished)
+PASS A plain: simTicks (1230) is every tick stepped (1230 counted here)
+PASS A plain: every save state was dropped (0 left)
+PASS A lazy: the same lap as plain when the policy never fails
+PASS A lazy: 6 replans, none troubled, 6 policy picks
+PASS A lazy: 3460 ticks by hand, reported 3460
+PASS A lazy: 6 marks, 12 rewinds (got 6, 12): no alternatives tried
+PASS A lazy: the committed decisions are the simulator's actual history
+PASS A lazy: the committed decisions driven again from the start end the same way (tick 1230, finished)
+PASS A lazy: simTicks (3460) is every tick stepped (3460 counted here)
+PASS A lazy: every save state was dropped (0 left)
+PASS A full: on equal scores the policy's own continuation is kept
+PASS A full: 1 + 9 try-outs and a commit per replan (66 rewinds, got 66)
+PASS A full: 23530 ticks by hand, reported 23530
+PASS A full: the committed decisions are the simulator's actual history
+PASS A full: the committed decisions driven again from the start end the same way (tick 1230, finished)
+PASS A full: simTicks (23530) is every tick stepped (23530 counted here)
+PASS A full: every save state was dropped (0 left)
+PASS defaults give 24 alternatives (26 rewinds per full replan, got 78 at 3 replans)
+PASS B plain: ends off track at position 6
+PASS B plain: fraction is 6 / 20
+PASS B lazy: left for two decisions, then straight, finished on tick 980
+PASS B lazy: 4 replans, 1 troubled and rescued, picks 1 forced + 3 policy
+PASS B lazy: 5760 ticks by hand, reported 5760
+PASS B lazy: alternatives only at the troubled replan (17 rewinds, got 17)
+PASS B lazy: the committed decisions are the simulator's actual history
+PASS B lazy: the committed decisions driven again from the start end the same way (tick 980, finished)
+PASS B lazy: simTicks (5760) is every tick stepped (5760 counted here)
+PASS B lazy: every save state was dropped (0 left)
+PASS B score=reward: the survivor with the larger summed reward is committed (right lane)
+PASS B score=progress: survivors level on progress, the first tried stays (left lane)
+PASS B score=value: discounted reward plus the value at the horizon decides (left lane)
+PASS score=value without a value function is refused
+PASS B score=reward: the committed decisions are the simulator's actual history
+PASS B score=reward: the committed decisions driven again from the start end the same way (tick 980, finished)
+PASS B score=reward: simTicks (5760) is every tick stepped (5760 counted here)
+PASS B score=reward: every save state was dropped (0 left)
+PASS C: 49.99 km/h at the horizon against a limit of 50 counts as failed, and the left lane is taken instead
+PASS C: exactly 50 km/h does not count as failed
+PASS C: only the speed at the end of the try-out is judged (a slow reading one decision earlier is ignored)
+PASS D: backs up two replan points, commits left there, finishes on tick 680
+PASS D: 8 replans, 1 dead end, 1 back-up, picks 7 policy + 1 forced
+PASS D: 11260 ticks by hand, reported 11260
+PASS D: the committed decisions are the simulator's actual history
+PASS D: the committed decisions driven again from the start end the same way (tick 680, finished)
+PASS D: simTicks (11260) is every tick stepped (11260 counted here)
+PASS D: every save state was dropped (0 left)
+PASS D back=2: three marks are kept, enough to back up two replan points
+PASS D back=2: the committed decisions are the simulator's actual history
+PASS D back=2: the committed decisions driven again from the start end the same way (tick 680, finished)
+PASS D back=2: simTicks (11260) is every tick stepped (11260 counted here)
+PASS D back=2: every save state was dropped (0 left)
+PASS D back=1: cannot back up far enough, ends in the wall after 10 decisions
+PASS D back=1: 5 replans, 2 dead ends, 0 back-ups
+PASS D back=1: the committed decisions are the simulator's actual history
+PASS D back=1: the committed decisions driven again from the start end the same way (tick 500, off track)
+PASS D back=1: simTicks (9100) is every tick stepped (9100 counted here)
+PASS D back=1: every save state was dropped (0 left)
+PASS D maxBackups=0: cannot back up far enough, ends in the wall after 10 decisions
+PASS D maxBackups=0: 5 replans, 2 dead ends, 0 back-ups
+PASS D maxBackups=0: the committed decisions are the simulator's actual history
+PASS D maxBackups=0: the committed decisions driven again from the start end the same way (tick 500, off track)
+PASS D maxBackups=0: simTicks (4100) is every tick stepped (4100 counted here)
+PASS D maxBackups=0: every save state was dropped (0 left)
+PASS E full: the earlier finish is committed whole (480 ticks), not the better-paid survivor
+PASS E full: the committed decisions are the simulator's actual history
+PASS E full: the committed decisions driven again from the start end the same way (tick 480, finished)
+PASS E full: simTicks (5980) is every tick stepped (5980 counted here)
+PASS E full: every save state was dropped (0 left)
+PASS E lazy: the policy's own finishing continuation is taken (580 ticks)
+PASS F plain sample=1: the decisions are the seed's own stream, one draw per decision
+PASS F plain: another seed gives another lap
+PASS F plain sample=0: top choices whatever the seed
+PASS F lazy: the same seed twice gives the same lap and the same cost
+PASS F lazy: the seed changes the sampled alternatives
+PASS F lazy: a committed sample steers at most for its first sampleFor decisions
+PASS F lazy seed 1: the committed decisions are the simulator's actual history
+PASS F lazy seed 1: the committed decisions driven again from the start end the same way (tick 980, finished)
+PASS F lazy seed 1: simTicks (4560) is every tick stepped (4560 counted here)
+PASS F lazy seed 1: every save state was dropped (0 left)
+PASS F lazy seed 2: the committed decisions are the simulator's actual history
+PASS F lazy seed 2: the committed decisions driven again from the start end the same way (tick 980, finished)
+PASS F lazy seed 2: simTicks (4860) is every tick stepped (4860 counted here)
+PASS F lazy seed 2: every save state was dropped (0 left)
+PASS F lazy seed 3: the committed decisions are the simulator's actual history
+PASS F lazy seed 3: the committed decisions driven again from the start end the same way (tick 980, finished)
+PASS F lazy seed 3: simTicks (4660) is every tick stepped (4660 counted here)
+PASS F lazy seed 3: every save state was dropped (0 left)
+PASS F lazy seed 4: the committed decisions are the simulator's actual history
+PASS F lazy seed 4: the committed decisions driven again from the start end the same way (tick 980, finished)
+PASS F lazy seed 4: simTicks (4660) is every tick stepped (4660 counted here)
+PASS F lazy seed 4: every save state was dropped (0 left)
+PASS F lazy seed 5: the committed decisions are the simulator's actual history
+PASS F lazy seed 5: the committed decisions driven again from the start end the same way (tick 980, finished)
+PASS F lazy seed 5: simTicks (4660) is every tick stepped (4660 counted here)
+PASS F lazy seed 5: every save state was dropped (0 left)
+PASS G: the fresh-car path ran (1 new car)
+PASS G: the lap is the same as on one car
+PASS G: 4260 ticks by hand, reported 4260
+PASS G: the committed decisions are the simulator's actual history
+PASS G: the committed decisions driven again from the start end the same way (tick 1230, finished)
+PASS G: simTicks (4260) is every tick stepped (4260 counted here)
+PASS G: every save state was dropped (0 left)
+
+== test_logs.mjs (0 s) ==
+PASS baseline: plain sampled attempts with seeds 10..19 on each of the three tracks
+PASS README: plain finishes 1, 7 and 1 of 10 (9 of 30) (logs: {"desert3":1,"summer3":7,"winter4":1})
+PASS README: eight of the nine winter4 failures end at 66.7 to 66.9%
+PASS README: the top-choice policy finishes none, ending at 17.7%, 66.5% and 36.4%
+PASS the main table's runs used the defaults (lazy, horizon 40, every 10, back 6, reward)
+PASS lookahead seeds: desert3 10..15, summer3 10..14, winter4 10..14 (16 laps)
+PASS README: the lookahead driver finished 16 of 16
+PASS README: the plain policy finished 1, 5 and 0 of the same seeds (6 of 16) (logs: 1, 5, 0)
+PASS README: lap times of the table (winter4 19.819 .. 25.069, desert3 20.793 .. 21.313, summer3 21.502 / 21.503)
+PASS README: cost 16 to 32, 9.3, and 9 to 39 times the lap's ticks, mean 17 (logs: mean 16.9)
+PASS README: the median of the five plain summer3 finishers on the same seeds is 21.07 s (21.071)
+PASS README: winter4 seed 11 needed 4 back-ups
+PASS README: desert4 specialist, plain 22.061, lazy the same lap (0 of 42 replans in trouble), full 21.988 / 22.006 / 22.042
+PASS README: lazy costs 4.8 x on a lap with no trouble; full on winter4 seed 10 took 22.773 s at 73 x
+PASS README: the horizon / interval and score tables
+PASS README: without backing up, desert3 seeds 11 and 12 ended at 53.4%; horizon 80 finished seed 11 in 22.669 s at 39.8 x
+     laps in the logs that took over 2 minutes of wall time: desert3 seed 11: 124 s; winter4 seed 11: 147 s; desert3 seed 11: 244 s; winter4 seed 10: 169 s
+
+== test_sim_a.mjs (62 s) ==
+PASS plain, seed 10, twice: the same attempt to the tick (stalled at tick 17271, 66.8% of the line)
+PASS plain: simTicks 17270 = ticks counted here 17270
+PASS plain: identical to an independently written sampled rollout (same seed; stops where the environment ends the episode, as lookahead does)
+PASS README: the plain policy does not finish winter4 with seed 10 and stops near 66.8% (got stalled at 66.8%)
+     lazy seed 10: finished 19819, 37 replans, 2 troubled, 2 rescued, 0 dead ends, 0 back-ups, 172540 ticks = 8.7x, 21 s wall
+PASS lazy, seed 10, twice: the same lap to the tick (19819)
+PASS lazy, twice: the same cost and the same picks
+PASS lazy: simTicks 172540 = ticks counted here 172540 (try-outs included)
+PASS README: the lookahead driver finishes winter4 with seed 10 where the plain policy does not
+PASS README: the seed 10 lap is 19.819 s (got 19819)
+PASS README: 8.7x the lap's ticks, no back-ups (got 8.70x, 0)
+PASS lazy: costs at least about horizon / every + 1 = 5 laps' worth (8.70x)
+PASS lazy: one replan per 10 committed decisions (37 replans, 397 decisions)
+PASS the committed decisions alone, from the start line, end on tick 19821 (driver said 19821)
+PASS the lap as keys on the bare simulator finishes on tick 19819 and passes Verify (one tick short is rejected: true)
+PASS the saved lap runs/g2-4-gen_winter4.json is this lap, key for key
+
+== test_sim_b.mjs (62 s) ==
+PASS winter4: both files state 19819 ticks (19.819 s) and hold that many keys
+PASS winter4: the recording string and the per-tick keys are the same lap
+PASS winter4: played from the start line on the bare simulator it finishes on tick 19819
+PASS winter4: the game's Verify passes at 19819 and rejects 19818 and 19820
+PASS winter4: the keys are exactly a sequence of block decisions (0 ticks differ)
+     winter4: 19.819 s against the fastest human lap 19.311 s
+PASS desert3: both files state 20793 ticks (20.793 s) and hold that many keys
+PASS desert3: the recording string and the per-tick keys are the same lap
+PASS desert3: played from the start line on the bare simulator it finishes on tick 20793
+PASS desert3: the game's Verify passes at 20793 and rejects 20792 and 20794
+PASS desert3: the keys are exactly a sequence of block decisions (0 ticks differ)
+     desert3: 20.793 s against the fastest human lap 20.302 s
+PASS summer3: both files state 21503 ticks (21.503 s) and hold that many keys
+PASS summer3: the recording string and the per-tick keys are the same lap
+PASS summer3: played from the start line on the bare simulator it finishes on tick 21503
+PASS summer3: the game's Verify passes at 21503 and rejects 21502 and 21504
+PASS summer3: the keys are exactly a sequence of block decisions (0 ticks differ)
+     summer3: 21.503 s against the fastest human lap 20.276 s
+     seed 12: plain stalled at 66.7%; top choices off track at 36.4%; lazy 21726, 12.5x ticks, 0 back-ups, 45 s wall
+PASS README: plain sampled, seed 12, stops near 66.8% on winter4 (66.7%)
+PASS README: the top-choice policy goes off track at 36.4% on winter4 (off track at 36.4%)
+PASS README: lazy lookahead, seed 12, finishes in 21.726 s (got 21726)
+PASS README: at 12.5x the lap's ticks (got 12.54x)
+PASS lazy follows the top choices until a replan point where trouble is in view (first 150 decisions shared)
+PASS seed 12: the committed decisions alone end on tick 21731 (driver said 21731)
+PASS seed 12: as keys on the bare simulator it finishes on tick 21726 and passes Verify
+
+== test_drive.mjs (29 s) ==
+PASS drive.mjs mode=plain seeds=10..12: one attempt per seed, exit code 0
+PASS the three plain attempts stop near 66.8% and the summary says "finished 0 of 3"
+PASS log=: one JSON line per attempt with its settings; a plain attempt costs exactly its own ticks; the printed mean share is the mean of the three
+PASS these three attempts end on the same ticks as in the author's log (plain_sample.jsonl)
+PASS seeds=3,7 without sample=1: top choices, the same attempt whatever the seed (off track at 36.4%)
+PASS drive.mjs without actor= prints its usage and exits with code 1
+PASS drive.mjs seeds=10 out=test-drv: finished in 19.819 s, 37 replans, 2 troubled and rescued, 8.7x the lap's ticks
+PASS it reports the lap as verified and saves both files under the g2-4- prefix
+PASS the saved lap is the README's runs/g2-4-gen_winter4, key for key (the documented command reproduces it)
+
+170 passed, 0 failed, 92 s

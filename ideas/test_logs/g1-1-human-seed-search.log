@@ -1,0 +1,92 @@
+
+== test_headlines.mjs
+PASS g1-1 does not import ideas/shared/sim_session.mjs (it drives sim/env.mjs save states itself), so the SimSession.load() defect cannot have affected its laps
+PASS runs/g1-1-smoke_desert4.recording.json exists
+PASS runs/g1-1-smoke_desert4.recording.json: says 21722 ticks on desert4 (claimed 21722)
+PASS g1-1-smoke desert4: replayed from the start line it finishes on tick 21722 (claimed 21722)
+PASS g1-1-smoke desert4: stopped at tick 21721 it has NOT finished
+PASS g1-1-smoke desert4: the game's Verify accepts 21722 (true) and rejects 21721 (true)
+PASS runs/g1-1-smoke_desert4.json: 21722 ticks and the same keys as the recording
+PASS desert4: lap 0 of data/laps replays to its stated 21750 ticks (got 21750) and is the fastest of the 10
+PASS g1-1-smoke desert4: 21722 is 28 ms FASTER than the best human lap (21750)
+PASS desert4: every key flip before tick 14750 (the last 7 s) is the human's; the first difference is at tick 17306
+PASS desert4: out/g1-1-smoke_desert4.recording.json is the same lap as the verified one in runs/
+PASS runs/g1-1-smoke_winter2.recording.json exists
+PASS runs/g1-1-smoke_winter2.recording.json: says 26816 ticks on winter2 (claimed 26816)
+PASS g1-1-smoke winter2: replayed from the start line it finishes on tick 26816 (claimed 26816)
+PASS g1-1-smoke winter2: stopped at tick 26815 it has NOT finished
+PASS g1-1-smoke winter2: the game's Verify accepts 26816 (true) and rejects 26815 (true)
+PASS runs/g1-1-smoke_winter2.json: 26816 ticks and the same keys as the recording
+PASS winter2: lap 0 of data/laps replays to its stated 26830 ticks (got 26830) and is the fastest of the 10
+PASS g1-1-smoke winter2: 26816 is 14 ms FASTER than the best human lap (26830)
+PASS winter2: every key flip before tick 19830 (the last 7 s) is the human's; the first difference is at tick 20282
+PASS winter2: out/g1-1-smoke_winter2.recording.json is the same lap as the verified one in runs/
+PASS runs/g1-1-smoke_summer4.recording.json exists
+PASS runs/g1-1-smoke_summer4.recording.json: says 34100 ticks on summer4 (claimed 34100)
+PASS g1-1-smoke summer4: replayed from the start line it finishes on tick 34100 (claimed 34100)
+PASS g1-1-smoke summer4: stopped at tick 34099 it has NOT finished
+PASS g1-1-smoke summer4: the game's Verify accepts 34100 (true) and rejects 34099 (true)
+PASS runs/g1-1-smoke_summer4.json: 34100 ticks and the same keys as the recording
+PASS summer4: lap 0 of data/laps replays to its stated 34105 ticks (got 34105) and is the fastest of the 10
+PASS g1-1-smoke summer4: 34100 is 5 ms FASTER than the best human lap (34105)
+PASS summer4: every key flip before tick 27105 (the last 7 s) is the human's; the first difference is at tick 30457
+PASS summer4: out/g1-1-smoke_summer4.recording.json is the same lap as the verified one in runs/
+PASS runs/g1-1-smoke_summer1.recording.json exists
+PASS runs/g1-1-smoke_summer1.recording.json: says 22127 ticks on summer1 (claimed 22127)
+PASS g1-1-smoke summer1: replayed from the start line it finishes on tick 22127 (claimed 22127)
+PASS g1-1-smoke summer1: stopped at tick 22126 it has NOT finished
+PASS g1-1-smoke summer1: the game's Verify accepts 22127 (true) and rejects 22126 (true)
+PASS runs/g1-1-smoke_summer1.json: 22127 ticks and the same keys as the recording
+PASS summer1: lap 0 of data/laps replays to its stated 22131 ticks (got 22131) and is the fastest of the 10
+PASS g1-1-smoke summer1: 22127 is 4 ms FASTER than the best human lap (22131)
+PASS summer1: every key flip before tick 15131 (the last 7 s) is the human's; the first difference is at tick 21254
+PASS summer1: out/g1-1-smoke_summer1.recording.json is the same lap as the verified one in runs/
+     README table: desert4 21.722, winter2 26.816, summer4 34.100, summer1 22.127 s
+   (test_headlines.mjs: 21 s)
+
+== test_worker.mjs
+PASS prepare(human lap, start 0): finishes on 21750
+PASS prepare(start 20000): the lap driven on from the save state finishes on the same tick
+PASS prepare with a limit one tick short of the finish: finishFrames null
+PASS prepare(a lap that never presses W): finishFrames null
+PASS an unknown command ('noop') is answered with an empty reply
+     last section, 20250 to the finish, 5 s: 89 tried, 89 driven on, 4 kept, 2 ms on the clock, 0.27 ms measured
+PASS last section, 20250 to the finish, 5 s: counts are consistent (tried >= driven on >= kept)
+PASS last section, 20250 to the finish, 5 s: the returned lap is a valid timeline (every key's flips strictly increasing)
+PASS last section, 20250 to the finish, 5 s: never slower than the input; "gained" is positive exactly when a step was kept; with none kept the lap is returned unchanged
+PASS last section, 20250 to the finish, 5 s: the returned lap replayed from the START LINE finishes on tick 21748; the worker says 21748
+PASS last section, 20250 to the finish, 5 s: no key change before the section start (tick 20250) was touched
+     section 18000 to 19500, 6 s: 63 tried, 26 driven on, 5 kept, 21 ms on the clock, 21.62 ms measured
+PASS section 18000 to 19500, 6 s: counts are consistent (tried >= driven on >= kept)
+PASS section 18000 to 19500, 6 s: the returned lap is a valid timeline (every key's flips strictly increasing)
+PASS section 18000 to 19500, 6 s: never slower than the input; "gained" is positive exactly when a step was kept; with none kept the lap is returned unchanged
+PASS section 18000 to 19500, 6 s: the returned lap replayed from the START LINE finishes on tick 21729; the worker says 21729
+PASS section 18000 to 19500, 6 s: no key change before the section start (tick 18000) was touched
+PASS search(seconds: 1) returns after 1.1 s
+PASS adopt(the lap found above): finishes on 21748 from this worker's save state too
+PASS the human lap has a key flip exactly on tick 21180 (what this case needs)
+     forced acceptance from tick 21180, seed 1: 122 tried, 54 kept, worker says 21747; left flips after 21100: 21120
+PASS seed 1: forced acceptance keeps many steps (54), so the lap has been changed many times
+PASS seed 1: after 54 kept steps no key flip has been moved to before the section start
+PASS seed 1: the lap replayed from the START LINE finishes on tick 21747; the worker says 21747
+     forced acceptance from tick 21180, seed 5: 114 tried, 64 kept, worker says 21748; left flips after 21100: 21120
+PASS seed 5: forced acceptance keeps many steps (64), so the lap has been changed many times
+PASS seed 5: after 64 kept steps no key flip has been moved to before the section start
+PASS seed 5: the lap replayed from the START LINE finishes on tick 21748; the worker says 21748
+   (test_worker.mjs: 32 s)
+
+== test_script.mjs
+PASS a starting lap that does not finish: exit code 1 (want 1) and it says so
+PASS and nothing is written to runs/
+PASS seconds=0: exit code 0 (want 0), "no improvement, nothing saved"
+PASS seed=<saved lap> is driven, and comes out at 21.722 s
+PASS and nothing is written to runs/
+PASS 16 s on the last 1.5 s of the human lap: exit code 0, starts from 21.750 s (21 s wall time)
+PASS last=1500 selects the 2 sections that start in the last 1.5 s; 2 processes by default
+PASS it reports PASS Verify for tick 21747
+PASS it wrote runs/g1-1-test-run_desert4.json and .recording.json (the name is g1-1-<out>)
+PASS independently: the saved lap replays to tick 21747, Verify accepts 21747 and rejects 21746, and it beats the human's 21750
+PASS out/<name>.recording.json (written on every improvement) ends up as the same lap
+   (test_script.mjs: 28 s)
+
+76 passed, 0 failed, 81 s

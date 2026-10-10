@@ -1,0 +1,30 @@
+desert4: the policy's own lap 22.061 s
+36 rollouts to the finish in 82 s
+
+start 20 decisions (1.0 s) into the lap: 18 states, 18 finish, finish times 22.029 .. 22.193 s (the policy's own lap: 22.061 s)
+  measure        rank agreement   top quarter against all
+  progress           0.24            -8 ms
+  value              0.28            -6 ms
+  look 5             0.18            -6 ms
+  look 10            0.26           -13 ms
+  look 20            0.25           -25 ms
+  look 40            0.21           -23 ms
+  lookvalue 5        0.21           -17 ms
+  lookvalue 10       0.03             1 ms
+  lookvalue 20      -0.04             8 ms
+  lookvalue 40      -0.06            -6 ms
+  (finish time)      1.00           -45 ms
+
+start 130 decisions (6.5 s) into the lap: 18 states, 17 finish, finish times 22.030 .. 22.289 s (the policy's own lap: 22.061 s)
+  measure        rank agreement   top quarter against all
+  progress           0.67          -101 ms
+  value              0.08           -92 ms
+  look 5             0.75          -120 ms
+  look 10            0.79          -120 ms
+  look 20            0.81          -118 ms
+  look 40            0.71          -108 ms
+  lookvalue 5        0.54          -117 ms
+  lookvalue 10       0.66           -88 ms
+  lookvalue 20       0.72          -111 ms
+  lookvalue 40       0.75          -108 ms
+  (finish time)      1.00          -123 ms

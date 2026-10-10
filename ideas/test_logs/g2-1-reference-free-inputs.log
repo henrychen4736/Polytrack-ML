@@ -1,0 +1,180 @@
+
+=== test_1_route_vs_human_sim.mjs
+PASS README: the validation table has a row for each of the 17 official tracks | 17 rows
+wasm streaming compile failed: TypeError: Cannot read properties of undefined (reading 'FinalizationRegistry')
+falling back to ArrayBuffer instantiation
+PASS summer1: the route is 1 unit per point from the spawn point, on the surface where it claims to be, through all 4 gates in order | 1254 points, steps 0.98..1.00, 1169 on the road (3 of them 0.35 to 1.1 off ride height, 0 with no surface under them), 1 flights
+PASS summer1: the tracker never reports the car nearer the route than a brute-force search over the whole route finds | 0 samples; tracker median 5.0, brute force 5.0
+PASS summer1: when the game reports the finish (tick 22131) progress is exactly the route's length | progress 1253 of 1253
+PASS summer1: "is there road under the car" is true for 99.5% or more of the human's four-wheels-down samples (README) | 0 of 1670 say no road
+PASS summer1: our own measurements reproduce the README's row (gates, lengths, distance median / 95% / max, off pace, above, drop, stall) | distance 5.0 / 36 / 44, off pace 0%, drop 0.0, stall 0.3 s
+PASS summer2: the route is 1 unit per point from the spawn point, on the surface where it claims to be, through all 3 gates in order | 951 points, steps 1.00..1.00, 951 on the road (161 of them 0.35 to 1.1 off ride height, 0 with no surface under them), 0 flights
+PASS summer2: the tracker never reports the car nearer the route than a brute-force search over the whole route finds | 0 samples; tracker median 9.5, brute force 9.5
+PASS summer2: when the game reports the finish (tick 15178) progress is exactly the route's length | progress 950 of 950
+PASS summer2: "is there road under the car" is true for 99.5% or more of the human's four-wheels-down samples (README) | 0 of 1295 say no road
+PASS summer2: our own measurements reproduce the README's row (gates, lengths, distance median / 95% / max, off pace, above, drop, stall) | distance 9.5 / 33 / 37, off pace 0%, drop 0.0, stall 0.3 s
+PASS summer3: the route is 1 unit per point from the spawn point, on the surface where it claims to be, through all 4 gates in order | 1409 points, steps 0.92..1.00, 1399 on the road (1 of them 0.35 to 1.1 off ride height, 0 with no surface under them), 1 flights
+PASS summer3: the tracker never reports the car nearer the route than a brute-force search over the whole route finds | 0 samples; tracker median 8.5, brute force 8.5
+PASS summer3: when the game reports the finish (tick 20276) progress is exactly the route's length | progress 1408 of 1408
+PASS summer3: "is there road under the car" is true for 99.5% or more of the human's four-wheels-down samples (README) | 0 of 1381 say no road
+PASS summer3: our own measurements reproduce the README's row (gates, lengths, distance median / 95% / max, off pace, above, drop, stall) | distance 8.5 / 25 / 33, off pace 0%, drop 0.0, stall 0.3 s
+PASS summer4: the route is 1 unit per point from the spawn point, on the surface where it claims to be, through all 5 gates in order | 2748 points, steps 0.95..1.00, 2725 on the road (39 of them 0.35 to 1.1 off ride height, 0 with no surface under them), 1 flights
+PASS summer4: the tracker never reports the car nearer the route than a brute-force search over the whole route finds | 0 samples; tracker median 41.3, brute force 19.8
+PASS summer4: when the game reports the finish (tick 34105) progress is exactly the route's length | progress 2747 of 2747
+PASS summer4: "is there road under the car" is true for 99.5% or more of the human's four-wheels-down samples (README) | 0 of 2731 say no road
+PASS summer4: our own measurements reproduce the README's row (gates, lengths, distance median / 95% / max, off pace, above, drop, stall) | distance 41.3 / 518 / 530, off pace 48%, drop 0.1, stall 11.5 s
+PASS summer5: the route is 1 unit per point from the spawn point, on the surface where it claims to be, through all 9 gates in order | 3798 points, steps 0.87..1.00, 3773 on the road (27 of them 0.35 to 1.1 off ride height, 0 with no surface under them), 2 flights
+PASS summer5: the tracker never reports the car nearer the route than a brute-force search over the whole route finds | 0 samples; tracker median 5.6, brute force 5.6
+PASS summer5: when the game reports the finish (tick 49872) progress is exactly the route's length | progress 3797 of 3797
+PASS summer5: "is there road under the car" is true for 99.5% or more of the human's four-wheels-down samples (README) | 0 of 4134 say no road
+PASS summer5: our own measurements reproduce the README's row (gates, lengths, distance median / 95% / max, off pace, above, drop, stall) | distance 5.6 / 68 / 79, off pace 0%, drop 0.0, stall 0.3 s
+PASS summer6: the route is 1 unit per point from the spawn point, on the surface where it claims to be, through all 10 gates in order | 2944 points, steps 0.98..1.00, 2800 on the road (108 of them 0.35 to 1.1 off ride height, 0 with no surface under them), 1 flights
+PASS summer6: the tracker never reports the car nearer the route than a brute-force search over the whole route finds | 0 samples; tracker median 4.6, brute force 4.6
+PASS summer6: when the game reports the finish (tick 37036) progress is exactly the route's length | progress 2943 of 2943
+PASS summer6: "is there road under the car" is true for 99.5% or more of the human's four-wheels-down samples (README) | 0 of 2874 say no road
+PASS summer6: our own measurements reproduce the README's row (gates, lengths, distance median / 95% / max, off pace, above, drop, stall) | distance 4.6 / 37 / 45, off pace 0%, drop 0.0, stall 0.3 s
+PASS summer7: the route is 1 unit per point from the spawn point, on the surface where it claims to be, through all 5 gates in order | 2090 points, steps 0.99..1.00, 2090 on the road (274 of them 0.35 to 1.1 off ride height, 0 with no surface under them), 0 flights
+PASS summer7: the tracker never reports the car nearer the route than a brute-force search over the whole route finds | 0 samples; tracker median 4.9, brute force 4.9
+PASS summer7: when the game reports the finish (tick 31142) progress is exactly the route's length | progress 2089 of 2089
+PASS summer7: "is there road under the car" is true for 99.5% or more of the human's four-wheels-down samples (README) | 0 of 2853 say no road
+PASS summer7: our own measurements reproduce the README's row (gates, lengths, distance median / 95% / max, off pace, above, drop, stall) | distance 4.9 / 51 / 85, off pace 3%, drop 0.4, stall 0.4 s
+PASS winter1: the route is 1 unit per point from the spawn point, on the surface where it claims to be, through all 3 gates in order | 1250 points, steps 0.95..1.00, 1240 on the road (17 of them 0.35 to 1.1 off ride height, 0 with no surface under them), 1 flights
+PASS winter1: the tracker never reports the car nearer the route than a brute-force search over the whole route finds | 0 samples; tracker median 4.8, brute force 4.8
+PASS winter1: when the game reports the finish (tick 17011) progress is exactly the route's length | progress 1249 of 1249
+PASS winter1: "is there road under the car" is true for 99.5% or more of the human's four-wheels-down samples (README) | 0 of 1613 say no road
+PASS winter1: our own measurements reproduce the README's row (gates, lengths, distance median / 95% / max, off pace, above, drop, stall) | distance 4.8 / 34 / 35, off pace 0%, drop 0.0, stall 0.3 s
+PASS winter2: the route is 1 unit per point from the spawn point, on the surface where it claims to be, through all 3 gates in order | 2809 points, steps 0.94..1.00, 2781 on the road (11 of them 0.35 to 1.1 off ride height, 0 with no surface under them), 2 flights
+PASS winter2: the tracker never reports the car nearer the route than a brute-force search over the whole route finds | 0 samples; tracker median 3.7, brute force 3.7
+PASS winter2: when the game reports the finish (tick 26830) progress is exactly the route's length | progress 2808 of 2808
+PASS winter2: "is there road under the car" is true for 99.5% or more of the human's four-wheels-down samples (README) | 0 of 2012 say no road
+PASS winter2: our own measurements reproduce the README's row (gates, lengths, distance median / 95% / max, off pace, above, drop, stall) | distance 3.7 / 42 / 55, off pace 0%, drop 0.0, stall 0.2 s
+PASS winter3: the route is 1 unit per point from the spawn point, on the surface where it claims to be, through all 6 gates in order | 2754 points, steps 0.86..1.00, 2739 on the road (32 of them 0.35 to 1.1 off ride height, 0 with no surface under them), 1 flights
+PASS winter3: the tracker never reports the car nearer the route than a brute-force search over the whole route finds | 0 samples; tracker median 3.2, brute force 3.2
+PASS winter3: when the game reports the finish (tick 34485) progress is exactly the route's length | progress 2753 of 2753
+PASS winter3: "is there road under the car" is true for 99.5% or more of the human's four-wheels-down samples (README) | 0 of 3282 say no road
+PASS winter3: our own measurements reproduce the README's row (gates, lengths, distance median / 95% / max, off pace, above, drop, stall) | distance 3.2 / 35 / 39, off pace 0%, drop 0.0, stall 0.3 s
+PASS winter4: the route is 1 unit per point from the spawn point, on the surface where it claims to be, through all 5 gates in order | 1854 points, steps 1.00..1.00, 1854 on the road (70 of them 0.35 to 1.1 off ride height, 0 with no surface under them), 0 flights
+PASS winter4: the tracker never reports the car nearer the route than a brute-force search over the whole route finds | 0 samples; tracker median 3.8, brute force 3.8
+PASS winter4: when the game reports the finish (tick 19311) progress is exactly the route's length | progress 1853 of 1853
+PASS winter4: "is there road under the car" is true for 99.5% or more of the human's four-wheels-down samples (README) | 0 of 1853 say no road
+PASS winter4: our own measurements reproduce the README's row (gates, lengths, distance median / 95% / max, off pace, above, drop, stall) | distance 3.8 / 19 / 24, off pace 0%, drop 0.0, stall 0.3 s
+PASS winter5: the route is 1 unit per point from the spawn point, on the surface where it claims to be, through all 3 gates in order | 1761 points, steps 1.00..1.00, 1761 on the road (51 of them 0.35 to 1.1 off ride height, 0 with no surface under them), 0 flights
+PASS winter5: the tracker never reports the car nearer the route than a brute-force search over the whole route finds | 0 samples; tracker median 2.6, brute force 2.6
+PASS winter5: when the game reports the finish (tick 18425) progress is exactly the route's length | progress 1760 of 1760
+PASS winter5: "is there road under the car" is true for 99.5% or more of the human's four-wheels-down samples (README) | 0 of 1733 say no road
+PASS winter5: our own measurements reproduce the README's row (gates, lengths, distance median / 95% / max, off pace, above, drop, stall) | distance 2.6 / 21 / 23, off pace 0%, drop 0.0, stall 0.3 s
+PASS desert1: the route is 1 unit per point from the spawn point, on the surface where it claims to be, through all 4 gates in order | 1645 points, steps 1.00..1.00, 1645 on the road (107 of them 0.35 to 1.1 off ride height, 0 with no surface under them), 0 flights
+PASS desert1: the tracker never reports the car nearer the route than a brute-force search over the whole route finds | 0 samples; tracker median 3.8, brute force 3.8
+PASS desert1: when the game reports the finish (tick 25259) progress is exactly the route's length | progress 1644 of 1644
+PASS desert1: "is there road under the car" is true for 99.5% or more of the human's four-wheels-down samples (README) | 0 of 1949 say no road
+PASS desert1: our own measurements reproduce the README's row (gates, lengths, distance median / 95% / max, off pace, above, drop, stall) | distance 3.8 / 24 / 36, off pace 0%, drop 0.0, stall 0.3 s
+PASS desert2: the route is 1 unit per point from the spawn point, on the surface where it claims to be, through all 5 gates in order | 2061 points, steps 0.79..1.00, 2054 on the road (32 of them 0.35 to 1.1 off ride height, 0 with no surface under them), 1 flights
+PASS desert2: the tracker never reports the car nearer the route than a brute-force search over the whole route finds | 0 samples; tracker median 4.5, brute force 4.5
+PASS desert2: when the game reports the finish (tick 28271) progress is exactly the route's length | progress 2060 of 2060
+PASS desert2: "is there road under the car" is true for 99.5% or more of the human's four-wheels-down samples (README) | 0 of 2624 say no road
+PASS desert2: our own measurements reproduce the README's row (gates, lengths, distance median / 95% / max, off pace, above, drop, stall) | distance 4.5 / 73 / 104, off pace 4%, drop 0.0, stall 0.3 s
+PASS desert3: the route is 1 unit per point from the spawn point, on the surface where it claims to be, through all 2 gates in order | 1543 points, steps 1.00..1.00, 1356 on the road (43 of them 0.35 to 1.1 off ride height, 0 with no surface under them), 1 flights
+PASS desert3: the tracker never reports the car nearer the route than a brute-force search over the whole route finds | 0 samples; tracker median 30.0, brute force 28.7
+PASS desert3: when the game reports the finish (tick 20302) progress is exactly the route's length | progress 1542 of 1542
+PASS desert3: "is there road under the car" is true for 99.5% or more of the human's four-wheels-down samples (README) | 0 of 1649 say no road
+PASS desert3: our own measurements reproduce the README's row (gates, lengths, distance median / 95% / max, off pace, above, drop, stall) | distance 30.0 / 52 / 56, off pace 0%, drop 0.0, stall 0.4 s
+PASS desert4: the route is 1 unit per point from the spawn point, on the surface where it claims to be, through all 4 gates in order | 1985 points, steps 1.00..1.00, 1985 on the road (6 of them 0.35 to 1.1 off ride height, 0 with no surface under them), 0 flights
+PASS desert4: the tracker never reports the car nearer the route than a brute-force search over the whole route finds | 0 samples; tracker median 5.9, brute force 5.9
+PASS desert4: when the game reports the finish (tick 21750) progress is exactly the route's length | progress 1984 of 1984
+PASS desert4: "is there road under the car" is true for 99.5% or more of the human's four-wheels-down samples (README) | 0 of 1806 say no road
+PASS desert4: our own measurements reproduce the README's row (gates, lengths, distance median / 95% / max, off pace, above, drop, stall) | distance 5.9 / 28 / 33, off pace 0%, drop 0.0, stall 0.3 s
+PASS desert5: the route is 1 unit per point from the spawn point, on the surface where it claims to be, through all 5 gates in order | 2668 points, steps 0.99..1.00, 2653 on the road (109 of them 0.35 to 1.1 off ride height, 5 with no surface under them), 1 flights
+PASS desert5: the tracker never reports the car nearer the route than a brute-force search over the whole route finds | 0 samples; tracker median 9.4, brute force 6.5
+PASS desert5: when the game reports the finish (tick 29027) progress is exactly the route's length | progress 2667 of 2667
+PASS desert5: "is there road under the car" is true for 99.5% or more of the human's four-wheels-down samples (README) | 0 of 2307 say no road
+PASS desert5: our own measurements reproduce the README's row (gates, lengths, distance median / 95% / max, off pace, above, drop, stall) | distance 9.4 / 96 / 156, off pace 11%, drop 1.0, stall 2.5 s
+PASS summary: results for all 17 tracks | 17
+PASS summary: the route reaches the finish through every gate on 17 of 17 tracks (README) | 17
+PASS summary: with the author's tracker, progress keeps step on exactly the 15 tracks the README names (drop at most 1 unit, stall at most 0.4 s, ends at the route's length) | loses step: desert5, summer4; worst of the 15: drop 0.39 units, stall 0.40 s
+PASS summary: with our own gate-free forward search, progress along the human lap also rises monotonically to the end on those same 15 tracks, and not on summer4 and desert5 | loses step: desert5 (drop 143 points, stall 5.6 s, reached 56%), summer4 (drop 5 points, stall 3.4 s, reached 100%); worst of the others: drop 1 points, stall 0.37 s
+PASS summary: summer4 and desert5 stall for 11.5 s and 2.5 s of the human lap (README), longer than the 2 s that ends an episode | 11.5 s, 2.5 s
+PASS summary: on the 15 good tracks the human is up to 104 units from the route (README: "off line at 20 or 40 units would end correct driving") | 9 tracks over 40 units; largest on a good track 104.1
+PASS summary: the memoryless locate() agrees with the tracker within 10 units for 95% or more of the samples on each of the 15 good tracks | lowest 96.6%
+--- test_1_route_vs_human_sim.mjs: 32.4 s
+
+=== test_2_observation_sim.mjs
+PASS observation: OBS_SIZE is 334
+PASS observation: every block starts where the header documents it (17, 20, 21, 81, 101, 103, 104, 144, 145, 146, 272, 292, 312, 315, 316, 317)
+PASS observation: the README's table of entries covers 0 to 333 with no gap and no overlap | 0-16 17-19 20-20 21-80 81-100 101-102 103-103 104-143 144-145 146-271 272-291 292-311 312-314 315-315 316-316 317-333
+PASS observation: 20 points ahead (LOOKAHEAD_POINTS), as the existing 352-number observation has
+wasm streaming compile failed: TypeError: Cannot read properties of undefined (reading 'FinalizationRegistry')
+falling back to ArrayBuffer instantiation
+PASS observation: 435 observations along the human lap are 334 finite numbers each | 435 observations, 0 of the wrong size, 0 non-finite numbers
+PASS observation: every number is within the documented clip of +-3 | largest magnitude 3.000
+PASS observation [0] speed, km/h / 300: matches our own computation on all 435 observations
+PASS observation [1..3] velocity in the car frame (left, up, forward) / 80: matches our own computation on all 435 observations
+PASS observation [4..6] world up in the car frame: matches our own computation on all 435 observations
+PASS observation [7..9] rotation rate about the car's axes, rad/s / 5: matches our own computation on all 435 observations
+PASS observation [10..13] wheel contacts: matches our own computation on all 435 observations
+PASS observation [14] steering angle / 0.45: matches our own computation on all 435 observations
+PASS observation [15] W minus S, [16] steering held (+1 left, -1 right): matches our own computation on all 435 observations
+PASS observation [17..19] nearest route point in the car frame / 10: matches our own computation on all 435 observations
+PASS observation [20] is 0 with lapFraction off: matches our own computation on all 435 observations
+PASS observation [20] is the fraction of the route covered with lapFraction on: matches our own computation on all 435 observations
+PASS observation [21..80] 20 route points ahead in the car frame, each / (k x gap), gap = max(2, speed x 0.15 s): matches our own computation on all 435 observations
+PASS observation [81..100] curvature at those points / 0.05: matches our own computation on all 435 observations
+PASS observation [104..143] room beside the route at those points, left then right, / 10: matches our own computation on all 435 observations
+PASS observation [146..271] route forward (3) and road up (3) in the car frame, nearest point then the 20 ahead: matches our own computation on all 435 observations
+PASS observation [272..291] slope at the 20 points: matches our own computation on all 435 observations
+PASS observation [292..311] 1 where the route is on the road: matches our own computation on all 435 observations
+PASS observation [101, 102] room from the car to the road edge, left and right, / 10: matches our own computation on all 435 observations
+PASS observation [103] body contact, [144] S held, [145] pedals read at the coming decision: matches our own computation on all 435 observations
+PASS observation [312] distance to the next flight, sqrt(d / 240), 1 if none within 240: matches our own computation on all 435 observations
+PASS observation [313, 314] that flight's length and take-off speed (0 if none within 240): matches our own computation on all 435 observations
+PASS observation [315] distance along the route to the next gate, sqrt(d / 240) capped at 1: matches our own computation on all 435 observations
+PASS observation [316] height of the car above the route / 10: matches our own computation on all 435 observations
+PASS observation [317] the ray straight ahead, sqrt(distance / 120): matches our own computation on all 435 observations
+PASS observation [330] the ray straight down from the car, [333] the ray straight down in world terms: matches our own computation on all 435 observations
+PASS observation [317..333] every ray reading is between 0 and 1: matches our own computation on all 435 observations
+PASS observation: the "forward" velocity entry really is forward: within 3% of the speedometer whenever the car is on four wheels above 100 km/h | 0 of 331 samples differ
+PASS observation: with the car level, "world up in the car frame" reads (0, 1, 0) | 303 of 303 level samples
+PASS observation: a route point 10 gaps ahead is about a unit direction (length 0.85 to 1.15) when the car is within 3 units of the route | 118 of 118
+PASS observation: with lapFraction on, entry 20 rises along the lap and ends at 1 | ends at 1.0000
+PASS observation: the lap finished on the human's tick (so the whole route was observed) | 21750
+PASS route: "left" is up x forward at every point (so + lateral is to the car's left) | 1985 of 1985
+PASS route: curvature is + for a left bend and in radians per unit (sign agrees with our own from the points at 95% of bends, mean ratio 0.8 to 1.25) | 807 of 807 agree in sign, mean ratio 1.12
+PASS route: slope is the climb per unit along the route (within 0.12 of the height change over 8 points, at 97% of on-road points) | 0 of 1977 differ
+PASS route: room beside the route is between 0 and 20 units on both sides everywhere
+--- test_2_observation_sim.mjs: 2.1 s
+
+=== test_3_under_road_sim.mjs
+PASS g2-1 builds a route for the generated track from its track string alone: every gate, no flights | 458 points, gates at 243, 457
+PASS the route lies on the generated road: on average under 1 unit, at worst under 3.5 units, from the road's measured centre line (the road is 5.6 either side) | mean 0.65, worst 1.23 units; length 457 against 459
+PASS route.edgeLeft + edgeRight on the straight pieces is the road's width (11.1 to 11.4 units kerb to kerb) | median 11.25 over 40 points
+wasm streaming compile failed: TypeError: Cannot read properties of undefined (reading 'FinalizationRegistry')
+falling back to ArrayBuffer instantiation
+PASS on the road: the follower finishes, progress never drops and ends at the route's length | drop 0.00, final progress 457 of 457
+PASS on the road: "road under the car" is true on every four-wheels-down sample and the car is within 0.5 units of the route's height | 0 of 2727 without road, largest height difference 0.03
+PASS under the road: the test really put a car on the ground beneath the intact road for a long stretch (over 300 samples, the game counting no checkpoint and no finish) | 2575 samples under the road, lowest y 0.11, checkpoint counter 0
+PASS under the road: the tracker says there is no road under the car on every one of those samples (at.overRoad false) | 2575 of 2575 (stateless locate(): 2575)
+PASS under the road: it reports the car about 10 units below the route (at.height) and 10 or more from it (at.offRoute) | median height -10.23, nearest 9.68 units from the route
+PASS under the road: progress never passes the first gate, which the game did not count | largest progress 249.5; first gate at 243; route length 457
+PASS under the road: the observation shows it: entry 316 (height above the route / 10) is about -1 | entry 316 = -1.019
+KNOWN FAIL under the road: no progress is credited for distance driven on the ground beneath the road | 218 units of progress credited while under the road (progress reached 250 of 457); only the gate the game did not count stopped it
+--- test_3_under_road_sim.mjs: 4.3 s
+
+=== test_4_scripts_sim.mjs
+PASS reference-free: route, surface, progress, observation and route_store import nothing that reads a human lap
+PASS summer1: the route built now from the track is the cached one (same points to 0.001, same gate points, flights and length) | 1254 points against 1254, largest difference 0.00009, built in 1.6 s
+PASS summer1: building the route twice gives the same route
+PASS summer1: gateStages gives one stage per checkpoint, then the finish (4 stages), each a detector box with a centre and a size | 1, 1, 1, 1 gate parts per stage
+PASS winter4: the route built now from the track is the cached one (same points to 0.001, same gate points, flights and length) | 1854 points against 1854, largest difference 0.00008, built in 3.4 s
+PASS validate.mjs: runs and exits 0
+PASS validate.mjs: "keeps step: 15 of 17" and "loses step: 2 of 17 (summer4, desert5)", no track without a route (README) | keeps step: 15 of 17  (summer1, summer2, summer3, summer5, summer6, summer7, winter1, winter2, winter3, winter4, winter5, desert1, desert2, desert3, desert4) | loses step: 2 of 17  (summer4, desert5) | no route: 0 of 17
+PASS validate.mjs: all 17 rows it prints are the README's table (gates, lengths, distances, off pace, above, drop, stall; end within 0.2%; no-road under 0.5%) | 17 rows
+PASS smoke_test.mjs desert4: exits 0 with "all checks passed" and no FAIL line
+PASS smoke_test.mjs: the "as now" entries equal RacingEnv's own observation over 178 decisions, largest difference 0 (README) | ok   car numbers [0..16], contact, pedal flags and the 17 rays equal RacingEnv's over 178 decisions (largest difference 0.0e+0)
+PASS smoke_test.mjs: 435 observations along the human lap, progress never drops, finish at 21750 ms with progress = the route's length (README) | ok   finished in 21750 ms; progress at the finish = 1984 of 1984
+PASS smoke_test.mjs: a car holding only W is seen to have no road under it from 3050 ms (README) | ok   with no human lap, the car is seen to leave the road (no surface under it from 3050 ms)
+PASS smoke_test.mjs: an observation takes under 2 ms (README: 0.5 to 0.7 ms) | 0.53 ms
+--- test_4_scripts_sim.mjs: 26.2 s
+
+============================================================
+Failures:
+  test_3_under_road_sim.mjs: KNOWN FAIL under the road: no progress is credited for distance driven on the ground beneath the road | 218 units of progress credited while under the road (progress reached 250 of 457); only the gate the game did not count stopped it
+156 passed, 0 failed, 1 known failures (defects written up in TESTING.md), 4 test files, 65 s

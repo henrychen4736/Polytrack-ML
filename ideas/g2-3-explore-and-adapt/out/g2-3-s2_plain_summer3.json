@@ -1,0 +1,58 @@
+{
+ "track": "summer3",
+ "mode": "plain",
+ "actor": "rl/checkpoints/ppo_blkgen.best2.actor.bin",
+ "seed": 2,
+ "humanFrames": 20276,
+ "lineLength": 1373,
+ "attempts": 2,
+ "lapsUsed": 1.978,
+ "wallSeconds": 9.6,
+ "cells": 0,
+ "frontier": 1,
+ "finished": true,
+ "finishFrames": 21287,
+ "verified": true,
+ "files": [
+  "runs/g2-3-s2-plain_summer3.json",
+  "runs/g2-3-s2-plain_summer3.recording.json"
+ ],
+ "log": [
+  {
+   "attempt": 1,
+   "laps": 0.927,
+   "kind": "greedy",
+   "level": 0,
+   "from": 0,
+   "fromLateral": 0,
+   "back": null,
+   "reached": 912.5,
+   "reason": "off track",
+   "moved": true,
+   "endLateral": -3.15,
+   "endSpeed": 17.3,
+   "endTick": 18791,
+   "approachLateral": -0.88,
+   "approachSpeed": 63.3,
+   "frontier": 0.6646
+  },
+  {
+   "attempt": 2,
+   "laps": 1.978,
+   "kind": "sample",
+   "level": 0,
+   "from": 0,
+   "fromLateral": 0,
+   "back": null,
+   "reached": 1373.5,
+   "reason": "finished",
+   "moved": true,
+   "endLateral": 2.32,
+   "endSpeed": 101.1,
+   "endTick": 21291,
+   "approachLateral": 2.23,
+   "approachSpeed": 99.8,
+   "frontier": 1
+  }
+ ]
+}

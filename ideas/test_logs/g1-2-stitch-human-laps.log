@@ -1,0 +1,110 @@
+
+== test_paths.mjs
+PASS angleBetween: the same orientation is 0
+PASS angleBetween: a quarter turn about y is pi/2
+PASS angleBetween: a half turn is pi
+PASS angleBetween: q and -q are the same orientation (0)
+PASS MOTION_GAP is 4, the same as SimSession measures velocity across
+PASS mismatch: distance 5 (3-4-5), velocity 2, spin 1, steering 0.5, wheels 2
+PASS mismatch cost with the default weights: 163 + 75 pi = 398.619 (got 398.619)
+PASS mismatch of a state with itself costs 0
+PASS mismatch is symmetric
+PASS mismatch with weights of its own: position and orientation set to 0 leave 63
+PASS stateAt(path, 16): that tick of every list
+PASS locate: the nearest tick to a point 0.4 ticks past tick 40 is 40
+PASS locate: distance to the nearest tick (0.3, 0.4 off the line -> 0.5)
+PASS locate only looks from `from` to `to`: a point at tick 40 searched in 50..60 gives 50
+PASS locate clamps the range to ticks 1..frames
+PASS crossings: boundaries every 250 ticks of the first lap, none in its last 125 ticks (3 for a 1000-tick lap)
+PASS crossings: a boundary faces the way the first lap was moving
+PASS crossings: the first lap crosses its own boundaries on ticks 250, 500, 750; first entry 0, last its finish
+PASS crossings: a lap at half the speed, 1 unit to the side, crosses on ticks 500, 1000, 1500
+PASS crossings: a lap 9 units to the side (reach is 8) has no crossing anywhere
+PASS crossings: a lap through a boundary point but heading 60 degrees off does not count as crossing it
+PASS crossings with reach 10: the lap 9 units to the side now crosses
+PASS sectionTimes: differences of crossing ticks; a lap with no crossings has its whole time on the first section
+PASS sectionTimes: plain differences
+PASS sectionTimes: a missed boundary books the whole stretch on the section before it
+PASS sectionTimes: two missed boundaries in a row
+PASS sectionTimes: every row adds up to the lap time, whatever was missed
+PASS planRoute: from lap 0 the cheapest is 0 -> 1 -> 0 at 290 (two switches at 5 each)
+PASS planRoute.route: the laps per section, and the time WITHOUT the switch costs (280)
+PASS planRoute: no switch is possible at boundary 0 (a car "arriving" on lap 1 drives section 0 on lap 1)
+PASS planRoute: nothing to go at the finish
+PASS planRoute.route from the middle: from boundary 2 on lap 1, switch to lap 0 for the last section
+PASS planRoute: switches that cost more than they gain are not planned
+PASS planRoute: with switches forbidden each lap costs its own time
+PASS planRoute calls switchCost(from, to, boundary): allowing only 0 -> 1 at boundary 1 gives 0, 1, 1
+PASS planRoute never asks for the cost of a switch on the start line or to the same lap
+PASS planRoute with a single lap and a single section
+   (test_paths.mjs: 0 s)
+
+== test_headline.mjs
+PASS runs/g1-2-stitch_desert4.recording.json exists
+PASS runs/g1-2-stitch_desert4.recording.json: says 21730 ticks on desert4 (claimed 21730)
+PASS g1-2-stitch desert4: replayed from the start line it finishes on tick 21730 (claimed 21730)
+PASS g1-2-stitch desert4: stopped at tick 21729 it has NOT finished
+PASS g1-2-stitch desert4: the game's Verify accepts 21730 (true) and rejects 21729 (true)
+PASS runs/g1-2-stitch_desert4.json: 21730 ticks and the same keys as the recording
+PASS desert4: lap 0 of data/laps replays to its stated 21750 ticks (got 21750) and is the fastest of the 10
+PASS g1-2-stitch desert4: 21730 is 20 ms FASTER than the best human lap (21750)
+PASS the stitched lap is human lap 1 key for key up to tick 17082 (README: the switch is at 17.0 s)
+PASS and it is no other human lap for that long (the longest other match ends at tick 970)
+PASS lap 1 alone is 21758 ticks, so the stitched 21730 beats both of its parents' whole laps (lap 7: 21792)
+   (test_headline.mjs: 6 s)
+
+== test_follow.mjs
+PASS recordPath: 21750 ticks, the lap's source and keys
+PASS recordPath: position, quaternion, velocity, spin, steering and wheels are filled for every tick 0..frames, all finite
+PASS recordPath: tick 0 (no state exists yet) is filled with the first state, velocity 0
+PASS recordPath throws when the lap does not finish on the tick its file states
+PASS path.position[2] is the car after 2 ticks
+PASS path.position / quaternion / steering / wheels [5000] are exactly the car after 5000 ticks
+PASS path.velocity and path.spin are the same quantities as SimSession.motion() (both across 4 ticks)
+PASS carState(sim): the car now, in the form mismatch() takes
+PASS compare() of the lap with itself: donor tick 5000, distance 0, mismatch 0.081 ms (rounding only)
+PASS compare() only looks within `slack` of the expected tick (expected 5300, slack 80: nearest is 5220)
+PASS follow raw, from on the lap, until donor tick 7000: stops exactly there, not lost, nothing tried
+PASS and the car is still exactly on the lap, with the lap's keys in sim.keys
+PASS follow does not overshoot `until` when it is less than one window away (50 ticks)
+PASS follow with `until` already reached drives nothing
+PASS follow raw to the finish (until = Infinity): finishes on the lap's tick 21750
+PASS and sim.keys is the whole lap
+PASS follow resync from on the lap: same as raw
+PASS follow repair from on the lap: stays on the lap
+PASS repair with the car already on the path scores only the uncorrected keys: 5 windows, 5 drives
+PASS and after its save / load cycles sim.keys and the car are exactly the lap at tick 6000
+     knocked off the lap: 0.02 units and 18 ms of mismatch from the donor at its tick 5059
+PASS the knocked-off car is far enough off that repair has to search (mismatch above `good`)
+     3 s later: raw LOST, resync LOST, repair 0.02 units off (327 candidates driven)
+PASS follow repair brings the knocked-off car along the donor lap for 3 s: not lost, within 1.5 units ("on path" in the README)
+PASS the repair really searched (327 candidate drives, against 15 windows)
+PASS and the mismatch at the end (2 ms) is no worse than at the start (18 ms)
+PASS the car's clock moved 3037 ticks for 3000 donor ticks (bounded by slack and one window)
+PASS after the repair sim.keys has one key per tick, no holes, and starts with the 5000 human keys
+PASS sim.keys after a repaired follow, replayed from the start line on a new car, ends in the identical car state
+PASS a car told to follow the lap from a donor tick 4 s away from where it is: lost (298 units off)
+PASS and the follow gives up after one window, not at the end of the lap
+   (test_follow.mjs: 13 s)
+
+== test_script.mjs
+PASS winter2 stitch=0: exit 0; best human / best of sections / planned route 26.830 / 26.778 / 26.830 s (README: 26.830 / 26.778 / 26.830)
+PASS stitch=0 joins=0 prints the tables only: no stitch, no Verify
+PASS summer1 stitch=0: exit 0; best human / best of sections / planned route 22.131 / 21.438 / 22.027 s (README: 22.131 / 21.438 / 22.027)
+PASS summer4 stitch=0: exit 0; best human / best of sections / planned route 34.105 / 33.505 / 33.637 s (README: 34.105 / 33.505 / 33.637)
+PASS desert4, defaults (joins=0 to skip the survival test): exit code 0 in 17 s
+PASS it prints best human 21.750, best of sections 21.680, planned route 21.734 as lap1 then lap7 from boundary 68 (the README table)
+PASS one switch kept, stitched lap 21.730 s, 20 ms faster, PASS Verify on tick 21730
+PASS it wrote runs/<name>_desert4.json and .recording.json
+PASS the lap written now is key for key the lap in runs/g1-2-stitch_desert4.recording.json: the headline result reproduces (and the SimSession.load fix did not change it)
+PASS forced bad switches without repair: the script reports NO LAP
+PASS and exits non-zero (exit code 1)
+PASS and writes nothing to runs/
+PASS accept-everything run: exit 0, 5 switches kept and 1 refused in 41 s
+PASS it reports PASS Verify (tick 21783) and wrote the lap
+PASS independently: that lap replays from the start line to tick 21783, Verify accepts it and rejects one tick fewer
+     (a lap of 21783 ticks: slower than the human's 21750, as the README says of loose settings)
+PASS joins=2 stitch=0: exit 0, a tally line for raw, resync and repair (raw     on path 1/2; resync  on path 1/2; repair  on path 2/2) in 17 s
+   (test_script.mjs: 128 s)
+
+93 passed, 0 failed, 148 s

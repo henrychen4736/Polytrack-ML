@@ -1,0 +1,10 @@
+desert4: the policy's own lap 22.061 s
+beam 4, 2 samples + 3 alternatives per member, rank by progress, 2 processes
+stopped at decision 130 (6.50 s): the beam is at 254.3..254.3 units, the policy's own lap was at 254.29
+    73 s  driven on from the end of the stretch: 22.035 s  (-26 ms)
+  3 of 3 members finish when the policy drives on: best 22.035 s, mean 22.058 s, worst 22.072 s
+
+169 candidates, 0 mid-lap rollouts (0 finished), 0.08 M ticks in 73 s (1 k ticks per second)
+cars used up and rebuilt: 13, 0 (per process)
+22.061 s -> 22.035 s (26 ms faster; policy's own lap 22.061 s)
+verified: 22.035 s, runs/g1-4-rebuild_desert4.json, runs/g1-4-rebuild_desert4.recording.json

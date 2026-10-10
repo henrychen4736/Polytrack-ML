@@ -1,0 +1,10 @@
+winter4, rl/checkpoints/ppo_blkgen.best2.actor.bin; reference (human) lap 19.311 s
+  seed 10: plain stalled at 66.8% of the line | lookahead finished in 19.819 s (2 of 37 replans in trouble, 2 rescued, 0 backed up; 19 s wall = 1.0x real time, 8.7x the lap's ticks)
+PASS seed 10: lookahead gets at least as far as the plain policy
+PASS seed 10: the committed decisions driven again end on the same tick (19821)
+  seed 12: plain stalled at 66.7% of the line | lookahead finished in 21.726 s (4 of 41 replans in trouble, 4 rescued, 0 backed up; 31 s wall = 1.4x real time, 12.5x the lap's ticks)
+PASS seed 12: lookahead gets at least as far as the plain policy
+PASS seed 12: the committed decisions driven again end on the same tick (21731)
+PASS the fastest lookahead lap passes Verify at 19819 ticks
+all passed in 64 s
+exit 0

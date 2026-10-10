@@ -1,0 +1,218 @@
+
+== test_laps.mjs
+PASS keysToTimeline: 6 hand-written ticks give the flip ticks worked out by hand
+PASS timelineToKeys: the same timeline gives back the 6 ticks
+PASS keysToTimeline: a key down from the first tick to the last is one flip at tick 0
+PASS timelineToKeys: past the last flip the last keys are held
+PASS timelineToKeys: a flip on tick `frames` itself is outside the result
+PASS keysToTimeline([]): five empty lists
+PASS timelineToKeys(empty, 0): no ticks
+PASS an empty lap encodes to a recording that decodes to no keys held
+PASS timeline -> recording string -> timeline is exact, with gaps of 1, 255, 256, 65536 and 16 million ticks
+PASS keysToRecording gives a base64url string without padding
+PASS keys -> recording -> keys is exact for the 6 hand-written ticks
+PASS sameKeys: different lengths are not the same
+PASS sameKeys: a missing key counts as released
+PASS sameKeys: the reset key is compared too
+PASS sameKeys: two empty laps are the same
+PASS decisionsToKeys: one decision is 1 empty tick + 50 ticks
+PASS decisionsToKeys: tick 0 empty; W from tick 1 (slice 0); A from tick 21 (slice 2), not tick 20
+PASS decisionsToKeys lead=0: only the 50 ticks
+PASS decisionsToKeys: the second block starts from the first block's keys and switches S at tick 61, steering at tick 91
+PASS decisionsToKeys: two decisions are 101 ticks
+PASS decisionsToKeys before=[right, W, -]: W released at slice 1, steering at slice 3
+PASS decisionsToKeys([]): just the one empty tick
+PASS decisionsToKeys([], lead 0): nothing
+PASS keysToDecisions inverts the two hand-written decisions (unchanged control: slice written as 0)
+PASS keysToDecisions: 0 wrong ticks, and `before` is the last decision's targets
+PASS keysToDecisions is exact on 50 random block-driven stretches of 30 decisions (0 wrong ticks, same keys back)
+PASS keysToDecisions: a 10 ms tap inside a block is lost, 10 wrong ticks
+PASS keysToDecisions: a press 14 ms into a block is rounded to slice 1, 4 wrong ticks
+PASS keysToDecisions: a press 46 ms into a block goes to the last slice (4), 6 wrong ticks
+PASS keysToDecisions: left + right held together reads as left
+PASS keysToDecisions: 71 ticks give 2 decisions (the short last block filled by holding), 0 wrong ticks
+PASS keysToDecisions([]): no decisions
+PASS keysToDecisions(one empty tick): no decisions
+PASS TRACKS: 17 names, each with data/laps/<track>.json
+PASS humanLaps: ten laps on each of the 17 tracks
+PASS humanLaps: fastest first on every track (so lap 0 is the best human lap we hold)
+PASS humanLaps: every lap has keys.length === frames, its track, source human:<n>, finished true
+PASS best human laps: desert4 21750, winter2 26830, summer4 34105, summer1 22131 ms (the times the ideas compare against)
+PASS loadLap(fixture:summer1) is the 22.279 s fixture lap, slower than data/laps lap 0 (CONTRACT, "Which human lap")
+PASS loadLap(human:3, track) is lap 3 of humanLaps
+PASS loadLap(human:10): throws (there are ten laps, 0..9)
+PASS humanLaps of an unknown track throws
+PASS loadLap({ finishFrames, controlsPerTick }): frames, keys, track taken from the object
+PASS loadLap({ frames, recording }): the same keys back; the track argument is used
+PASS loadLap of a crashed attempt: finished false, frames = number of keys
+PASS loadLap of an object in neither shape throws
+PASS loadLap reads runs/x.json and runs/x.recording.json to the same 21722 keys
+PASS CONTRACT: keysToDecisions gets 2.8% / 1.7% / 5.7% of ticks wrong on the best desert4 / summer1 / winter2 human laps
+     so block decisions do not replay a human lap, as the contract says
+   (test_laps.mjs: 3 s)
+
+== test_sim_session.mjs
+PASS create(name): trackName is the name
+PASS restart(): tick 0, no keys, no state, not finished, motion() null, budget left
+PASS drive([]) does nothing
+PASS hold(keys, 0) does nothing
+PASS the first tick: tick 1, one key kept, the state's own frame counter says 1
+PASS motion() is still null with one state known
+PASS the same 3000 keys in one drive() and in 261 uneven pieces leave the car in the identical state
+PASS sim.keys holds exactly the 3000 keys driven
+PASS state.frames equals the lap clock
+PASS save(): the point knows its tick and stores 0.16 MB
+PASS load(A): clock back to 3000 and sim.state is the state saved
+PASS load(A): motion() is what it was at the save
+PASS the same 1000 keys from the loaded point end in the identical car state
+PASS after a load the state's own frame counter follows the lap clock again
+PASS motion() one tick after a load: 171.5 km/h against the speedometer's 171.5
+PASS another branch from A (W + left for 1 s) ends somewhere else
+PASS load(B) after the other branch: the car is B's
+PASS load(B) after a different branch of the same length was driven from A: sim.keys is B's keys, not the other branch's
+PASS load(B) after a SHORTER branch from A: no missing entries in sim.keys
+PASS load(B) after a shorter branch: sim.keys is B's keys
+PASS driven on from B the lap finishes on the human's tick (21750)
+PASS after branch, load and finish, sim.keys is the lap that was actually driven (the human lap)
+PASS load(A) from further along the same branch: the first 3000 keys
+PASS loading the same points repeatedly, with driving in between, never corrupts a point's keys
+PASS load() of a point before the finish, taken after the car had finished: not finished
+PASS drive() with 500 keys too many stops at the finish: tick, finishFrames and keys.length all 21750
+PASS motion() at the finish is measured across the last 4 ticks as documented (it spans 4)
+PASS motion() at the finish: 507.8 km/h against the speedometer's 507.8
+PASS driving on after the finish does nothing
+PASS hold() after the finish does nothing
+PASS a point saved after the finish loads as finished
+PASS driven to tick 21749 the lap has NOT finished
+PASS the 21750th tick finishes it
+PASS the whole human lap from a fresh car: 21750 ticks, 0 body-contact ticks (CONTRACT: clean human laps have zero)
+PASS restart() kills earlier points: load() of one throws
+PASS no keys for 700 ticks: not finished, finishFrames null, 700 keys kept
+PASS and the car has not moved off
+PASS W + left for 3 s into the scenery: 1686 body-contact ticks counted
+PASS budgetLeft is true well inside the tick budget
+PASS create(CreateCar inputs): same car state after 3000 ticks as create(name), in a second simulator
+     one simulator at a time throughout
+   (test_sim_session.mjs: 7 s)
+
+== test_verify.mjs
+PASS scoreKeys(human lap): finished on tick 21750
+PASS scoreKeys returns the recording of the keys it was given
+PASS scoreKeys with maxFrames one tick short of the finish: not finished
+PASS scoreKeys with maxFrames exactly the finish tick: finished
+PASS scoreKeys(first 3 s): not finished, 0 checkpoints (default limit: 1000 ticks past the keys)
+PASS scoreKeys([]): not finished
+PASS the game's Verify accepts the human recording on tick 21750 only: 21749 and 21751 are both rejected
+PASS verifyAndSave(human lap, save: false): ok, 21750, verified, off-by-one rejected, no files
+PASS save: false really writes nothing
+PASS an Env passed to verifyAndSave is left open
+PASS verifyAndSave without an Env (boots and closes its own) and without a name when save is false
+PASS verifyAndSave(first 3 s): ok false, finished false, no files
+PASS an unfinished lap writes nothing under runs/
+PASS verifyAndSave([]): ok false
+PASS a lap spoiled 1.5 s before the line: finishes on 21839, verified at that tick
+PASS 400 keys too many: still 21750 (the extra keys are cut)
+PASS the two files written: track, finish tick, and exactly finishFrames keys
+PASS the saved keys are the lap, without the extra ones
+PASS the SAVED recording string passes the game's Verify on 21750 and is rejected on 21749
+PASS loadLap reads both files back to the lap
+PASS keys that stop 40 ticks before the line: the last keys are held, it finishes on 21750 and verifies
+PASS the saved lap is padded to exactly finishFrames keys
+PASS and the padding is the last key given
+PASS verifyAndSave refuses the run name "rollout"
+PASS verifyAndSave refuses the run name "g3-1-x"
+PASS verifyAndSave refuses the run name "g1-1"
+PASS verifyAndSave refuses the run name "g1-1-"
+PASS verifyAndSave refuses the run name "g1-1-a b"
+PASS verifyAndSave refuses the run name "x-g1-1-a"
+PASS verifyAndSave refuses the run name "g1-1-a/b"
+PASS verifyAndSave refuses the run name "../g1-1-a"
+PASS verifyAndSave refuses the run name undefined
+PASS verifyAndSave refuses a track that is not a name
+PASS the test left none of its files in runs/
+   (test_verify.mjs: 21 s)
+
+== test_track_info.mjs
+PASS loadTrackInfo(desert4): name, and environment 2 = Desert
+PASS desert4: 4 gates, path 1919.7 units (CONTRACT smoke: 1920 over 4 gates)
+PASS all 17 tracks: the finish is the last gate and only the last; cumulative starts at 0, rises, and ends at path.length
+PASS gates per track are within the contract's "2 to 10" (2 to 10)
+PASS progress on the start line: checkpoint 0, distance 0, toGate = straight line to the first gate
+PASS progress at the centre of gate 0 while aiming for it: distance = path length to that gate (307.0)
+PASS progress at the centre of gate 1 while aiming for it: distance = path length to that gate (1049.5)
+PASS progress at the centre of gate 2 while aiming for it: distance = path length to that gate (1688.8)
+PASS progress at the centre of gate 3 while aiming for it: distance = path length to that gate (1919.7)
+PASS progress halfway between gates 0 and 1: halfway between their path lengths
+PASS progress far from the next gate: clamped at the previous gate's path length, not negative
+PASS progress of a finished car: distance = path.length, fraction 1
+PASS a checkpoint counter past the last gate is clamped to the finish gate
+PASS ray straight down from 2 units above the start position hits the road 2.14 units below
+PASS ray straight up from there hits nothing: Infinity
+PASS raycastFar agrees with raycast on the same ray
+PASS a ray shorter than the distance to the road reports Infinity
+PASS mesh: 69062 triangles
+PASS loadTrackInfo(CreateCar inputs) and loadTrackInfo(save string): name null, same parts and path as by name
+PASS the car after its first tick is 0.000 units from path.start.position
+PASS progress() of the real car on the start line is 0
+   (test_track_info.mjs: 1 s)
+
+== test_policy_rollout.mjs
+PASS GROUPS cover 22 scores as 3 + 5 + 2 + 5 + 2 + 5; OBS_SIZE is 352
+PASS loadPolicy with the wrong observation size throws instead of reading garbage
+PASS loadValue of an ACTOR file throws (the sizes do not fit a one-output network)
+PASS createRng: same seed, same numbers in [0, 1); another seed, other numbers
+PASS decide(obs) is the top score of each of the six groups
+PASS logProb: the chances of all 1500 decisions add up to 1 (1.000000000000)
+PASS the decision logProb rates most likely is the one decide() returns
+PASS decide(obs, rng): over 30000 samples the steering choice comes up with the softmax chances (largest gap 0.0043)
+PASS decide at temperature 0.001 always takes the top choice
+PASS decide with the same seed samples the same decision
+PASS BLOCK_ENV is what the contract lists
+PASS fromStart: an observation of 352 numbers; the new car is not used up
+PASS roll with neither a decision nor a policy throws
+PASS fromStart twice: the identical observation
+PASS roll of no decisions: nothing driven, clock at 1 (the one empty tick), reward 0
+PASS the policy's top-choice lap finishes on tick 22061 (CONTRACT: 22.061 s)
+PASS 442 decisions = one per 50 ms after the empty first tick
+PASS decisionsToKeys gives the 22061 keys the environment held
+PASS keysToDecisions of that lap: 0 wrong ticks
+PASS 100 explicit decisions: clock at 5001, not done
+PASS explicit [d, null, null] with a policy: the nulls are the policy's top choices (the same as its own lap)
+PASS rewind(mark): the observation is the one at the mark
+PASS rewind(mark): the environment's progress is back too
+PASS the same sampled 2 s from the mark twice (same seed): same decisions, tick, progress and reward
+PASS and sampling really differs from the top choices
+PASS the rest of the lap replayed from the mark finishes on the same tick, 22061
+PASS no keys at all: cut off as "stalled" after 41 decisions, no finish time
+PASS SimSession driving decisionsToKeys(the lap) finishes on the tick RacingEnv reported
+PASS and the best human lap (21750) is faster than this policy lap, as BRIEF.md says
+PASS loadValue: 59.3 on the start line and 78.3 five seconds in (CONTRACT: 59 and 78)
+   (test_policy_rollout.mjs: 37 s)
+
+== test_pool.mjs
+PASS pool: replies come back in request order
+PASS pool: a request to a child that throws is rejected, not left waiting
+PASS pool: the rejection carries the child's own error text
+PASS pool: the surviving child still answers
+PASS pool: a later request to the dead child is rejected at once
+PASS pool: a child that dies while starting rejects createPool with its error
+   (test_pool.mjs: 1 s)
+
+== test_export_critic.py
+PASS export_critic.py on a block checkpoint: exit 0 and <checkpoint>.critic.bin written next to it
+PASS the critic file holds 156417 float32 values = three layers of a 352-256-256-1 network (156417)
+PASS layout: starts with the first layer's weights row by row, ends with the output bias
+PASS it prints the hidden width and the observation size
+PASS export_critic.py with no argument exits non-zero
+PASS a checkpoint that is not a block-decision one: exit non-zero, nothing written
+PASS a checkpoint file that does not exist: exit non-zero
+PASS rl/export_actor.py on the same copy (for the comparison below)
+PASS policy.mjs loads both files (absolute paths)
+PASS loadPolicy works out hidden = 256 from the file size; OBS_SIZE = 352 as the checkpoint says
+PASS policy.scores: the 22 scores agree with PyTorch on 3 observations (largest difference 1.9e-07)
+PASS loadValue: the value agrees with PyTorch's critic (largest difference 3.4e-07)
+PASS policy.decide without an rng is PyTorch's argmax of each of the six groups
+PASS policy.logProb agrees with PyTorch's log-softmax summed over the six groups (largest difference 2.7e-08)
+   (test_export_critic.py: 50 s)
+
+193 passed, 0 failed, 120 s

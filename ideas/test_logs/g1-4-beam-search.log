@@ -1,0 +1,157 @@
+
+=== test_prune.mjs ===
+PASS prune: keeps the BEAM best by score, best first
+PASS prune: fewer candidates than BEAM -> all of them
+PASS prune: the list given is not reordered
+PASS prune: nothing in, nothing out
+PASS prune: a candidate that is the same car as a better one (to 0.001) is dropped even when the beam has room
+PASS prune: 2 mm/s apart is not the same car
+PASS prune: at most perBucket (2) from one bucket while better-spread candidates remain
+PASS prune: perBucket=1
+PASS prune: when the spread ones run out, the beam is filled with what was passed over, best first
+PASS prune: never more than BEAM
+PASS prune: across 0.01 and 0.24 share a bucket (the third, elsewhere, is taken instead of the second)
+PASS prune: across 0.24 and 0.26 are different buckets
+PASS prune: just right and just left of the line (-0.01, +0.01) are different buckets
+PASS prune: across -0.01 and -0.24 share a bucket
+PASS prune: along 50.49 and 50.51 are different buckets, 50.01 and 50.49 the same
+PASS prune: the bucket sizes are the settings (latBin=1 alongBin=5 puts 0.24/0.26 and 50.49/50.51 together)
+PASS prune: the elite is kept whatever its score, and counts towards BEAM
+PASS prune: with a beam of 1 the elite is the only member
+PASS prune: a candidate that is the same car as the elite is dropped, not the elite
+PASS prune: the elite is outside the bucket count: its bucket holds the elite + perBucket (2) others, never more while spread ones remain
+PASS prune: 2 processes, beam 4 -> at most 3 from one process while the other has candidates
+PASS prune: ... but a process may fill the beam when the other has nothing left
+PASS prune: beam 8 on 2 processes -> the cap is 6
+PASS ranks: 1..n in order of size
+PASS ranks: ties share their mean rank
+PASS spearman: the same order -> 1
+PASS spearman: the opposite order -> -1
+PASS spearman: [1,2,3,4,5] against [2,1,4,3,5] -> 0.8
+PASS spearman: with a tie, the Pearson correlation of the mean ranks (0.9487)
+PASS spearman: a measure that is the same everywhere -> 0, not NaN
+
+=== test_child.mjs ===
+PASS root: a node on the start line, after the lap's one empty tick (tick 1)
+PASS finish from the root: the policy's own lap is the 22.061 s the README and CONTRACT.md give
+PASS finish: the number of decisions fits the finish tick (finish inside the last 50 ms block)
+PASS finish from the root: "rest" is the whole lap, with one progress value and one value estimate per decision
+PASS finish: progress along the lap never goes backwards by more than a unit
+PASS adopt 400 decisions: a node at tick 1 + 50 x 400 = 20001
+PASS adopt: reports where the policy's lap was at that decision (progress to 2 decimals)
+PASS expand: between 2 and 6 candidates (top choice, 2 samples, 3 alternatives, repeats removed), all from the node asked
+PASS expand: no two candidates are the same decision
+PASS expand: only the first candidate is marked "first"
+PASS expand: the first candidate is the policy's top choice (the decision its own lap took there)
+PASS expand: every candidate is written with slice 0 where a control does not change
+PASS expand: the three systematic alternatives are among them (the two other steering targets, W flipped)
+PASS expand without "mark": no save states are made (node 0) and every candidate is one block further (tick 20051)
+PASS expand: the top choice lands where the policy's own lap was one decision later
+PASS expand: the candidates do not all end in the same place
+PASS expand: reports the ticks it spent (50 per candidate)
+PASS expand: the same request again (same seed) gives the same candidates to the last digit
+PASS expand: another seed changes only the random choices (the first candidate and the alternatives stay)
+PASS expand with samples=0 alts=0: the top choice alone
+PASS expand with a forced decision: it comes first and is the one marked "first"; the top choice follows
+PASS expand with a forced decision: still no repeats
+PASS commit: one new node per pick, and every other node is freed
+PASS the first kept candidate, driven again from the start line (adopt), is the same car to the last digit
+PASS the last kept candidate likewise
+PASS ... and the reward so far agrees (to 1e-9; it is summed in a different order)
+PASS keep: frees everything not listed
+PASS finish from two nodes: answers in the order asked, each naming its node
+PASS finish from the top-choice node with no decisions given: the policy's own lap again, to the tick
+PASS finish: "decisions" is the node's 401 decisions followed by "rest"
+PASS finish with explicit decisions: they are driven first, then the policy
+PASS expand with lookahead=3: "look" is the distance after the candidate and 3 more top choices (the policy lap's own trace)
+PASS expand with lookahead=3: costs (1 + 3) x 50 ticks per candidate
+PASS expand with lookahead: the candidate itself is still reported one block on (not at the end of the lookahead)
+PASS expand with lookahead: "lookScore" is a number
+PASS expand with mark: every surviving candidate is a node of its own
+PASS adopt of decisions that end the lap (full left lock from the start): no node
+PASS idle: an empty reply
+PASS the policy's own lap (22061 ticks), replayed from its decisions on the bare simulator, finishes on the same tick
+PASS the policy's own lap: one tick fewer does not finish
+PASS the lap finished from the last kept candidate (22087 ticks), replayed from its decisions on the bare simulator, finishes on the same tick
+PASS the lap finished from the last kept candidate: one tick fewer does not finish
+PASS with carBudget=60000 the child rebuilt its nodes on a new car more than once during the same requests
+PASS the child without a budget never rebuilt
+PASS after rebuilds, all 18 replies (nodes, candidates, features, values, laps) are identical to the child that never rebuilt
+
+=== test_beam.mjs ===
+PASS no track given: usage and exit code 1
+PASS an unknown rank= is refused (exit code 1) before any simulator starts
+PASS g1-4-test-a: ends with exit code 0, a summary line and a "verified" line
+PASS g1-4-test-b: ends with exit code 0, a summary line and a "verified" line
+PASS g1-4-test-c: ends with exit code 0, a summary line and a "verified" line
+PASS g1-4-test-d: ends with exit code 0, a summary line and a "verified" line
+PASS g1-4-test-e: ends with exit code 0, a summary line and a "verified" line
+PASS g1-4-test-f: ends with exit code 0, a summary line and a "verified" line
+PASS g1-4-test-g: ends with exit code 0, a summary line and a "verified" line
+PASS the policy's own lap is 22.061 s in every run
+PASS determinism: the stretch run found a faster lap (so the comparison below is not of two untouched laps)
+PASS determinism: the same command twice gives the same lap to the tick
+PASS determinism: ... the same recording, character for character
+PASS determinism: ... and the same printed search (candidates, rollouts, beam positions, improvements, ticks), wall-clock numbers aside
+PASS rebuild: with carBudget=90000 a process rebuilt its nodes on a new car in the middle of the search
+PASS rebuild: a run without carBudget reports no rebuild
+PASS rebuild: the lap is the same to the tick, and the same recording, as the run that never rebuilt
+PASS rebuild: ... and the search printed the same (candidates, improvements, beam positions; tick totals aside)
+PASS elite: g1-4-test-a is not slower than the lap it started from (22061 -> 22040)
+PASS elite: g1-4-test-b is not slower than the lap it started from (22061 -> 22040)
+PASS elite: g1-4-test-c is not slower than the lap it started from (22061 -> 22040)
+PASS elite: g1-4-test-d is not slower than the lap it started from (22061 -> 22061)
+PASS elite: g1-4-test-e is not slower than the lap it started from (21907 -> 21907)
+PASS elite: g1-4-test-f is not slower than the lap it started from (21907 -> 21907)
+PASS elite: g1-4-test-g is not slower than the lap it started from (22061 -> 22061)
+PASS elite: started from the policy -> the starting lap is the policy's own
+PASS elite: with beam=1 from the policy's lap the result is that lap exactly (22.061 s)
+PASS elite, from a lap file: the file's lap (21.907 s) is taken as the starting lap
+PASS elite, from a lap file: beam=1 gives the file's lap back exactly (21.907 s)
+PASS elite, from a lap file: a beam of 4 run across the finish line (no depth) is not slower than 21.907 s, and far from the policy's 22.061 s
+PASS from a lap file: the run went to the line (it did not stop at a depth)
+PASS elite, from a lap file with beam=1: the saved keys are the file's keys on every one of the 21907 ticks
+PASS from=human:0 (a lap that is not block decisions): refused with the reason, and the policy's lap is used instead
+PASS ... the human lap really is faster than what the run reported (so "refused" is the honest outcome)
+PASS g1-4-test-a: printed time, "verified" time and saved file agree (22040 ticks)
+PASS g1-4-test-a: the saved recording, driven from the start line on the bare simulator, crosses the line on tick 22040
+PASS g1-4-test-a: ... and not one tick sooner
+PASS g1-4-test-a: the lap is made of block decisions (one empty tick, then 50 ms blocks; no tick out of place)
+PASS g1-4-test-c: printed time, "verified" time and saved file agree (22040 ticks)
+PASS g1-4-test-c: the saved recording, driven from the start line on the bare simulator, crosses the line on tick 22040
+PASS g1-4-test-c: ... and not one tick sooner
+PASS g1-4-test-c: the lap is made of block decisions (one empty tick, then 50 ms blocks; no tick out of place)
+PASS g1-4-test-d: printed time, "verified" time and saved file agree (22061 ticks)
+PASS g1-4-test-d: the saved recording, driven from the start line on the bare simulator, crosses the line on tick 22061
+PASS g1-4-test-d: ... and not one tick sooner
+PASS g1-4-test-d: the lap is made of block decisions (one empty tick, then 50 ms blocks; no tick out of place)
+PASS g1-4-test-e: printed time, "verified" time and saved file agree (21907 ticks)
+PASS g1-4-test-e: the saved recording, driven from the start line on the bare simulator, crosses the line on tick 21907
+PASS g1-4-test-e: ... and not one tick sooner
+PASS g1-4-test-e: the lap is made of block decisions (one empty tick, then 50 ms blocks; no tick out of place)
+PASS g1-4-test-f: printed time, "verified" time and saved file agree (21907 ticks)
+PASS g1-4-test-f: the saved recording, driven from the start line on the bare simulator, crosses the line on tick 21907
+PASS g1-4-test-f: ... and not one tick sooner
+PASS g1-4-test-f: the lap is made of block decisions (one empty tick, then 50 ms blocks; no tick out of place)
+PASS g1-4-test-g: printed time, "verified" time and saved file agree (22061 ticks)
+PASS g1-4-test-g: the saved recording, driven from the start line on the bare simulator, crosses the line on tick 22061
+PASS g1-4-test-g: ... and not one tick sooner
+PASS g1-4-test-g: the lap is made of block decisions (one empty tick, then 50 ms blocks; no tick out of place)
+PASS g1-4-smoke (the README's 21.997 s lap, as saved by its author): printed time, "verified" time and saved file agree (21997 ticks)
+PASS g1-4-smoke (the README's 21.997 s lap, as saved by its author): the saved recording, driven from the start line on the bare simulator, crosses the line on tick 21997
+PASS g1-4-smoke (the README's 21.997 s lap, as saved by its author): ... and not one tick sooner
+PASS g1-4-smoke (the README's 21.997 s lap, as saved by its author): the lap is made of block decisions (one empty tick, then 50 ms blocks; no tick out of place)
+PASS g1-4-test-a: the game's Verify accepts tick 22040 and rejects 22039
+PASS g1-4-test-e: the game's Verify accepts tick 21907 and rejects 21906
+PASS the test laps were removed from runs/ again
+
+=== test_calibrate.mjs ===
+PASS calibrate.mjs at=420 n=6: runs to the end (exit code 0)
+PASS calibrate: starts from the policy's own 22.061 s lap
+PASS calibrate: at most the 6 states asked for, all at one start point, with their finish times
+PASS calibrate: one row per measure (progress, value, look and lookvalue at 5/10/20/40) and the finish time itself
+PASS calibrate: every rank agreement lies in [-1, 1]
+PASS calibrate: no measure's top quarter is faster than the true fastest quarter
+PASS calibrate: the same command twice prints the same table
+
+147 passed, 0 failed, 165 s
