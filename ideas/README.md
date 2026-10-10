@@ -425,3 +425,49 @@ existing file: the laps under `runs/` listed above (names start with the
 idea's id); `rl/checkpoints/ppo_blkgen.best2.actor.bin` and `.critic.bin`,
 `rl/checkpoints/ppo_sr1_desert4.u800.critic.bin` (exports of existing
 checkpoints); `rl/checkpoints/g2-3-bc_winter4.npz`.
+
+## Overnight results, 10 October 2026 (added by the main session)
+
+Run after the sections above were written, on the idle machine.
+
+**Search from the human's lap (g1-1), two whole-lap passes of 20 minutes per
+track on 8 processes.** All four pass the game's Verify and are rejected one
+tick sooner. Laps: `runs/g1-1-full2_<track>.recording.json` (copies in
+`ideas/g1-1-human-seed-search/out/`).
+
+| Track | Best human | Smoke test | Pass 1 | Pass 2 | Under the human by |
+| --- | --- | --- | --- | --- | --- |
+| desert4 | 21.750 s | 21.722 s | 21.710 s | 21.709 s | 41 ms |
+| winter2 | 26.830 s | 26.816 s | 26.793 s | 26.775 s | 55 ms |
+| summer1 | 22.131 s | 22.127 s | 22.107 s | 22.104 s | 27 ms |
+| summer4 | 34.105 s | 34.100 s | 34.087 s | 34.069 s | 36 ms |
+
+Pass 2 added 1 to 3 ms on desert4 and summer1, so those two are close to what
+this search finds; winter2 and summer4 still gained 18 ms each.
+
+**Off-policy learner (g1-6), first real run: desert4, GPU, 6 simulators, 3
+hours, 9.2 million decisions, from scratch.** Reward is distance along the
+track only; no imitation start. Log: `runs/g1-6-iqn_desert4.log`; checkpoints
+`rl/checkpoints/g1-6-iqn_desert4.pt` and `.best.pt`.
+
+| Decisions | Best lap from the start line, no exploring |
+| --- | --- |
+| 0.46 M | 26.70 s |
+| 1.04 M | 23.97 s |
+| 2.15 M | 22.75 s |
+| 3.4 M | 22.23 s |
+| 6.3 M | 22.02 s |
+| 9.2 M | 21.957 s |
+
+For comparison the PPO specialists drive 22.0 to 22.1 s after an imitation
+start and about 100 million decisions of generalist training, and the human
+lap is 21.750 s. The learner's laps still vary from run to run (22.07 to
+22.33 s over the last four checks), and the run was stopped by the clock, not
+because it had levelled off. The GPU was the limit (95% of the time spent
+learning, about 760 decisions per second). No lap from this run has been
+exported or put through Verify yet.
+
+**Search-then-train, round 2 (`scripts/search_round.sh`).** Searched laps
+after round 2 against round 1: desert4 21.880 s (was 21.907), summer4 34.505
+(34.500), summer1 22.371 (22.334), winter2 27.031 (27.020). Only desert4
+improved, so no third round was run.
