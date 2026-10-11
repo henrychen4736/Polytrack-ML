@@ -6,3 +6,8 @@ __pycache__/
 runs/
 graphify-out/cache/
 graphify-out/.graphify_*
+# Not published: the game's captured geometry and other players' leaderboard laps
+data/
+# ... and files derived from those laps
+ideas/g1-1-human-seed-search/out/
+ideas/g1-7-computed-racing-line/out/
