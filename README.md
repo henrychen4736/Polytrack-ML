@@ -49,6 +49,21 @@ npm test          # both acceptance tests below
 
 Needs Node 20+. `npm run capture` additionally needs Microsoft Edge.
 
+### Getting the data
+
+The code needs two things that are deliberately not published here:
+
+- `data/init_0.6.3.json` and `data/createcar_<track>.json`: what the real
+  game client sends its physics worker. `npm run capture` regenerates them in
+  headless Edge with `vps.kodub.com` blocked.
+- `data/laps/<track>.json`: the ten fastest leaderboard laps per track, used
+  as reference laps. `node scripts/fetch_laps.mjs` downloads them. It is the
+  only script here that contacts Kodub's server, and it only reads.
+
+Files derived from those laps (`ideas/g1-1-human-seed-search/out/`,
+`ideas/g1-7-computed-racing-line/out/`) are not published either; the scripts
+in those folders recreate them.
+
 Training needs Python with PyTorch. The project's `.venv` has the CUDA build;
 use `.venv/Scripts/python` and `--device cuda` to train on the GPU.
 
@@ -70,8 +85,9 @@ use `.venv/Scripts/python` and `--device cuda` to train on the GPU.
 - `ideas/`: twelve separate approaches, each in its own folder with a README
   and tests, plus `ideas/shared/` for code they have in common.
 - `data/`: messages the real client posted to its worker, and human laps
-  (`data/laps/<track>.json`, ten per track). Kodub's geometry; do not
-  redistribute.
+  (`data/laps/<track>.json`, ten per track). **Not in this repository**: it is
+  Kodub's geometry and other players' laps, which are not ours to
+  redistribute. See "Getting the data" below.
 - `runs/`, `rl/checkpoints/`: results and model files. Both are git-ignored.
 - `graphify-out/`: a knowledge graph of the code. Ask it with
   `graphify query "<question>"`; refresh it with `graphify update .`.
