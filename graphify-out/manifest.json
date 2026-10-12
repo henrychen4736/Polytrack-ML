@@ -264,10 +264,10 @@
     "semantic_hash": "623a78853c28300ea7b2cfa811588d36"
   },
   "README.md": {
-    "mtime": 1791786310.622825,
-    "seen": 1791790269.3075793,
-    "ast_hash": "08d8952bc0468da7089c4971895b15eb",
-    "semantic_hash": "08d8952bc0468da7089c4971895b15eb"
+    "mtime": 1791794270.3400035,
+    "seen": 1791794288.8419988,
+    "ast_hash": "66ba3f98a2223c73f65c1838d47a7ef9",
+    "semantic_hash": ""
   },
   "rl/README.md": {
     "mtime": 1791191822.153144,
@@ -282,10 +282,10 @@
     "semantic_hash": "093f6a0f9c8d4b849c2da1eac9847837"
   },
   "scripts/eval_block_specialist.sh": {
-    "mtime": 1791400998.2320302,
-    "seen": 1791790269.3075793,
-    "ast_hash": "e94b7737999001dda2776422cbcf251e",
-    "semantic_hash": "e94b7737999001dda2776422cbcf251e"
+    "mtime": 1791791935.9045193,
+    "seen": 1791793990.533852,
+    "ast_hash": "f8a02f79853db896cfc42a98100a7e20",
+    "semantic_hash": ""
   },
   "scripts/eval_generalist.sh": {
     "mtime": 1791365875.3452096,
@@ -540,10 +540,10 @@
     "semantic_hash": "b01dc59091e3ca2c804de3399673bb96"
   },
   "ideas/g1-6-offpolicy-rl/train_iqn.py": {
-    "mtime": 1791623930.6943612,
-    "seen": 1791790269.3075793,
-    "ast_hash": "743d81054df39c5b60e052a37c2ea3fb",
-    "semantic_hash": "743d81054df39c5b60e052a37c2ea3fb"
+    "mtime": 1791792249.513759,
+    "seen": 1791793990.5333464,
+    "ast_hash": "91c2c6c349b482503d79bee7e6e3ad07",
+    "semantic_hash": ""
   },
   "ideas/g1-7-computed-racing-line/car_model.json": {
     "mtime": 1791627284.0185971,
@@ -2632,5 +2632,35 @@
     "seen": 1791790269.3085904,
     "ast_hash": "be32fbcf3baa3687360f5ea60fb04b8b",
     "semantic_hash": "be32fbcf3baa3687360f5ea60fb04b8b"
+  },
+  ".claude/settings.json": {
+    "mtime": 1791793923.1227188,
+    "seen": 1791793990.5323472,
+    "ast_hash": "0fc09b32988d3068c717e3d4b4c9d728",
+    "semantic_hash": ""
+  },
+  "ideas/g1-6-offpolicy-rl/eval_lap.py": {
+    "mtime": 1791792249.514266,
+    "seen": 1791793990.5333464,
+    "ast_hash": "68a199d5a71a6bed0e8e89be7dbcfdeb",
+    "semantic_hash": ""
+  },
+  "CLAUDE.md": {
+    "mtime": 1791794270.3400035,
+    "seen": 1791794288.8419988,
+    "ast_hash": "f82743b81a6a96903ed16bd68f9fc364",
+    "semantic_hash": ""
+  },
+  "docs/model-history.md": {
+    "mtime": 1791794270.3389015,
+    "seen": 1791794288.8419988,
+    "ast_hash": "703e446de4638174c5722eafbf70c9c9",
+    "semantic_hash": ""
+  },
+  "skill-out.txt": {
+    "mtime": 1791793272.2954717,
+    "seen": 1791793990.533852,
+    "ast_hash": "8b3830bf7596b7910d827cf5f814d40d",
+    "semantic_hash": ""
   }
 }

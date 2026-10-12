@@ -114,7 +114,10 @@ the conventions, the state of every model, and how each one came to be.
 
 - **Human lap / reference.** Lap 0 of `data/laps/<track>.json` is the best
   human lap. The training environment needs a reference lap: its line, speeds
-  and keys are in the model's inputs and its line measures progress.
+  and keys are in the model's inputs and its line measures progress. On summer1 the
+  environment's default reference is polyrl's fixture lap (22.279 s), which
+  is why test output prints that as "human"; the best human lap there is
+  22.131 s.
 - **Old scheme.** One decision per 10 ms from 12 key combinations, W and S
   re-read every 50 ms.
 - **Block decision.** One decision per 50 ms: for each of steering, W and S, a
@@ -131,7 +134,7 @@ the conventions, the state of every model, and how each one came to be.
 
 | Track | Best human | Human lap re-timed by search | Best lap a model drives |
 | --- | --- | --- | --- |
-| desert4 | 21.750 s | 21.709 s | 21.880 s (PPO + search), 21.957 s (IQN, unverified) |
+| desert4 | 21.750 s | 21.709 s | 21.880 s (PPO + search), 21.977 s (IQN alone) |
 | winter2 | 26.830 s | 26.775 s | 27.020 s |
 | summer1 | 22.131 s | 22.104 s | 22.334 s |
 | summer4 | 34.105 s | 34.069 s | 34.500 s |
@@ -158,7 +161,7 @@ may already have been tried. The table below is the index.
 | 2 | `ppo_general` | First generalist, 14 tracks | 9 of 51; replaced |
 | 3 | `ppo_general2` | + road edges, contact penalty | 31 of 51; tapped W |
 | 4 | `ppo_general3` | + held keys, imitation start | 114 of 170; old-scheme benchmark |
-| 5 | `ppo_follow` | Follow the reference lap | Peaked below #4; dropped |
+| 5 | `ppo_follow` | Follow the reference lap | 85 of 170: fast, unreliable; dropped |
 | 6 | `ppo_rays` | + 17 distance rays | No gain over #4 |
 | 7 | `ppo_spec_*` | First specialists | Wobbly on straights |
 | 8 | `ppo_spec2_*` | + steering costs | Superseded by blocks |
@@ -169,7 +172,7 @@ may already have been tried. The table below is the index.
 | 13 | `ppo_gblk_*` | Set 2: specialists from #12 | Best specialists |
 | 14 | `ppo_g3blk_*` | Set 3: + rules 1, 2, 3 | No better than #13 |
 | 15 | `ppo_sr1_*`, `ppo_sr2_*` | Search, then train | Stalled after two rounds |
-| 16 | `g1-6-iqn_desert4` | Off-policy learner | Matched PPO in 3 hours |
+| 16 | `g1-6-iqn_desert4` | Off-policy learner | 21.977 s in 3 hours, from scratch |
 
 ## The models last trained, and what they are for
 
@@ -194,15 +197,20 @@ an interruption.
 
 - Files: `rl/checkpoints/g1-6-iqn_desert4.pt` (latest, 9.2M),
   `g1-6-iqn_desert4.best.pt`, `.actor.bin`; log `runs/g1-6-iqn_desert4.log`.
-- Not done: its 21.957 s lap has not been exported or put through Verify, and
-  `--resume` and `--save-laps` are tested only at toy size.
+- Verified: the latest checkpoint drives **21.977 s** and passes the game's
+  Verify (`runs/g1-6-iqn-latest_desert4.recording.json`). The 21.957 s the
+  training log reported cannot be reproduced; the network that drove it was
+  not the one saved. `ideas/g1-6-offpolicy-rl/eval_lap.py` drives and saves a
+  lap from any checkpoint.
+- Not done: `--resume` and `--save-laps` are tested only at toy size. A
+  resumed run starts with an empty replay buffer.
 - The intention is the first model that beats the human unaided. Next: resume
-  it on desert4, verify its best lap, and see whether it passes 21.750 s. It
+  it on desert4 and see whether it passes 21.750 s; it is 227 ms short. It
   was limited by the GPU (95% of time in learning), not the simulators.
 
 ## What is next
 
-1. Resume the off-policy learner on desert4 and verify its best lap.
+1. Resume the off-policy learner on desert4 (verified best so far 21.977 s).
 2. Send one message per block decision instead of five in
    `rl/racing_env.mjs` (`stepBlock`). Two agents measured about 11 ms per
    block decision against 2.5 ms for one 50 ms step on a busy machine;
