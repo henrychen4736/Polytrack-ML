@@ -276,6 +276,14 @@ def main(argv=None) -> None:
                         # itself (driven again: it is deterministic, 1 to 2 s).
                         save_checkpoint()
                         shutil.copyfile(checkpoint_path, checkpoint_path.with_suffix(".best.pt"))
+                        # The lap was driven by the weights FILE, which was
+                        # written before this round's gradient steps; the
+                        # checkpoint just saved holds the network after them.
+                        # So .best.pt does not reproduce the lap exactly (the
+                        # first real run: stored best 21.957 s, .best.pt drives
+                        # 22.023 s). Keep the file that did drive it as well;
+                        # eval_lap.py --actor replays it.
+                        shutil.copyfile(weights_file, checkpoint_path.with_suffix(".best.actor.bin"))
                         if args.save_laps:
                             servers.evaluate(weights_file, save="g1-6-iqn")
                 else:

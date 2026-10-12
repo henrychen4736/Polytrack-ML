@@ -25,7 +25,7 @@ sooner.
 
 | Method | desert4 | Notes |
 | --- | --- | --- |
-| Off-policy learner (IQN), from scratch | 21.957 s | 3 hours, 9.2 million decisions, reward is distance only; not yet put through Verify |
+| Off-policy learner (IQN), from scratch | 21.977 s | 3 hours, 9.2 million decisions, reward is distance only; passes Verify |
 | PPO specialist + model-guided search | 21.880 s | after two rounds of search-then-train |
 | PPO specialist alone | 22.0 to 22.1 s | imitation start, inherits from the generalist |
 | Best human | 21.750 s | |
@@ -171,7 +171,7 @@ for matching the human.
 .venv/Scripts/python -u ideas/g1-6-offpolicy-rl/train_iqn.py --track desert4 --envs 6 --device cuda --total-decisions 30000000
 ```
 
-Its first run reached 21.957 s on desert4 in 3 hours from scratch and was
+Its first run reached 21.977 s on desert4 (verified) in 3 hours from scratch and was
 stopped by the clock, not because it had levelled off. The GPU is its limit,
 not the simulators.
 
@@ -186,7 +186,7 @@ Each folder under `ideas/` has its own README with commands and numbers.
 | `g1-3-search-train-rounds` | Unattended, restartable search-then-train rounds | Tested in dry runs only |
 | `g1-4-beam-search` | Keep many partial laps alive at once | Does not beat the existing search |
 | `g1-5-fine-key-timing` | Re-time each key press to the millisecond | desert4 21.722 s from the human lap |
-| `g1-6-offpolicy-rl` | Off-policy learner, distance-only reward | desert4 21.957 s from scratch |
+| `g1-6-offpolicy-rl` | Off-policy learner, distance-only reward | desert4 21.977 s from scratch |
 | `g1-7-computed-racing-line` | Racing line from a fitted car model | Not faster than the human; the car model is reusable |
 | `g2-1-reference-free-inputs` | Route, progress and inputs with no human lap | Route correct on 15 of 17 tracks; not yet trained on |
 | `g2-2-track-generator` | Random tracks from the game's pieces | Narrow-road tracks only; a scripted driver finishes them all |
