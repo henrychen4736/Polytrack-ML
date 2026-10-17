@@ -40,6 +40,9 @@ for c in u800 u1000 u1200 final; do
 done | xargs -P 8 -L 1 sh -c "python rl/evaluate.py --track $track --max-off-line 40 --checkpoint $ck.\$0.pt --policy \$2 --seed \$1 --run ${prefix}_\$0_\$2\$1 > runs/search_round/$track.$round.\$0.\$2.\$1.txt 2>&1"
 pick=""; pickTime=999
 for c in u800 u1000 u1200 final; do
+  # The copies exist only for a 2.5-million-decision run kept every 200
+  # updates; say so rather than report a missing file as 0/10.
+  [ -f $ck.$c.pt ] || { echo "$track.$round.$c: no such checkpoint"; continue; }
   n=$(grep -l '^FINISHED' runs/search_round/$track.$round.$c.sample.*.txt | wc -l)
   t=$(grep -ho '^FINISHED in [0-9.]*' runs/search_round/$track.$round.$c.sample.*.txt | awk '{print $3}' | sort -n | head -1)
   echo "$track.$round.$c: $n/10 best $t | greedy: $(grep -ho 'FINISHED in [0-9.]*\|DID NOT FINISH ([a-z ]*)[^:]*: reached [0-9.]*%' runs/search_round/$track.$round.$c.greedy.0.txt | sed 's/ at .*reached / /')"

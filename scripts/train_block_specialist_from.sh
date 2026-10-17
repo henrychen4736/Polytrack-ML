@@ -18,11 +18,17 @@
 # different reference lap.
 # Output: rl/checkpoints/ppo_<PREFIX>_<track>.pt (+ .u<update>.pt copies),
 #         runs/rl_train_<PREFIX>_<track>.log        (PREFIX defaults to gblk)
+# The generalist is copied in only when the specialist's checkpoint does not
+# exist yet. (It used to be copied every time, so a rerun silently threw the
+# trained specialist away.) A rerun therefore continues from the checkpoint as
+# a new stretch: the learning rate fades from --lr again and the kept copies
+# are numbered from the start again, overwriting the earlier .u<update>
+# copies. To start over, delete rl/checkpoints/ppo_<PREFIX>_<track>.pt.
 track=$1
 base=$2
 shift 2
 prefix=${PREFIX:-gblk}
-[ "$base" != "rl/checkpoints/ppo_${prefix}_$track.pt" ] && cp "$base" rl/checkpoints/ppo_${prefix}_$track.pt
+[ -f rl/checkpoints/ppo_${prefix}_$track.pt ] || cp "$base" rl/checkpoints/ppo_${prefix}_$track.pt
 .venv/Scripts/python -u rl/train_ppo.py --track $track --envs 8 --block 5 --device cuda \
   --no-lap-fraction --resume --checkpoint rl/checkpoints/ppo_${prefix}_$track.pt \
   --random-start 0.5 --failure-start 0.3 --own-start 0.5 --gamma 0.995 --gae-lambda 0.9 \

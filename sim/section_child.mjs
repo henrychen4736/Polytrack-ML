@@ -25,7 +25,7 @@
 //       the "old lap's path" (see sim/sectional.mjs).
 //
 // Local use only: nothing here contacts Kodub's servers.
-import { Env, loadTrack } from './env.mjs';
+import { Env, loadTrack, CAR_TICK_BUDGET } from './env.mjs';
 import { decodeState, stateFinished } from './state.mjs';
 import { controlsAt, nextFlipAfter } from './sectional.mjs';
 
@@ -35,12 +35,9 @@ let saved = null;   // save-state handle at tick `start`
 let start = 0;
 let prepared = null; // the recording the save state was made from
 
-// The game refuses to step one car past 5,999,999 ticks of its own counter,
-// and that counter keeps climbing across save-state restores (see
-// CAR_TICK_BUDGET in rl/racing_env.mjs). A long section uses millions of
-// ticks, so well before the limit the car is replaced and the save state
+// A long section uses millions of ticks, so well before the game's limit on
+// one car (CAR_TICK_BUDGET in env.mjs) the car is replaced and the save state
 // rebuilt, which costs one drive from the start line.
-const CAR_TICK_BUDGET = 4_500_000;
 
 /** New car, drive the prepared lap to tick `start`, save that state. */
 async function prepare() {

@@ -18,6 +18,9 @@
 // observation, renv.progress and the 'off line' cut-off are all measured
 // against it. For a rollout with no reference at all use sim_session.mjs.
 import { RacingEnv } from '../../rl/racing_env.mjs';
+// One car can be stepped about 6 million ticks in total, save-state restores
+// included; see CAR_TICK_BUDGET there.
+import { CAR_TICK_BUDGET } from '../../sim/env.mjs';
 
 /** The environment as every block checkpoint so far was trained and is
  *  tested (rl/evaluate.py, scripts/search_rollout.mjs): 10 ms steps, 5 per
@@ -25,9 +28,6 @@ import { RacingEnv } from '../../rl/racing_env.mjs';
  *  search rounds use (the trainer's default is 20). */
 export const BLOCK_ENV = { ticks: 10, block: 5, pedalEvery: 5, lapFraction: 0, maxOffLine: 40 };
 
-/** See CAR_TICK_BUDGET in racing_env.mjs: one car can be stepped about 6
- *  million ticks in total, save-state restores included. */
-const CAR_TICK_BUDGET = 4_500_000;
 
 /**
  * Boot a simulator with the training environment on `track`. `extra`
@@ -49,7 +49,7 @@ export const needsFreshCar = (renv) => renv.env.frames > CAR_TICK_BUDGET;
  * 1 s); later calls restore a save state (a few ms).
  */
 export async function fromStart(renv) {
-  if (needsFreshCar(renv)) renv.ladder = null;
+  if (needsFreshCar(renv)) renv.replaceCar();
   return (await renv.reset({ startFraction: 0 })).obs;
 }
 
@@ -95,7 +95,7 @@ export async function roll(renv, obs, { explicit = [], policy = null, horizon = 
     obs = r.obs;
     if (r.terminated || r.truncated) break;
   }
-  const info = r?.info ?? renv._info(null);
+  const info = r?.info ?? renv.info();
   return {
     decisions, obs, reward,
     done: !!r && (r.terminated || r.truncated),

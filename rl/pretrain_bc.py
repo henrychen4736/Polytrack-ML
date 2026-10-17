@@ -43,12 +43,12 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from polytrack_env import EnvServer
-from train_ppo import Agent, PEDAL_OPEN, block_imitation_loss
+from polytrack_env import EnvServer, OBS_PEDAL, OBS_STEER, OBS_S, PEDAL_OPEN
+from train_ppo import Agent, block_imitation_loss
 
 # Observation entries holding the previous decision's keys (see the table at
-# the top of rl/racing_env.mjs).
-PREVIOUS_KEYS = [15, 16, 144]
+# the top of rl/racing_env.mjs): 15, 16 and 144.
+PREVIOUS_KEYS = [OBS_PEDAL, OBS_STEER, OBS_S]
 
 
 def collect(track: str, laps: int, lap_fraction: int, pedal_every: int, seed: int, block: int = 0):

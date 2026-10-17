@@ -21,8 +21,9 @@
 // Observation: [position, lane]. The policy the tests use reads nothing else.
 //
 // CARS. env.frames counts every tick ever stepped and is NOT put back by a
-// rewind (as sim/env.mjs). reset() with `ladder` set to null builds a new car:
-// env.frames goes to 0 and every earlier mark is dead.
+// rewind (as sim/env.mjs). reset() after replaceCar() (which sets `ladder` to
+// null, as RacingEnv's does) builds a new car: env.frames goes to 0 and every
+// earlier mark is dead.
 
 export class ToyEnv {
   constructor({ length = 20, walls = [], sticky = null, slow = {}, laneBonus = {}, finishAt = {}, frames = 0 } = {}) {
@@ -51,7 +52,7 @@ export class ToyEnv {
 
   async reset({ startFraction } = {}) {
     if (startFraction !== 0) throw new Error('toy: only starts on the line');
-    if (this.ladder === null) {      // shared fromStart() asks for a new car this way
+    if (this.ladder === null) {      // replaceCar() was called (shared fromStart() does)
       this.ladder = {}; this.car++; this.env.frames = 0; this.count.newCars++;
     }
     this.count.resets++;
@@ -102,6 +103,9 @@ export class ToyEnv {
     this.history = mark.history.slice();
     return { obs: this._obs(), info: { reason: null } };
   }
+
+  /** As RacingEnv.replaceCar(): the next reset() builds a new car. */
+  replaceCar() { this.ladder = null; }
 
   dropMark(mark) {
     if (!this.liveMarks.has(mark.id)) throw new Error(`toy: mark ${mark.id} dropped twice`);

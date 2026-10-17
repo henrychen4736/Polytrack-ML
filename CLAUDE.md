@@ -23,10 +23,12 @@ the conventions, the state of every model, and how each one came to be.
 - **No network.** The only script that contacts Kodub's server is
   `scripts/fetch_laps.mjs`, and it only reads.
 - **`data/` stays out of git.** It is Kodub's captured geometry and other
-  players' leaderboard laps. So do `ideas/g1-1-human-seed-search/out/` and
-  `ideas/g1-7-computed-racing-line/out/`, which derive from those laps. The
+  players' leaderboard laps. So do `ideas/g1-1-human-seed-search/out/`,
+  `ideas/g1-7-computed-racing-line/out/` and
+  `ideas/g2-5-memory-policy/out/smoke.bin`, which derive from those laps. The
   repository is public (`github.com/henrychen4736/Polytrack-ML`); the history
-  was rewritten on 10 October 2026 to remove these paths.
+  was rewritten on 10 October 2026 to remove the first two paths.
+  `smoke.bin` was untracked on 16 October 2026 and is still in the history.
 - **Stopping training:** kill only processes whose command line contains
   `rl/train_ppo.py` (or `train_iqn.py`), then confirm the simulator processes
   have exited. Henry's own jobs (`transcribe.py`, an Adobe `node.exe`) stay
@@ -189,9 +191,10 @@ The intention was a model that drives a better-than-human lap by itself, by
 alternating search and training. It closed part of the gap and then stalled
 130 to 400 ms short. Carry forward the fastest verified lap per track, which
 for summer4, summer1 and winter2 is round 1's. To run more rounds, use
-`ideas/g1-3-search-train-rounds/rounds.mjs`, which is restartable;
-`scripts/search_round.sh` restarts the practice from scratch if rerun after
-an interruption.
+`ideas/g1-3-search-train-rounds/rounds.mjs`, which is restartable.
+`scripts/search_round.sh` rerun after an interruption continues the practice
+from its last save as a new stretch (fresh learning-rate fade, kept copies
+renumbered); delete the round's checkpoint to start it over.
 
 **`g1-6-iqn_desert4` (off-policy learner). Stopped by the clock, not finished.**
 

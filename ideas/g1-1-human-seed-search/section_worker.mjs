@@ -48,7 +48,7 @@
 //       fractions) it is faster than when the request arrived.
 //
 // Local use only: nothing here contacts Kodub's servers.
-import { Env, loadTrack } from '../../sim/env.mjs';
+import { Env, loadTrack, CAR_TICK_BUDGET } from '../../sim/env.mjs';
 import { stateFrames } from '../../sim/state.mjs';
 import { CHANNELS } from '../../sim/recording.mjs';
 import { controlsAt, nextFlipAfter, splice, REJOIN_DEFAULTS } from '../../sim/sectional.mjs';
@@ -73,8 +73,8 @@ export const SEARCH_DEFAULTS = {
 
 // The game refuses to step one car past about 6 million ticks, and restoring
 // a save state does not wind that counter back (CONTRACT.md, "Car tick
-// budget"). Past this many the car is replaced and the save state rebuilt.
-const CAR_TICK_BUDGET = 4_500_000;
+// budget"). Past CAR_TICK_BUDGET (sim/env.mjs) the car is replaced and the
+// save state rebuilt.
 // Longest single call to the simulator, so a finish or a car that has left
 // the path is noticed within this many ticks. Not shorter, because every call
 // costs about 2 ms on top of its ticks (measured: 16 000 ticks/s in calls of

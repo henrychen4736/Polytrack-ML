@@ -10,7 +10,7 @@ What it does, in a loop ("update"):
 
   1. COLLECT. Run the current policy in N simulators at once for `--rollout`
      decisions each. The policy is a small neural network that looks at the
-     observation (335 numbers, see rl/racing_env.mjs) and gives probabilities
+     observation (352 numbers, see rl/racing_env.mjs) and gives probabilities
      for three separate choices: W down or up, S down or up, and steering
      straight, left or right. Each is drawn from its probabilities, so the
      car tries slightly different things every time.
@@ -44,7 +44,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from polytrack_env import PolytrackVecEnv
+from polytrack_env import PolytrackVecEnv, OBS_PEDAL, OBS_STEER, OBS_S, PEDAL_OPEN
 
 CHECKPOINT_DIR = Path(__file__).resolve().parent / "checkpoints"
 
@@ -58,24 +58,25 @@ def _layer(inputs: int, outputs: int, gain: float) -> nn.Linear:
     return layer
 
 
-# Observation entry that says whether W and S are read at this decision
-# (OBS_PEDAL_OPEN in rl/racing_env.mjs).
-PEDAL_OPEN = 145
+# Observation entries read here (PEDAL_OPEN: whether W and S are read at this
+# decision; OBS_PEDAL, OBS_STEER, OBS_S: the keys held at the previous one)
+# are defined and checked against the server in rl/polytrack_env.py.
+
 # The number of actions a block-decision environment reports (see BLOCK
 # DECISIONS in rl/racing_env.mjs); the Agent uses it to know which kind it is.
 BLOCK_ACTIONS = 1500
-# Where the keys held at the previous decision sit in the observation:
-# [15] W minus S, [16] steering (+1 left, -1 right), [144] S.
-OBS_PEDAL, OBS_STEER, OBS_S = 15, 16, 144
+# Where each of a block decision's six choices sits among the network's 22
+# scores: steering target (3 options), steering "at" (5), W target (2),
+# W "at" (5), S target (2), S "at" (5). Same layout as GROUPS in
+# rl/rollout_child.mjs and sampleAction in rl/env_server.mjs.
+BLOCK_EDGES = [0, 3, 8, 10, 15, 17, 22]
 
 
 def block_parts(logits: torch.Tensor):
     """Split a block-decision network's 22 scores into its six choices, in the
-    order of a block decision: steering target (3 options), steering "at" (5),
-    W target (2), W "at" (5), S target (2), S "at" (5)."""
+    order of a block decision (BLOCK_EDGES)."""
     Categorical = torch.distributions.Categorical
-    edges = [0, 3, 8, 10, 15, 17, 22]
-    return [Categorical(logits=logits[:, a:b]) for a, b in zip(edges, edges[1:])]
+    return [Categorical(logits=logits[:, a:b]) for a, b in zip(BLOCK_EDGES, BLOCK_EDGES[1:])]
 
 
 def held_keys(obs: torch.Tensor):
@@ -318,11 +319,10 @@ def block_imitation_loss(logits: torch.Tensor, label: torch.Tensor):
     Returns (loss, accuracy dict): how often the network's top choice matches
     the human's, for each of the six choices.
     """
-    edges = [0, 3, 8, 10, 15, 17, 22]
     names = ["steer", "steer_at", "W", "W_at", "S", "S_at"]
     loss, accuracy = 0.0, {}
     for k, name in enumerate(names):
-        scores, wanted = logits[:, edges[k]:edges[k + 1]], label[:, k]
+        scores, wanted = logits[:, BLOCK_EDGES[k]:BLOCK_EDGES[k + 1]], label[:, k]
         if k % 2 == 1:  # a timing: keep only the examples with a change
             keep = wanted < 5
             if not keep.any():
@@ -610,8 +610,14 @@ def main() -> None:
                 shutil.copyfile(checkpoint_path, checkpoint_path.with_suffix(f".u{update}.pt"))
     except KeyboardInterrupt:
         print("interrupted; saving the checkpoint")
-    finally:
         save_checkpoint()
+    else:
+        save_checkpoint()
+    finally:
+        # Any other error (a simulator that died, a loss that went NaN) is
+        # NOT saved: the network may be what broke, and saving here used to
+        # overwrite the last good checkpoint with it. The last periodic save
+        # (--save-every) stays as it was.
         envs.close()
     print(f"saved {checkpoint_path}")
 

@@ -208,12 +208,13 @@ launch should print "N of 1220 updates done ... continuing".
 
 ## Changes needed elsewhere
 
-1. **`scripts/search_round.sh` / `train_block_specialist_from.sh` are not safe
-   to rerun after an interruption.** The second copies the base checkpoint
-   over `ppo_<prefix>_<track>.pt` whenever it starts, discarding the practice
-   done so far, and `--total-steps` then runs the whole amount again. This
-   applies to the round 2 running now: if it is cut off during practice, do
-   not rerun the same command.
+1. **(Done, 16 October 2026.) `scripts/search_round.sh` /
+   `train_block_specialist_from.sh` were not safe to rerun after an
+   interruption.** The second copied the base checkpoint over
+   `ppo_<prefix>_<track>.pt` whenever it started, discarding the practice done
+   so far. It now copies only when that checkpoint does not exist. A rerun
+   still runs the whole `--total-steps` again as a new stretch from the last
+   save; `rounds.mjs` remains the way to continue a round exactly.
 2. **`scripts/search_rollout.mjs` should write its best lap as it goes** (after
    every section) and accept `start=<lap>` to continue from one. That removes
    the reason for 3 x 200 s and lets a search build on the best lap of an
