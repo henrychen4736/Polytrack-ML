@@ -21,13 +21,13 @@
 //
 // One SimSession = one simulator (a worker thread). To use several cores you
 // need several PROCESSES (sim/pool.mjs explains why).
-import { Env, loadTrack } from '../../sim/env.mjs';
+import { Env, loadTrack, CAR_TICK_BUDGET } from '../../sim/env.mjs';
 import { decodeState, stateFinished } from '../../sim/state.mjs';
 
 /** A car can be stepped about 6 million ticks of the game's own counter in
- *  total, and restoring a save state does not wind that counter back (see
- *  CAR_TICK_BUDGET in rl/racing_env.mjs). Past this many, restart(). */
-export const CAR_TICK_BUDGET = 4_500_000;
+ *  total, and restoring a save state does not wind that counter back. Past
+ *  this many (defined in sim/env.mjs), restart(). */
+export { CAR_TICK_BUDGET };
 
 /** Ticks between the two states that velocity and spin are measured across.
  *  A longer gap averages out float32 rounding in the positions (positions are

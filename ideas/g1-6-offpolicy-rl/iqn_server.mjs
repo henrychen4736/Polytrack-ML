@@ -112,10 +112,15 @@ const options = {
 };
 const own = { ...OWN };
 for (const arg of process.argv.slice(2)) {
-  const [key, value] = arg.split('=');
-  if (value === undefined || !(key in DEFAULTS || key in OWN)) { send({ error: `unknown argument "${arg}"` }); process.exit(2); }
+  // Split at the first "=" only, and refuse a value that is not a number
+  // (as in rl/env_server.mjs: Number("abc") is NaN, Number("") is 0).
+  const at = arg.indexOf('=');
+  const key = arg.slice(0, at), value = arg.slice(at + 1);
+  if (at < 0 || !(key in DEFAULTS || key in OWN)) { send({ error: `unknown argument "${arg}"` }); process.exit(2); }
+  const text = !(key in OWN) && (key === 'track' || key === 'refFile');
+  if (!text && (value.trim() === '' || Number.isNaN(Number(value)))) { send({ error: `argument "${arg}": not a number` }); process.exit(2); }
   if (key in OWN) own[key] = Number(value);
-  else options[key] = key === 'track' || key === 'refFile' ? value : Number(value);
+  else options[key] = text ? value : Number(value);
 }
 if ('block' in options || 'ticks' in options || 'pedalEvery' in options) { send({ error: 'ticks, block and pedalEvery are set by `slices` (a decision is always 50 ms)' }); process.exit(2); }
 if (own.slices !== 1 && own.slices !== 5) { send({ error: 'slices must be 1 or 5' }); process.exit(2); }
@@ -160,7 +165,7 @@ function decisionOf(action) {
   return [combination % 3, at, Math.floor(combination / 3) % 2, at, combination >= 6 ? 1 : 0, at];
 }
 
-/** Seeded generator (mulberry32, as in racing_env.mjs), a separate stream from
+/** Seeded generator (createRng, the one racing_env.mjs uses too), a separate stream from
  *  the environment's own so exploring does not change the start positions. */
 const rng = makeRng((options.seed ?? 0) + 104729);
 

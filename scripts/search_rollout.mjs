@@ -46,7 +46,6 @@
 // Usage: node scripts/search_rollout.mjs <track> actor=<file> [key=value ...]
 //   actor=...      the policy's weights, written by
 //                    python rl/export_actor.py rl/checkpoints/<name>.pt
-//   hidden=256     the policy's hidden width (export_actor.py prints it)
 //   seconds=600    time budget for the search itself
 //   workers=8      parallel simulator processes
 //   rngSeed=1      random seed
@@ -81,7 +80,6 @@ const randInt = (n) => Math.floor(rng() * n); // 0 .. n-1
 // (rl/evaluate.py): 10 ms steps, 5 per decision.
 const pool = await createPool(name, workers, '../rl/rollout_child.mjs', {
   actor: fileURLToPath(new URL(`../${opt.actor}`, import.meta.url)),
-  hidden: num('hidden', 256),
   env: { ticks: 10, block: 5, pedalEvery: 5, lapFraction: 0, maxOffLine: num('maxOffLine', 40), ...(opt.refFile ? { refFile: opt.refFile } : {}) },
 });
 /** The same request to every process at once. */

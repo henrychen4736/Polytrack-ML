@@ -14,11 +14,14 @@
 // request.
 //
 //   at start-up, unprompted:
-//     <- {"ready":true,"obsSize":335,"numActions":12,"track":"summer1",
-//         "ticks":10,"maxTicks":44558,"lineLength":..., "humanFrames":22279}
+//     <- {"ready":true,"obsSize":352,"obsIndex":{"pedal":15,...},"numActions":12,
+//         "block":0,"track":"summer1","ticks":10,"pedalEvery":5,"maxTicks":44558,
+//         "lineLength":..., "humanFrames":22279}
+//        obsIndex: where the entries Python reads directly sit (OBS_INDEX in
+//        racing_env.mjs; rl/polytrack_env.py checks its own copy against it)
 //
 //   -> {"cmd":"reset"}                         optional: "seed":n, "startFraction":0..1
-//     <- {"obs":[...335 numbers...],"info":{...}}
+//     <- {"obs":[...352 numbers...],"info":{...}}
 //
 //   -> {"cmd":"step","action":0..11}
 //     <- {"obs":[...],"reward":0.03,"terminated":false,"truncated":false,"info":{...}}
@@ -48,7 +51,9 @@
 // network connections.
 import { readFileSync } from 'node:fs';
 import { createInterface } from 'node:readline';
-import { RacingEnv, DEFAULTS, OBS_SIZE, NUM_ACTIONS } from './racing_env.mjs';
+import { RacingEnv, DEFAULTS, OBS_SIZE, OBS_INDEX, NUM_ACTIONS } from './racing_env.mjs';
+import { createRng } from '../sim/search.mjs';
+import { loadNet, forward, layerTanhFast, pick, GROUPS } from './policy.mjs';
 
 /** Outputs of the policy network. Each group of scores is its own choice;
  *  see Agent in rl/train_ppo.py.
@@ -71,12 +76,18 @@ console.log = console.error;
 /** Write one protocol line. */
 const send = (message) => process.stdout.write(JSON.stringify(message) + '\n');
 
-// key=value arguments -> options. Values are numbers except `track` and `refFile`.
+// key=value arguments -> options. Values are numbers except `track` and
+// `refFile`. Split at the first "=" only, and refuse a value that is not a
+// number: Number("abc") is NaN and Number("") is 0, which used to go through
+// silently ("True" from Python, for instance, would have become NaN).
 const options = {};
 for (const arg of process.argv.slice(2)) {
-  const [key, value] = arg.split('=');
-  if (!(key in DEFAULTS) || value === undefined) { send({ error: `unknown argument "${arg}"` }); process.exit(2); }
-  options[key] = key === 'track' || key === 'refFile' ? value : Number(value);
+  const at = arg.indexOf('=');
+  const key = arg.slice(0, at), value = arg.slice(at + 1);
+  if (at < 0 || !(key in DEFAULTS)) { send({ error: `unknown argument "${arg}"` }); process.exit(2); }
+  const text = key === 'track' || key === 'refFile';
+  if (!text && (value.trim() === '' || Number.isNaN(Number(value)))) { send({ error: `argument "${arg}": not a number` }); process.exit(2); }
+  options[key] = text ? value : Number(value);
 }
 
 let renv;
@@ -90,6 +101,7 @@ if (renv.cfg.block > 0) { NUM_SCORES = 22; ACTION_WIDTH = 6; }
 send({
   ready: true,
   obsSize: OBS_SIZE,
+  obsIndex: OBS_INDEX,
   numActions: renv.cfg.block > 0 ? BLOCK_ACTIONS : NUM_ACTIONS,
   block: renv.cfg.block,
   track: renv.cfg.track,
@@ -118,99 +130,27 @@ const round = (obs) => obs.map((v) => Math.round(v * 1e4) / 1e4);
 // starts a new episode whenever one ends, and finally returns everything in
 // one message. All the server processes do this at the same time.
 
-/** Small seeded random generator for picking actions (same algorithm as in
- *  racing_env.mjs; a separate stream so it does not disturb start positions). */
-function makeActionRng(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-const actionRng = makeActionRng((options.seed ?? 0) + 7919);
+/** Random numbers for picking actions: a separate stream from racing_env.mjs's,
+ *  so it does not disturb start positions. */
+const actionRng = createRng((options.seed ?? 0) + 7919);
 
 /**
- * The policy ("actor") network, read from the file train_ppo.py writes:
- * raw float32 values, layer after layer, each as weights then biases:
- *   layer 1: hidden x OBS_SIZE weights (one row per hidden unit), hidden biases
- *   layer 2: hidden x hidden, hidden
- *   layer 3: NUM_SCORES x hidden, NUM_SCORES
+ * Run the actor on one observation and pick each part of the action
+ * independently, each from its own group of scores, at random in proportion
+ * to exp(score) (pick in policy.mjs). The network is read by loadNet in
+ * policy.mjs, from the file train_ppo.py writes: raw float32 values, layer
+ * after layer, each as weights (one row per unit) then biases. Its layers are
+ * added up with layerTanhFast, the order training has always used.
  */
-function loadActor(file, hidden) {
-  const bytes = readFileSync(file);
-  const all = new Float32Array(bytes.buffer, bytes.byteOffset, bytes.byteLength / 4);
-  let o = 0;
-  const take = (n) => { const part = all.subarray(o, o + n); o += n; return part; };
-  const actor = {
-    hidden,
-    w1: take(hidden * OBS_SIZE), b1: take(hidden),
-    w2: take(hidden * hidden), b2: take(hidden),
-    w3: take(NUM_SCORES * hidden), b3: take(NUM_SCORES),
-    // Scratch space for the two hidden layers' outputs.
-    h1: new Float32Array(hidden), h2: new Float32Array(hidden),
-  };
-  if (o !== all.length) throw new Error(`weights file has ${all.length} values, expected ${o}`);
-  return actor;
-}
-
-/** out[i] = tanh(bias[i] + sum_j weights[i][j] * input[j]) for one layer.
- *  The sum is kept in four running totals, four inputs at a time. It is the
- *  same sum; written this way the processor can work on the four at once,
- *  which measured 1.6 times faster. This function is about a quarter of all
- *  training time, so that is worth the less obvious loop. */
-function layerTanh(weights, bias, input, out) {
-  const n = input.length, n4 = n - (n % 4);
-  for (let i = 0, w = 0; i < out.length; i++) {
-    let s0 = bias[i], s1 = 0, s2 = 0, s3 = 0, j = 0;
-    for (; j < n4; j += 4, w += 4) {
-      s0 += weights[w] * input[j];
-      s1 += weights[w + 1] * input[j + 1];
-      s2 += weights[w + 2] * input[j + 2];
-      s3 += weights[w + 3] * input[j + 3];
-    }
-    for (; j < n; j++) s0 += weights[w++] * input[j];
-    out[i] = Math.tanh(s0 + s1 + s2 + s3);
-  }
-}
-
-/** Pick one of scores[from .. from+count) at random, each one's chance
- *  proportional to exp(score) (a softmax). Returns 0 .. count-1. */
-function sampleGroup(scores, from, count) {
-  // Subtracting the largest score before exp() avoids overflow and does not
-  // change the proportions.
-  let top = -Infinity;
-  for (let a = 0; a < count; a++) top = Math.max(top, scores[from + a]);
-  let total = 0;
-  const weight = new Float64Array(count);
-  for (let a = 0; a < count; a++) { weight[a] = Math.exp(scores[from + a] - top); total += weight[a]; }
-  let pick = actionRng() * total;
-  for (let a = 0; a < count; a++) { pick -= weight[a]; if (pick <= 0) return a; }
-  return count - 1;
-}
-
-/** Run the actor on one observation and pick the three parts of the action
- *  (W, S, steering) independently, each from its own group of scores. */
 function sampleAction(actor, obs) {
-  layerTanh(actor.w1, actor.b1, obs, actor.h1);
-  layerTanh(actor.w2, actor.b2, actor.h1, actor.h2);
-  const scores = new Float64Array(NUM_SCORES);
-  for (let a = 0, w = 0; a < NUM_SCORES; a++) {
-    let sum = actor.b3[a];
-    for (let j = 0; j < actor.hidden; j++) sum += actor.w3[w++] * actor.h2[j];
-    scores[a] = sum;
-  }
-  if (ACTION_WIDTH === 6) {
-    // Block decision: [steer, steerAt, w, wAt, s, sAt].
-    return [sampleGroup(scores, 0, 3), sampleGroup(scores, 3, 5), sampleGroup(scores, 8, 2),
-      sampleGroup(scores, 10, 5), sampleGroup(scores, 15, 2), sampleGroup(scores, 17, 5)];
-  }
+  const scores = forward(actor, obs, layerTanhFast);
+  const sample = (from, count) => pick(scores, from, count, actionRng);
+  // Block decision: [steer, steerAt, w, wAt, s, sAt].
+  if (ACTION_WIDTH === 6) return GROUPS.map(([from, count]) => sample(from, count));
   // action = steer + 3 * W + 6 * S (see the table at the top of racing_env.mjs).
   // On decisions where W and S are not read, the environment ignores those
   // two parts; step() reports the action that was really applied.
-  return sampleGroup(scores, 4, 3) + 3 * sampleGroup(scores, 0, 2) + 6 * sampleGroup(scores, 2, 2);
+  return sample(4, 3) + 3 * sample(0, 2) + 6 * sample(2, 2);
 }
 
 const b64 = (typed) => Buffer.from(typed.buffer, typed.byteOffset, typed.byteLength).toString('base64');
@@ -219,8 +159,10 @@ const b64 = (typed) => Buffer.from(typed.buffer, typed.byteOffset, typed.byteLen
  *  first episode. Kept between rollouts, so episodes carry on across them. */
 let currentObs = null;
 
-async function rollout({ steps, weights, hidden }) {
-  const actor = loadActor(weights, hidden);
+async function rollout({ steps, weights }) {
+  // The hidden width is worked out from the file's size. rl/polytrack_env.py
+  // still sends it as "hidden"; it is accepted and not needed.
+  const actor = loadNet(weights, NUM_SCORES);
   const obsOut = new Float32Array(steps * OBS_SIZE);
   const actions = new Uint8Array(steps * ACTION_WIDTH);
   const rewards = new Float32Array(steps);

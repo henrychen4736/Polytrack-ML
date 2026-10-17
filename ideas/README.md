@@ -355,10 +355,10 @@ grouped by the file they touch. The first three unblock the most.
   return its `trackData`. Three lines; without them no training environment
   can open a generated track. (g2-2)
 
-**`sim/pool.mjs`**
+**`sim/pool.mjs`** (done, 16 October 2026)
 - Reject a request when its child exits, and keep the child's last error
-  lines. `ideas/shared/pool.mjs` is the same file with that added and can
-  replace it. (found by the testers of g1-1 and g1-5)
+  lines. `ideas/shared/pool.mjs`'s version replaced it, and that file now
+  re-exports it. (found by the testers of g1-1 and g1-5)
 
 **`sim/search.mjs`**
 - `mutate()` can move a key flip up to 20 ticks outside the window it was
@@ -377,9 +377,10 @@ grouped by the file they touch. The first three unblock the most.
 **`rl/train_ppo.py`**
 - `--resume` continues the weights but not the run: `--total-steps`, the
   learning-rate line, `--critic-warmup` and the `.u<update>.pt` names all
-  count from the start of the process. A `--target-steps` (stop at this step
-  count, schedule over the whole run) would make an interrupted run
-  resumable. (g1-3)
+  count from the start of the process, so a resumed run is a new stretch
+  (the shell wrappers now resume instead of starting over; see below). A
+  `--target-steps` (stop at this step count, schedule over the whole run)
+  would make an interrupted run resume exactly where it stopped. (g1-3)
 - `--ref-file` is one file for every track; training on a folder of
   generated tracks needs one per track (the `.lap.json` beside each). (g2-2)
 - For the memory policy: `--memory`, `--session-max`; pad `--bc-data`
@@ -394,11 +395,12 @@ grouped by the file they touch. The first three unblock the most.
   (three places), and return `sessionEnds` from `rollout`; decode it in
   `polytrack_env.py`. (g2-5)
 
-**`rl/rollout_child.mjs`, `rl/env_server.mjs`**
-- Both carry a private copy of the policy network code; `ideas/shared/policy.mjs`
-  is the same code with an exported interface (checked against PyTorch to
-  1e-6) and reads the input count and hidden width from the file. (shared;
-  g2-5 needs the input count)
+**`rl/rollout_child.mjs`, `rl/env_server.mjs`** (done, 16 October 2026)
+- Both carried a private copy of the policy network code. The code of
+  `ideas/shared/policy.mjs` is now `rl/policy.mjs`, both use it, and the
+  shared file re-exports it; each keeps its own order of additions, so no
+  result changed by a bit. The hidden width is read from the file. (shared;
+  g2-5 needs the input count, which `loadNet` takes as `obsSize`)
 
 **`rl/evaluate.py`, `scripts/eval_generalist.sh`**
 - Evaluate in sessions of several attempts, for a memory policy. (g2-5)
@@ -412,11 +414,12 @@ grouped by the file they touch. The first three unblock the most.
   examples. (g1-3)
 
 **`scripts/train_block_specialist_from.sh`, `scripts/search_round.sh`**
-- `train_block_specialist_from.sh` copies the base checkpoint over the
-  working one every time it starts, so rerunning `search_round.sh` after an
-  interruption throws away the practice done. **Do not rerun a cut-off
-  round with the same command**; `ideas/g1-3-search-train-rounds/rounds.mjs`
-  works around it. (g1-3)
+- (done, 16 October 2026) `train_block_specialist_from.sh` copied the base
+  checkpoint over the working one every time it started, so rerunning
+  `search_round.sh` after an interruption threw away the practice done. It
+  now copies only when the working checkpoint does not exist, so a rerun
+  continues from the last save as a new stretch (fresh learning-rate fade,
+  kept copies renumbered). (g1-3)
 - Take the checkpoint name as given (it forces `ppo_<prefix>_<track>.pt`).
   (g2-3)
 

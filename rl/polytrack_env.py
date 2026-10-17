@@ -14,8 +14,9 @@ Three classes, from low level to high level:
     PolytrackVecEnv   N environments stepped together, each in its own
                       process, with automatic reset when an episode ends
 
-Observation: 335 float32 numbers, roughly within -1..1 (layout in
-rl/racing_env.mjs). Action: an integer 0..11 = steer + 3 * W + 6 * S.
+Observation: 352 float32 numbers, roughly within -1..1 (layout in
+rl/racing_env.mjs). Action: an integer 0..11 = steer + 3 * W + 6 * S, or with
+block=5 a block decision of six numbers (see BLOCK DECISIONS there).
 
 Only numpy is required. If the `gymnasium` package is installed, PolytrackEnv
 is a real `gymnasium.Env` with `observation_space` and `action_space`, so
@@ -52,6 +53,13 @@ except ImportError:
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 SERVER_SCRIPT = "rl/env_server.mjs"
 
+# Observation entries that the Python side reads directly (OBS_INDEX in
+# rl/racing_env.mjs): [15] W minus S and [16] steering (+1 left, -1 right)
+# held at the previous decision, [103] body contact during the last step,
+# [144] S held, [145] whether W and S are read at this decision. EnvServer
+# checks these against the numbers the server reports at start-up.
+OBS_PEDAL, OBS_STEER, OBS_CONTACT, OBS_S, PEDAL_OPEN = 15, 16, 103, 144, 145
+
 
 class EnvServer:
     """One Node environment process and the request/reply pipe to it."""
@@ -82,6 +90,11 @@ class EnvServer:
         # The first line is the server's "ready" message with the sizes the
         # caller needs: obsSize, numActions, ticks, maxTicks, lineLength, ...
         self.spec = self._read()
+        expected = {"pedal": OBS_PEDAL, "steer": OBS_STEER, "contact": OBS_CONTACT, "sHeld": OBS_S, "pedalOpen": PEDAL_OPEN}
+        if self.spec["obsIndex"] != expected:
+            self.close()
+            raise RuntimeError(f"the observation layout changed: the server has {self.spec['obsIndex']}, "
+                               f"rl/polytrack_env.py expects {expected}; update OBS_* there")
 
     def _read(self) -> dict:
         """Read one reply line. Raises if the server died or reported an error."""

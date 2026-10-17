@@ -17,6 +17,8 @@ Why: applies to the round 2 running now (prefix sr2). ideas/g1-3-search-train-ro
 
 **Decision (phase 2): DEFERRED, cannot be done from `ideas/`.** The three files are outside `ideas/` and serve jobs that are running. The proposed changes are listed in `ideas/README.md` under "Changes needed elsewhere" (`scripts/train_block_specialist_from.sh`, `rl/train_ppo.py`, `scripts/search_rollout.mjs`). Until they are made, use `ideas/g1-3-search-train-rounds/rounds.mjs`, which works around all three.
 
+**Update (16 October 2026): first part DONE.** `train_block_specialist_from.sh` now copies the base only when the working checkpoint does not exist, so rerunning `search_round.sh` continues the practice from its last save, as a new stretch (fresh learning-rate fade, `.u<update>` copies renumbered). Still open: `--target-steps` for an exact resume, and `search_rollout.mjs` writing its lap as it goes.
+
 ## g1-3-search-train-rounds — imitation examples from several laps
 Kind: offer
 What: ideas/g1-3-search-train-rounds/laps_bc.py <track> <out.npz> <lap> [<lap> ...]: rl/lap_bc.py for any number of lap files (identical output for one lap; the first lap is repeated to stay at least half of the examples). ideas/g1-3-search-train-rounds/ckpt_steps.py prints checkpoints' step counters as JSON.
@@ -77,3 +79,5 @@ Why: every idea that branches from save points with SimSession and then saves `s
 Kind: resolved
 What: (1) The seeded generator (mulberry32) was copied into `g1-6/iqn_server.mjs`, `g2-2/generate.mjs` and `g2-5/memory_env.mjs`; all three now import `ideas/shared/rng.mjs` (same algorithm, same sequences). (2) `g1-1`, `g1-4` and `g1-5` each start pool children through `sim/pool.mjs`, where a child that throws leaves the parent waiting for ever; they now import `ideas/shared/pool.mjs`, a drop-in with the same interface that rejects the request with the child's error text (`tests/test_pool.mjs`). The three children themselves do different jobs and were left alone. (3) Looked for and NOT found: no folder re-implemented policy sampling (all use `policy.mjs`) or the finish-and-verify steps (all nine call `verifyAndSave`). (4) Left alone on purpose: `g1-6/iqn_server.mjs` `loadNet` (a different network), and two `roomBeside` functions (g1-7 `corridor.mjs`, g2-1 `route.mjs`) that measure different things.
 Why: so the next agent does not copy them again.
+
+**Update (16 October 2026).** The pool fix is now `sim/pool.mjs` itself (`ideas/shared/pool.mjs` re-exports it), so `sim/pool.mjs` no longer hangs on a dead child. The policy code is now `rl/policy.mjs` (`ideas/shared/policy.mjs` re-exports it), and `rl/env_server.mjs` and `rl/rollout_child.mjs` use it in place of their private copies. The generator copies in `rl/` import `createRng` from `sim/search.mjs`.

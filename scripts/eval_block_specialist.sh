@@ -21,5 +21,8 @@ for c in u1600 u2000 u2400 final; do
   echo "$c 0 greedy"
 done | xargs -P 8 -L 1 sh -c "python rl/evaluate.py --track $track --checkpoint rl/checkpoints/ppo_${PREFIX:-blk}_$track.\$0.pt --policy \$2 --seed \$1 --run blk_\$0_\$2\$1 > $d/$track.\$0.\$2.\$1.txt 2>&1"
 for c in u1600 u2000 u2400 final; do
+  # The copies exist only for a 5-million-decision run kept every 200 updates;
+  # say so rather than report a missing file as 0/10.
+  [ -f rl/checkpoints/ppo_${PREFIX:-blk}_$track.$c.pt ] || { echo "$track.$c: no such checkpoint"; continue; }
   echo "$track.$c: $(grep -l '^FINISHED' $d/$track.$c.sample.*.txt | wc -l)/10 best $(grep -ho '^FINISHED in [0-9.]*' $d/$track.$c.sample.*.txt | awk '{print $3}' | sort -n | head -1) | greedy: $(grep -ho 'FINISHED in [0-9.]*\|DID NOT FINISH ([a-z ]*)[^:]*: reached [0-9.]*%' $d/$track.$c.greedy.0.txt | sed 's/ at .*reached / /') | human $(grep -ho 'human [0-9.]*' $d/$track.$c.*.txt | head -1 | cut -d' ' -f2)"
 done

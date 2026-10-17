@@ -150,7 +150,7 @@ async function drive(obs, { explicit = [], horizon = Infinity } = {}) {
 /** New car on the start line. Every mark made on the old car is dead after
  *  this, so the caller must have dropped them. */
 async function freshStart() {
-  renv.ladder = null; // makes reset() build a new car and a new ladder
+  renv.replaceCar(); // makes reset() build a new car and a new ladder
   return (await renv.reset({ startFraction: 0 })).obs;
 }
 

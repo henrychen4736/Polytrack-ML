@@ -9,6 +9,14 @@ import { bootWorker, loadCaptured, Ki } from './host.mjs';
 import { loadTrackSaveString } from '../vendor/polyrl/node/sim_host.mjs';
 import { stateFrames, stateFinished, decodeState } from './state.mjs';
 
+/** The game refuses to step one car past 5,999,999 ticks of its own counter,
+ *  and restoring a save state does not wind that counter back. Code that
+ *  restores save states many times (the searches, rl/rollout_child.mjs,
+ *  ideas/shared/sim_session.mjs) replaces the car once it has been stepped
+ *  this many ticks, leaving room for the drive that is under way when the
+ *  count is checked. rl/racing_env.mjs keeps its own, 5,000,000 (see there). */
+export const CAR_TICK_BUDGET = 4_500_000;
+
 /** CreateCar inputs for a track: the real client's capture when we have one,
  *  otherwise polyrl's track string with no mountains (fine unless the car can
  *  reach the backdrop terrain). */

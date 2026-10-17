@@ -25,7 +25,7 @@ from pathlib import Path
 
 import numpy as np
 
-from polytrack_env import PolytrackEnv
+from polytrack_env import PolytrackEnv, OBS_PEDAL, OBS_STEER, OBS_CONTACT, OBS_S
 
 CHECKPOINT_DIR = Path(__file__).resolve().parent / "checkpoints"
 
@@ -107,9 +107,9 @@ def main() -> None:
                     # ([15] W minus S, [144] S, [16] steer: +1 left, -1 right)
                     # and raise the score of "the same again" for each choice.
                     logits = agent.actor(batch)[0].clone()
-                    s_down = int(obs[144] > 0.5)
-                    w_down = int(obs[15] + s_down > 0.5)
-                    steer = 1 if obs[16] > 0.5 else 2 if obs[16] < -0.5 else 0
+                    s_down = int(obs[OBS_S] > 0.5)
+                    w_down = int(obs[OBS_PEDAL] + s_down > 0.5)
+                    steer = 1 if obs[OBS_STEER] > 0.5 else 2 if obs[OBS_STEER] < -0.5 else 0
                     logits[0 + w_down] += args.sticky
                     logits[2 + s_down] += args.sticky
                     logits[4 + steer] += args.sticky
@@ -129,7 +129,7 @@ def main() -> None:
         obs, reward, terminated, truncated, info = env.step(choose(obs))
         total += reward
         steps += 1
-        contact_steps += int(len(obs) > 103 and obs[103] > 0)
+        contact_steps += int(len(obs) > OBS_CONTACT and obs[OBS_CONTACT] > 0)
         done = terminated or truncated
         if info["fraction"] >= next_report:  # one line per 10% of the lap
             print(f"  {round(100 * next_report)}% at {info['frames'] / 1000:.2f} s, "

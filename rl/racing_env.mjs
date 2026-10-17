@@ -267,6 +267,7 @@ import { buildLine, nearestIndex, lineStraightness, SPACING } from '../sim/line.
 import { rotate } from '../sim/track.mjs';
 import { buildTrackMesh, clearanceProfile, MAX_CLEARANCE } from '../sim/trackmesh.mjs';
 import { decodeRecording, toDense } from '../sim/recording.mjs';
+import { createRng } from '../sim/search.mjs';
 
 // ---- actions ---------------------------------------------------------------
 
@@ -317,6 +318,12 @@ const RAY_DIRECTIONS = (() => {
 export const OBS_SIZE = OBS_RAYS + RAY_DIRECTIONS.length + 1;
 /** S held, and "W and S are read now" (the two entries before that block). */
 export const OBS_S_HELD = OBS_REF - 2, OBS_PEDAL_OPEN = OBS_REF - 1;
+/** The entries the Python side reads directly (see _observe): W minus S and
+ *  steering held at the previous decision, body contact, S held, and "W and
+ *  S are read now". env_server.mjs reports these at start-up and
+ *  rl/polytrack_env.py checks its own copy against them, so a change to the
+ *  layout stops training instead of feeding it the wrong inputs. */
+export const OBS_INDEX = { pedal: 15, steer: 16, contact: 21 + 4 * LOOKAHEAD_POINTS + 2, sHeld: OBS_S_HELD, pedalOpen: OBS_PEDAL_OPEN };
 /** Decisions between the save states an episode leaves behind for ownStart. */
 const OWN_SNAPSHOT_EVERY = 100;
 /** How many of those are kept (the last 8 seconds of driving). */
@@ -337,7 +344,10 @@ const EDGE_SCALE = 10;         // world units; road-edge distances are divided b
 const LADDER_STEP = 250;
 /** Make a fresh car once the current one has been stepped this many ticks in
  *  total. The game refuses to step a car past 5,999,999 ticks of its own
- *  counter, which keeps counting across save-state restores. */
+ *  counter, which keeps counting across save-state restores. Deliberately
+ *  not sim/env.mjs's CAR_TICK_BUDGET (4,500,000): changing this would change
+ *  when the ladder is rebuilt, and with it the training runs. An episode
+ *  here is at most twice a lap, far less than the 999,999 ticks of margin. */
 const CAR_TICK_BUDGET = 5_000_000;
 
 /** Defaults for everything that can be set per environment. */
@@ -473,19 +483,6 @@ function quatMultiply(a, b) {
   ];
 }
 
-/** Small repeatable random number generator (mulberry32): returns a function
- *  giving numbers in [0, 1). Math.random cannot be seeded. */
-function makeRng(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
 /** One string per key combination, to compare two ticks' keys cheaply. */
 const controlsKey = (c) => `${+!!c.up}${+!!c.right}${+!!c.down}${+!!c.left}${+!!c.reset}`;
 
@@ -506,7 +503,7 @@ export class RacingEnv {
     renv.mesh = buildTrackMesh(renv.track.trackData);
     renv.maxTicksOption = cfg.maxTicks;   // null unless the caller fixed it
     renv.references = new Map();          // lap number -> everything built from that lap
-    renv.rng = makeRng(cfg.seed);
+    renv.rng = createRng(cfg.seed);
     await renv.setReference(cfg.refFile
       ? JSON.parse(readFileSync(new URL(`../${cfg.refFile}`, import.meta.url), 'utf8'))
       : cfg.refLaps > 0 ? Math.floor(renv.rng() * cfg.refLaps) : cfg.refLap);
@@ -648,7 +645,7 @@ export class RacingEnv {
    * time then includes the human's time for the first part.
    */
   async reset({ seed = null, startFraction = null } = {}) {
-    if (seed != null) this.rng = makeRng(seed);
+    if (seed != null) this.rng = createRng(seed);
     // Line indices where recent episodes of this environment ended without
     // finishing (see step()). Created on first use.
     this.failures ??= [];
@@ -860,6 +857,16 @@ export class RacingEnv {
 
   /** Free a mark's memory in the simulator. */
   dropMark(mark) { this.env.dropState(mark.handle); }
+
+  /** Make the next reset() build a fresh car and a new ladder, for a search
+   *  that has used up most of this car's ticks (CAR_TICK_BUDGET in
+   *  sim/env.mjs). Every mark made before it becomes useless. */
+  replaceCar() { this.ladder = null; }
+
+  /** Numbers about the episode so far (as in step()'s result), for code
+   *  that drives the environment through mark and rewind and may end up
+   *  with no step result to read them from. */
+  info() { return this._info(null); }
 
   /**
    * Replay the human's keys for ticks [from, to), one step() call per run of

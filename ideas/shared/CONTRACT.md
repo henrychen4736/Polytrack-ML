@@ -129,7 +129,9 @@ or use `sim_session.mjs`.
 
 ### `policy.mjs` — a block policy and its value estimate in Node
 
-Used by: g1-1, g1-3, g1-4, g2-3, g2-4, g2-5.
+Used by: g1-1, g1-3, g1-4, g2-3, g2-4, g2-5. The code lives in
+`rl/policy.mjs` (since 16 October 2026), where training and the search use it
+too; this file re-exports it.
 
 ```js
 const policy = loadPolicy('rl/checkpoints/ppo_sr1_desert4.u800.actor.bin');
@@ -296,7 +298,7 @@ the idea folder stays free to change its internals.
 | Shared file | What it gives | Code lives in | Confirmed by an independent tester |
 | --- | --- | --- | --- |
 | `rng.mjs` | `createRng(seed)` → a function giving floats in [0, 1). The one seeded generator; imports no simulator | `sim/search.mjs` | yes (`shared/tests`) |
-| `pool.mjs` | `createPool(track, n, childFile, setup)` → `{ runAll, evaluateAll, close }`: the interface of `sim/pool.mjs`, except that a child that dies rejects the request with its error text instead of leaving the parent waiting for ever | here | `tests/test_pool.mjs`, 6 checks |
+| `pool.mjs` | `createPool(track, n, childFile, setup)` → `{ runAll, evaluateAll, close }`: a child that dies rejects the request with its error text instead of leaving the parent waiting for ever | `sim/pool.mjs` (written here, promoted 16 October 2026) | `tests/test_pool.mjs`, 6 checks |
 | `track_info.mjs` (added) | `surfaceBelow(mesh, p, above = 1, reach = 3)` → height of the track surface under point `p`, or `null`; `watchLap(mesh, states, maxGap = 1.5)` → `{ offRoad, worstGap, lowest, firstOff }` | here (moved from g2-2's tests) | written by g2-2's tester |
 | `car_model.mjs` | `loadCarModel()` → `{ accel(v, share), coast(v), brake(v), kappaMax(v), speedFor(kappa), topSpeed }`, speeds in units/s, accelerations in units/s², curvature in 1/units; `buildPad({ wide, long })` → CreateCar inputs of a flat pad | g1-7 | straight-line numbers and the turning limit: yes. Braking while steering: NO (it throws here) |
 | `track_build.mjs` | `encodeSaveString(parts, environment)` → `trackData`; `encodeExportString`; `loadPieceTable()`; `worldPorts(part)` → `[{ axis, out, plane, a, b, center, width, pitch }]`; `matePorts(parts)`; `generateTrack({ seed, length, difficulty })` → `{ createCar, route, parts }`; `loadGenerated(file)` | g2-2 | yes |
@@ -401,9 +403,10 @@ folder is named so the measurement can be found.
   at 16.5 s) and useless mid-lap (0.06 to 0.08). Two decisions (100 ms) of
   different keys move the finish time by 70 to 360 ms once the policy drives
   on (g1-4).
-- **A worker process that throws leaves its parent waiting for ever** with
-  `sim/pool.mjs` (found by the testers of g1-1 and g1-5; never triggered in
-  the reported runs). `pool.mjs` here fixes it; g1-1, g1-4 and g1-5 use it.
+- **A worker process that threw used to leave its parent waiting for ever**
+  with `sim/pool.mjs` (found by the testers of g1-1 and g1-5; never
+  triggered in the reported runs). `pool.mjs` here fixed it, and since
+  16 October 2026 that fix is `sim/pool.mjs` itself, so every pool has it.
 - **Blind replay of a human lap's keys from a state that is not exactly
   theirs does not survive** (g1-2): 0 of 20 raw switches between human laps
   on desert4 reached the finish, and a car 2 cm off its own lap is lost
