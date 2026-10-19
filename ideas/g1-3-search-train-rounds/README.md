@@ -263,7 +263,9 @@ launch should print "N of 1220 updates done ... continuing".
 
 ## Training towards near-best candidates (17 October 2026)
 
-Built, smoke-tested at toy size, **not run at full size**.
+Built, smoke-tested at toy size, **not run at full size**. *(Superseded: run
+at full size on desert4 on 17 October 2026; result at the end of this
+section.)*
 
 - `scripts/search_rollout.mjs keep=30` also writes every different finished
   lap within 30 ms of its final best to `runs/<out>_<track>.candidates.json`
@@ -320,6 +322,33 @@ sh ideas/g1-3-search-train-rounds/g1-3-train_on_candidates.sh desert4
 It starts from `base` in `work/<track>/state.json` (desert4:
 `g1-3-desert4-r1.c1220.pt`) and trains towards `best` there (desert4:
 21.880 s), unless `BASE=` / `BEST_LAP=` say otherwise.
+
+**Full run on desert4 (17 October 2026, added by the main session).** The
+command above, defaults. Log `runs/g1-3-candidates_desert4.log`, results
+`work/desert4/g1-3-cand/results.txt`.
+
+- Search (600 s, 8 processes, from `g1-3-desert4-r1.c1220`): best **21.820
+  s** (verified: passes on tick 21820, 21819 rejected); kept **1738**
+  different finished laps within 30 ms of it (slowest 21.850 s),
+  `runs/g1-3-cand_desert4.candidates.json`.
+- Examples: the 21.880 s lap (`runs/rollout_r2_desert4.recording.json`, the
+  fastest in `state.json`) plus 50 candidates, **43,650 examples from 51
+  laps**; practice 2.5M decisions.
+- Test, ten sampled attempts (seeds 10 to 19) and one greedy:
+
+  | Copy | Finishes | Fastest sampled | Greedy |
+  | --- | --- | --- | --- |
+  | u800 | 10/10 | 21.992 s | 22.245 s |
+  | u1000 | 10/10 | 22.012 s | 22.039 s |
+  | u1200 | 10/10 | 21.963 s | 21.999 s |
+  | final | 10/10 | **21.961 s** | 21.989 s |
+
+  Before this practice the policy's fastest sampled lap was 21.987 s.
+
+So the policy gained 26 ms on its own fastest sampled lap and stayed 10 of 10
+reliable, but the search itself, at 21.820 s, gave the better lap, and both
+are behind the human (21.750 s) and the IQN-seeded search (21.720 s). Not
+run on other tracks.
 
 ## Cost of a full run
 

@@ -1,5 +1,12 @@
 # g1-1: search from the human's lap
 
+> **Status (18 October 2026).** Superseded numbers below: the smoke-test
+> table is the first result only. Whole-lap runs since then reached 21.709,
+> 26.775, 22.104 and 34.069 s from the human's laps, and the same search
+> seeded with the IQN learner's own lap reached **21.720 s on desert4**, 30 ms
+> under the human. See "Later results" at the end. "Starting from a model's
+> lap" under "Not done" has now been done.
+
 **Result: all four target tracks now have a verified lap faster than the best
 human lap we hold**, each from one 100-second run on 2 simulator processes.
 
@@ -180,3 +187,45 @@ None. Suggestions only:
   of penalty to a car exactly on the old line.
 - `data/laps` lap 0 is what every row above is compared with; on summer1 that
   is 22.131 s, not the 22.279 s fixture.
+
+## Later results (added by the main session)
+
+All laps below pass the game's Verify on their tick and fail one tick sooner.
+
+**Whole-lap runs from the human's lap (10 October 2026).** Two 20-minute
+whole-lap runs per track, 8 processes (`seconds=1200 workers=8`), the first
+seeded with the smoke-test lap (`out=full`) and the second with the first's
+lap (`out=full2`). Files `runs/g1-1-full2_<track>.recording.json`.
+
+| Track | Best human | Smoke test | Run 1 | Run 2 | Under the human by |
+| --- | --- | --- | --- | --- | --- |
+| desert4 | 21.750 s | 21.722 s | 21.710 s | 21.709 s | 41 ms |
+| winter2 | 26.830 s | 26.816 s | 26.793 s | 26.775 s | 55 ms |
+| summer1 | 22.131 s | 22.127 s | 22.107 s | 22.104 s | 27 ms |
+| summer4 | 34.105 s | 34.100 s | 34.087 s | 34.069 s | 36 ms |
+
+On 17 October all four `full2` laps were re-verified on the current code and
+still pass at 21.709, 22.104, 34.069 and 26.775 s.
+
+**Seeded with a model's lap (17 to 18 October 2026).** The same search,
+started from a lap the IQN learner (`ideas/g1-6-offpolicy-rl/`) drove by
+itself, two 20-minute runs of one pass each on 8 processes, the second seeded
+with the first's lap:
+
+```
+node ideas/g1-1-human-seed-search/search_human.mjs desert4 seed=runs/g1-6-iqn-s3best_desert4.recording.json seconds=1200 workers=8 out=iqnseed
+node ideas/g1-1-human-seed-search/search_human.mjs desert4 seed=runs/g1-1-iqnseed_desert4.recording.json seconds=1200 workers=8 out=iqnseed2
+```
+
+| Track | Model lap (seed) | Run 1 | Run 2 | Best human | Files |
+| --- | --- | --- | --- | --- | --- |
+| desert4 | 21.792 s (IQN) | 21.733 s | **21.720 s** | 21.750 s | `runs/g1-1-iqnseed_desert4`, `runs/g1-1-iqnseed2_desert4` |
+| winter2 | 26.997 s (IQN) | 26.937 s | 26.927 s | 26.830 s | `runs/g1-1-iqnseed_winter2`, `runs/g1-1-iqnseed2_winter2` |
+| desert4 | 21.846 s (IQN, route inputs, no human lap) | 21.801 s | 21.800 s | 21.750 s | `runs/g1-1-routeseed_desert4`, `runs/g1-1-routeseed2_desert4` |
+
+So the search gains 46 to 72 ms from a model's lap, against 41 to 55 ms from
+a human lap, and on desert4 the result is 30 ms under the human: the first
+better-than-human lap here whose driving came from a model. It is still 11 ms
+slower than the search from the human's own lap (21.709 s). The shift-and-
+repair step was not examined separately in these runs. g1-5's fine timing
+then found no change on the 21.720 s lap (see `ideas/g1-5-fine-key-timing/`).

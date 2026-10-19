@@ -1,24 +1,24 @@
 # Graph Report - Polytrack-ML  (2026-10-18)
 
 ## Corpus Check
-- 476 files · ~478,588 words
+- 476 files · ~484,210 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 99 file(s) not represented in the graph (top: .log 60, .result 17, .jsonl 15)
 
 ## Summary
-- 2868 nodes · 6350 edges · 163 communities (135 shown, 28 thin omitted)
+- 2868 nodes · 6351 edges · 157 communities (128 shown, 29 thin omitted)
 - Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 408 edges (avg confidence: 0.91)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `103b1e5a`
+- Built from commit: `28793098`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - Lookahead driver (driveLap)
 - env.mjs
-- ref_node_child_process
+- check_track.mjs
 - test_3_under_road_sim.mjs
 - ReplayBuffer
 - refine.mjs
@@ -27,10 +27,10 @@
 - lib.mjs
 - shared/policy.mjs
 - g1-4-beam-search/tests/test_child.mjs
+- ref_node_url
 - test_worker.mjs
-- ._observe
 - track.mjs
-- pieces.mjs
+- test_1_pieces.mjs
 - test_logs.mjs
 - explore.mjs
 - train_ppo.py
@@ -51,7 +51,7 @@
 - test_lock.mjs
 - g1-7 computed racing line README
 - fit_car.mjs
-- g2-1-route_mode_check.mjs
+- rotate
 - env_server.mjs
 - paths.mjs
 - search_rollout.mjs
@@ -62,10 +62,10 @@
 - Agent
 - search_settings.mjs
 - Polytrack-ML refactor plan
-- package.json
+- capture_init.mjs
 - iqn_server.mjs
 - raceline.mjs
-- route.mjs
+- plot_dump.mjs
 - g2-3-explore-and-adapt/tests/test_logic.mjs
 - generate.mjs
 - g1-4-beam-search/child.mjs
@@ -76,42 +76,42 @@
 - memory_test.mjs
 - test_memory_env.mjs
 - section_worker.mjs
-- test_2_codec.mjs
+- g2-2-track-generator/smoke_test.mjs
 - corridor.mjs
 - g1-5 fine key timing README
 - createRng
 - MemoryEnv
 - g1-7 independent tests (TESTING.md)
-- plot_dump.mjs
+- test_beam.mjs
 - ref_node_fs
-- g1-4-beam-search/tests/TESTING.md
+- prune
 - diff_capture.mjs
 - Polytrack-ML
 - test_follow.mjs
 - calibrate.mjs
 - .load
-- test_1_route_vs_human_sim.mjs
+- rollout_child.mjs
 - run_all_tests.mjs
 - fingerprint.mjs
 - BRIEF.md
 - smoke_real.mjs
 - g1-7-computed-racing-line/car_model.mjs
 - Polytrack-ML
-- CLAUDE.md
+- README.md
 - ppo_rays (17 distance rays)
 - plan.md
 - trace.mjs
-- g2-4-lookahead-driving/tests/test_logic.mjs
+- g1-4: beam search over block decisions
 - replica_check.mjs
 - g1-7: a computed racing line
 - rl/smoke_test.mjs
 - ladder_test.mjs
 - g1-5: fine key timing (1 ms)
+- search.mjs
+- ._observe
+- g2-3 Explore and adapt
 - progress
-- test_1_raceline.mjs
-- test_beam.mjs
-- fetch_laps.mjs
-- ToyEnv
+- buildRoute
 - search_timeline.mjs
 - worker_entry.mjs
 - test_network
@@ -120,7 +120,7 @@
 - g2-5-memory-policy/README.md
 - test_track_memory.mjs
 - SimSession
-- search.mjs
+- g1-4-beam-search/tests/TESTING.md
 - g1-2-stitch-human-laps/README.md
 - g1-4-beam-search/README.md
 - analyze.mjs
@@ -132,7 +132,7 @@
 - TrackMemory
 - g1-3-train_on_candidates.sh
 - g2-2-eval_route_on_generated.sh
-- route_store.mjs
+- test_1_raceline.mjs
 - Requests to the orchestrator (ideas/shared/REQUESTS.md)
 - g1-2-run_all.sh
 - train_memory.sh
@@ -151,9 +151,9 @@
 - Eager pump in worker_entry
 - eval_memory.sh
 - g1-6-offpolicy-rl/tests/run_tests.mjs
-- test_2_observation_sim.mjs
-- watch_ghost.mjs
-- g1-6-offpolicy-rl/tests/test_author.mjs
+- test_4_car_vs_sim.mjs
+- fetch_laps.mjs
+- .demo
 - g1-4-beam-search/tests/run_tests.mjs
 - g2-5-memory-policy/tests/run_tests.mjs
 - RefMemory
@@ -166,14 +166,8 @@
 - train_block_specialist_from.sh
 - g1-3 search-train rounds README
 - stepBlock: one message per 50 ms block
-- test_4_car_vs_sim.mjs
-- .demo
 - rl/: reinforcement learning on the headless simulator
 - g1-3-search-train-rounds/tests/run_tests.mjs
-- node_scores.mjs
-- capture_init.mjs
-- g2-3-explore-and-adapt/tests/run_tests.mjs
-- g2-4-lookahead-driving/tests/run_tests.mjs
 - widen_checkpoint.py
 - queue_untried.sh
 
@@ -217,7 +211,7 @@
 - **Node environment to Python PPO training pipeline** — sim_env, rl_racing_env, rl_env_server, rl_polytrack_env, rl_train_ppo, rl_evaluate [INFERRED 0.85]
 - **Three ways to get the generalist round unseen tracks (explore, lookahead, memory)** — ideas_g2_3_explore_and_adapt_readme_explore_loop, ideas_g2_4_lookahead_driving_readme_lookahead_driver, ideas_g2_5_memory_policy_readme_design_b_attempt_conditioned_inputs, ideas_g2_3_explore_and_adapt_readme_unseen_tracks_test_set, ideas_g2_3_explore_and_adapt_readme_ppo_blkgen_best2_generalist [INFERRED 0.85]
 
-## Communities (163 total, 28 thin omitted)
+## Communities (157 total, 29 thin omitted)
 
 ### Community 0 - "Lookahead driver (driveLap)"
 Cohesion: 0.12
@@ -227,13 +221,13 @@ Nodes (34): Fine-tune plan (dry run, not executed), Plain mode baseline (attempt
 Cohesion: 0.08
 Nodes (19): What is not done or not tested, at3000, at4000, { check, eq, throws, note }, LEFT, motionA, track, FIX (+11 more)
 
-### Community 2 - "ref_node_child_process"
-Cohesion: 0.07
-Nodes (22): PROJECT, PY, failures, files, here, root, started, failures (+14 more)
+### Community 2 - "check_track.mjs"
+Cohesion: 0.25
+Nodes (5): args, checkpoint, driven, flag(), positional
 
 ### Community 3 - "test_3_under_road_sim.mjs"
-Cohesion: 0.16
-Nodes (14): check(), known(), median(), near(), percentile(), section(), broken, brokenParts (+6 more)
+Cohesion: 0.08
+Nodes (32): DEFAULTS, gateStages(), GRAVITY, RIDE_HEIGHT, SPACING, CACHE, routeFor(), check() (+24 more)
 
 ### Community 4 - "ReplayBuffer"
 Cohesion: 0.10
@@ -252,36 +246,36 @@ Cohesion: 0.07
 Nodes (25): main(), export_actor(), IQN, quantile_huber_loss(), Files, IqnServers, check(), main() (+17 more)
 
 ### Community 8 - "lib.mjs"
-Cohesion: 0.10
-Nodes (27): chooseExamples(), concludeRound(), copiesToTest(), DEFAULTS, ID, parseArgs(), parseAttempt(), parseSearchLog() (+19 more)
+Cohesion: 0.11
+Nodes (26): chooseExamples(), concludeRound(), copiesToTest(), DEFAULTS, ID, parseArgs(), parseAttempt(), parseSearchLog() (+18 more)
 
 ### Community 9 - "shared/policy.mjs"
-Cohesion: 0.17
-Nodes (14): [actorFile, criticFile], out, policy, value, forward(), GROUPS, loadNet(), loadPolicy() (+6 more)
+Cohesion: 0.14
+Nodes (18): [actorFile, obsFile, outFile, size], all, bytes, obsSize, out, policy, [actorFile, criticFile], out (+10 more)
 
 ### Community 11 - "g1-4-beam-search/tests/test_child.mjs"
-Cohesion: 0.10
-Nodes (16): check(), failed, finish(), passed, same(), throws(), a, b (+8 more)
+Cohesion: 0.13
+Nodes (11): check(), failed, finish(), passed, same(), throws(), alive, script() (+3 more)
 
-### Community 12 - "test_worker.mjs"
+### Community 12 - "ref_node_url"
+Cohesion: 0.09
+Nodes (18): PROJECT, PY, failures, files, here, root, started, failures (+10 more)
+
+### Community 13 - "test_worker.mjs"
 Cohesion: 0.17
 Nodes (13): ask(), before(), { check, eq, note }, inputs, lap0, replay(), searchSection(), valid() (+5 more)
 
-### Community 13 - "._observe"
-Cohesion: 0.21
-Nodes (6): straight(), Changes needed elsewhere, dot(), quatMultiply(), sub(), toCarFrame()
-
 ### Community 14 - "track.mjs"
-Cohesion: 0.11
-Nodes (28): pad, chooseTracks(), FEATURE_SETS, hasFeature(), structureFailures(), TEST_KINDS, TRAIN_CYCLE, saveTrack() (+20 more)
+Cohesion: 0.09
+Nodes (34): pad, chooseTracks(), FEATURE_SETS, hasFeature(), structureFailures(), TEST_KINDS, TRAIN_CYCLE, saveTrack() (+26 more)
 
-### Community 15 - "pieces.mjs"
+### Community 15 - "test_1_pieces.mjs"
 Cohesion: 0.06
-Nodes (34): count, firstSeed, LENGTHS, started, used, worst, checkOfficial(), matePorts() (+26 more)
+Nodes (39): count, firstSeed, LENGTHS, started, used, worst, checkOfficial(), matePorts() (+31 more)
 
 ### Community 16 - "test_logs.mjs"
-Cohesion: 0.16
-Nodes (19): cost(), early, finishedPlain, lazy, long, of(), one(), pair() (+11 more)
+Cohesion: 0.07
+Nodes (34): check(), finish(), same(), ROOT, saved, TMP, dead, invariants() (+26 more)
 
 ### Community 17 - "explore.mjs"
 Cohesion: 0.07
@@ -292,16 +286,16 @@ Cohesion: 0.05
 Nodes (9): MemoryAgent, ppo_loss(), write_actor(), How to run, What was verified, rel(), slow_reference(), compute_advantages() (+1 more)
 
 ### Community 19 - "rounds.mjs"
-Cohesion: 0.19
-Nodes (31): paths(), seconds(), alive(), at(), attemptsOf(), ckptSteps(), createState(), dropLock() (+23 more)
+Cohesion: 0.18
+Nodes (32): paths(), seconds(), alive(), at(), attemptsOf(), ckptSteps(), createState(), dropLock() (+24 more)
 
 ### Community 20 - "stitch_laps.mjs"
 Cohesion: 0.06
 Nodes (30): acceptCost, allowedCost(), args, attempts, banned, bestOf, checkMs, fallbacks (+22 more)
 
 ### Community 21 - "validate.mjs"
-Cohesion: 0.18
-Nodes (8): EVERY, args, fresh, jobs, names, perTrack, rank, verdicts
+Cohesion: 0.11
+Nodes (19): EVERY, describe(), dot(), fence(), locate(), nearest(), sub(), WINDOW (+11 more)
 
 ### Community 22 - "attempts.mjs"
 Cohesion: 0.16
@@ -324,8 +318,8 @@ Cohesion: 0.08
 Nodes (31): { check, note }, CLAIMS, { check }, attempt(), ladder, prepare(), samePrefix(), snapshot() (+23 more)
 
 ### Community 27 - "test_4_sim.mjs"
-Cohesion: 0.09
-Nodes (33): loadGenerated(), check(), fmt(), near(), section(), decodeParts(), detectorBox(), gatesOf() (+25 more)
+Cohesion: 0.14
+Nodes (21): loadGenerated(), check(), fmt(), near(), section(), decodeParts(), detectorBox(), gatesOf() (+13 more)
 
 ### Community 28 - "polytrack_env.py"
 Cohesion: 0.06
@@ -337,7 +331,7 @@ Nodes (4): Changes needed elsewhere, tracks, actionToControls(), RacingEnv
 
 ### Community 30 - "observation.mjs"
 Cohesion: 0.08
-Nodes (25): createObserver(), LOOKAHEAD_POINTS, OBS_CONTACT, OBS_CURVATURE, OBS_EDGE_AHEAD, OBS_EDGE_NOW, OBS_FLIGHT, OBS_FRACTION (+17 more)
+Nodes (24): createObserver(), LOOKAHEAD_POINTS, OBS_CONTACT, OBS_CURVATURE, OBS_EDGE_AHEAD, OBS_EDGE_NOW, OBS_FLIGHT, OBS_FRACTION (+16 more)
 
 ### Community 31 - "test_driver.mjs"
 Cohesion: 0.08
@@ -348,8 +342,8 @@ Cohesion: 0.08
 Nodes (26): alongBin, args, ask(), BEAM, elapsed(), elite, incumbent, latBin (+18 more)
 
 ### Community 33 - "test_lock.mjs"
-Cohesion: 0.12
-Nodes (19): check(), failed, finish(), passed, same(), throws(), PROJECT, SCRIPTS (+11 more)
+Cohesion: 0.11
+Nodes (20): IDEA_DIR, check(), failed, finish(), passed, same(), throws(), PROJECT (+12 more)
 
 ### Community 34 - "g1-7 computed racing line README"
 Cohesion: 0.23
@@ -359,9 +353,9 @@ Nodes (11): g1-7 computed racing line README, Where it could pay: tracks with fl
 Cohesion: 0.09
 Nodes (21): accelRun, accelW, binBySpeed(), brake, brakeRun, coast, coastRun, entries (+13 more)
 
-### Community 36 - "g2-1-route_mode_check.mjs"
-Cohesion: 0.06
-Nodes (34): follow(), laps, track, W_ONLY, follow(), attempt(), DRIVER_DEFAULTS, driveTrack() (+26 more)
+### Community 36 - "rotate"
+Cohesion: 0.07
+Nodes (35): follow(), laps, track, W_ONLY, toCarFrame(), follow(), attempt(), DRIVER_DEFAULTS (+27 more)
 
 ### Community 37 - "env_server.mjs"
 Cohesion: 0.18
@@ -403,9 +397,9 @@ Nodes (19): args, bigMoveChance, clamp(), current, extraChance, gaussian(), GLOB
 Cohesion: 0.18
 Nodes (12): Context, Deliberately not changing, Housekeeping (needs Henry's yes), Phase 1: Bug fixes (small, no effect on results), Phase 2: One source for each shared constant (about 30 lines, no effect on results), Phase 3: Deduplication (medium; each step gated by a fixed-seed comparison), Phase 4 (optional, only with Phase 5 of "What is next"): split `racing_env.mjs`, Polytrack-ML refactor plan (+4 more)
 
-### Community 47 - "package.json"
-Cohesion: 0.15
-Nodes (12): devDependencies, playwright-core, name, private, scripts, capture, setup, test (+4 more)
+### Community 47 - "capture_init.mjs"
+Cohesion: 0.10
+Nodes (15): devDependencies, playwright-core, name, private, scripts, capture, setup, test (+7 more)
 
 ### Community 48 - "iqn_server.mjs"
 Cohesion: 0.21
@@ -415,9 +409,9 @@ Nodes (18): b64(), begin(), decisionOf(), drive(), evaluate(), greedy(), handle(
 Cohesion: 0.24
 Nodes (18): speedFor(), curvature(), dot(), optimiseLine(), optimiseTime(), shiftedPoints(), speedProfile(), sub() (+10 more)
 
-### Community 50 - "route.mjs"
-Cohesion: 0.24
-Nodes (15): buildRoute(), flights(), runStage(), cross(), dist(), dot(), finishRoute(), gateStages() (+7 more)
+### Community 50 - "plot_dump.mjs"
+Cohesion: 0.19
+Nodes (9): info, nodes, route, surface, buildSurface(), near(), CellMap, EDGE_CAP (+1 more)
 
 ### Community 51 - "g2-3-explore-and-adapt/tests/test_logic.mjs"
 Cohesion: 0.08
@@ -444,8 +438,8 @@ Cohesion: 0.22
 Nodes (9): corrections(), donorKeys(), follow(), joins, [name, ...rest], paths, settings, { ticks } (+1 more)
 
 ### Community 57 - "Route built from track geometry alone"
-Cohesion: 0.08
-Nodes (28): Missing speed profile from curvature, Changes needed in RacingEnv to use the route reference, Validation of route against fastest human lap on 17 official tracks, g2-1 independent tests (TESTING.md), Observation: route floats 0.5 to 1.1 units off curved surfaces, test_3: g2-1 route on a g2-2 generated track, 1. The piece table, 2. The generator (+20 more)
+Cohesion: 0.07
+Nodes (32): Missing speed profile from curvature, Changes needed in RacingEnv to use the route reference, Validation of route against fastest human lap on 17 official tracks, g2-1 independent tests (TESTING.md), g2-1 tests, Observation: route floats 0.5 to 1.1 units off curved surfaces, The README's claims, test_3: g2-1 route on a g2-2 generated track (+24 more)
 
 ### Community 58 - "memory_test.mjs"
 Cohesion: 0.13
@@ -459,9 +453,9 @@ Nodes (17): check(), finish(), known(), same(), a, b, crashed, expected (+9 more
 Cohesion: 0.18
 Nodes (23): dist2(), drive(), driveTail(), driveTo(), faster(), pos, pose, quat (+15 more)
 
-### Community 61 - "test_2_codec.mjs"
-Cohesion: 0.19
-Nodes (10): deflate(), encodeExportString(), encodeSaveString(), partsToBytes(), wrap(), keyOf(), sameParts(), withHole() (+2 more)
+### Community 61 - "g2-2-track-generator/smoke_test.mjs"
+Cohesion: 0.15
+Nodes (11): deflate(), encodeExportString(), encodeSaveString(), partsToBytes(), wrap(), difficulty, rows, started (+3 more)
 
 ### Community 62 - "corridor.mjs"
 Cohesion: 0.17
@@ -483,17 +477,17 @@ Nodes (9): MemoryEnv, Changes needed elsewhere, Curriculum, g2-5: a policy with 
 Cohesion: 0.24
 Nodes (11): compare_human.mjs (calibration against the human lap), optimiseTime (search on predicted lap time), speedProfile (forward-backward pass), g1-7 independent tests (TESTING.md), Known failure: turning limit stored with 4 decimals, Known failure: computed line starts 0.59 units beside the car, Fix: full-lock accel never exceeds straight-line accel, Fix: corridor roomBeside edge at the 20-unit search limit (+3 more)
 
-### Community 67 - "plot_dump.mjs"
-Cohesion: 0.19
-Nodes (9): info, nodes, route, surface, buildSurface(), near(), CellMap, EDGE_CAP (+1 more)
+### Community 67 - "test_beam.mjs"
+Cohesion: 0.16
+Nodes (13): a, b, BEAM, c, d, e, f, files() (+5 more)
 
 ### Community 68 - "ref_node_fs"
 Cohesion: 0.06
 Nodes (44): args, createCar, file, lines, options, settings, [track = 'desert4', which = 'all'], OBS_PEDAL_OPEN (+36 more)
 
-### Community 69 - "g1-4-beam-search/tests/TESTING.md"
-Cohesion: 0.19
-Nodes (13): prune(), same(), ranks(), spearman(), Diversity buckets and per-process share in pruning, Check: the same command gives the same lap, recording and log, Did the README's claims hold?, Note: the elite does not count towards its bucket (+5 more)
+### Community 69 - "prune"
+Cohesion: 0.39
+Nodes (7): prune(), same(), ranks(), spearman(), Diversity buckets and per-process share in pruning, Note: the elite does not count towards its bucket, What is covered
 
 ### Community 70 - "diff_capture.mjs"
 Cohesion: 0.17
@@ -515,25 +509,21 @@ Nodes (10): args, HORIZONS, N, opt, rng, seed(), starts, states (+2 more)
 Cohesion: 0.21
 Nodes (11): Changes needed elsewhere, restore(), snapshot(), Tests of g1-2 (independent tester), Defects found, Headline claim, Headline claim holds: desert4 21.730 s reproduced key for key, Defect (fixed): stitch_laps exited 0 on NO LAP (+3 more)
 
-### Community 75 - "test_1_route_vs_human_sim.mjs"
-Cohesion: 0.18
-Nodes (13): describe(), dot(), fence(), locate(), nearest(), sub(), WINDOW, RIDE_HEIGHT (+5 more)
-
 ### Community 76 - "run_all_tests.mjs"
 Cohesion: 0.17
 Nodes (11): folders, IDEAS, killTree(), LOGS, results, ROOT, runFolder(), t0 (+3 more)
 
 ### Community 77 - "fingerprint.mjs"
-Cohesion: 0.20
-Nodes (8): blockArgs, oldActor, oldSteps, out, rolls, ROOT, server(), strip()
+Cohesion: 0.11
+Nodes (13): blockArgs, oldActor, oldSteps, out, rolls, ROOT, server(), strip() (+5 more)
 
 ### Community 78 - "BRIEF.md"
 Cohesion: 0.12
 Nodes (14): Brief for the idea agents, Deliverables: runnable code plus README per idea, Find your way around, Orchestrator plus twelve idea agents, Rules, ideas/shared and CONTRACT.md (orchestrator-owned), The project, What to deliver (+6 more)
 
 ### Community 79 - "smoke_real.mjs"
-Cohesion: 0.21
-Nodes (11): IDEA_DIR, at(), cleanUp(), keep, launch(), ours(), p, PROJECT (+3 more)
+Cohesion: 0.23
+Nodes (10): at(), cleanUp(), keep, launch(), ours(), p, PROJECT, r (+2 more)
 
 ### Community 80 - "g1-7-computed-racing-line/car_model.mjs"
 Cohesion: 0.27
@@ -543,8 +533,8 @@ Nodes (8): fill(), GRAVITY, loadCarModel(), buildPad(), PLATE_CELLS, PLATE_UNITS
 Cohesion: 0.20
 Nodes (8): Housekeeping awaiting Henry's yes, Acceptance tests, Captured Init payload (data/init_0.6.3.json), Driving and watching a lap, Layout, Polytrack-ML, Setup, Things that were not obvious
 
-### Community 82 - "CLAUDE.md"
-Cohesion: 0.18
+### Community 82 - "README.md"
+Cohesion: 0.20
 Nodes (8): Goal 1: lap faster than best human, Lap time jagged to the millisecond, How to read this, Lineage at a glance, Model history, Where the evidence is, Sub-human laps from human-lap search (four tracks), The twelve ideas (g1-1 to g2-5)
 
 ### Community 83 - "ppo_rays (17 distance rays)"
@@ -559,13 +549,13 @@ Nodes (8): Old scheme (10 ms, 12 key combinations), CAR_TICK_BUDGET constant, OB
 Cohesion: 0.18
 Nodes (10): [i,j,k], [name, join, opts='{}', every='5'], paths, t0, { ticks }, trace(), track, renewCar() (+2 more)
 
-### Community 86 - "g2-4-lookahead-driving/tests/test_logic.mjs"
-Cohesion: 0.18
-Nodes (11): check(), finish(), same(), ROOT, saved, TMP, dead, invariants() (+3 more)
+### Community 86 - "g1-4: beam search over block decisions"
+Cohesion: 0.20
+Nodes (10): 2. The beam on one stretch, three rankings, 3. Against the 21.907 s lap (`from=runs/rollout_desert4.json`), 4. Checks, A full run: cost and what it might gain, Changes needed elsewhere, Files, g1-4: beam search over block decisions, How to run (+2 more)
 
 ### Community 87 - "replica_check.mjs"
-Cohesion: 0.14
-Nodes (10): actions, dump, episodeStartArc, finishTicks, now, obs, reasons, rewards (+2 more)
+Cohesion: 0.11
+Nodes (18): check(), failed, finish(), passed, same(), throws(), actions, dump (+10 more)
 
 ### Community 88 - "g1-7: a computed racing line"
 Cohesion: 0.18
@@ -583,25 +573,25 @@ Nodes (21): body(), fractions, human, keys, resetTimes, same(), t0, THROTTLE (+1
 Cohesion: 0.18
 Nodes (11): Changes needed elsewhere, Cost of a full run, Files, g1-5: fine key timing (1 ms), How to run, Not done, not tested, Smoke test 1: searched lap, flips from 18.0 s to the finish, Smoke test 2: best human lap, flips from 17.75 s to the finish (+3 more)
 
-### Community 92 - "progress"
-Cohesion: 0.06
-Nodes (35): 1. What to rank by (`calibrate.mjs`), 2. The beam on one stretch, three rankings, 3. Against the 21.907 s lap (`from=runs/rollout_desert4.json`), 4. Checks, A full run: cost and what it might gain, Changes needed elsewhere, Files, g1-4: beam search over block decisions (+27 more)
+### Community 92 - "search.mjs"
+Cohesion: 0.20
+Nodes (12): change(), sameBefore(), Defect found (fixed), Headline claims, Other claims in the README, Tests of g1-1 (search from the human's lap), What is covered, countFlips() (+4 more)
 
-### Community 93 - "test_1_raceline.mjs"
-Cohesion: 0.24
-Nodes (5): TOLERANCE, cross(), makeCorridor(), unit(), UP
+### Community 93 - "._observe"
+Cohesion: 0.21
+Nodes (6): straight(), Changes needed elsewhere, dot(), quatMultiply(), sub(), toCarFrame()
 
-### Community 94 - "test_beam.mjs"
-Cohesion: 0.16
-Nodes (13): a, b, BEAM, c, d, e, f, files() (+5 more)
-
-### Community 95 - "fetch_laps.mjs"
+### Community 94 - "g2-3 Explore and adapt"
 Cohesion: 0.22
-Nodes (9): allOfficial, amount, args, get(), officialDir, opt, outDir, sleep() (+1 more)
+Nodes (9): Changes needed elsewhere, Cost of a full run, Design questions, and what the logs say, Files, Fine-tune (dry run only), g2-3 Explore and adapt, How to run (from the project root), The test set (+1 more)
 
-### Community 96 - "ToyEnv"
-Cohesion: 0.23
-Nodes (4): run(), replayToy(), ToyEnv, toyPolicy
+### Community 95 - "progress"
+Cohesion: 0.16
+Nodes (12): 1. What to rank by (`calibrate.mjs`), Defects, Not fixed, Observations that are not defects, Not done, not tested, Defects, g2-4 lookahead driving: independent tests, Not covered, and why (+4 more)
+
+### Community 96 - "buildRoute"
+Cohesion: 0.29
+Nodes (11): buildRoute(), flights(), runStage(), cross(), dist(), dot(), finishRoute(), Heap (+3 more)
 
 ### Community 97 - "search_timeline.mjs"
 Cohesion: 0.10
@@ -627,17 +617,17 @@ Nodes (6): 3 s doomed window assumption, MemoryAgent warm-started from the gener
 Cohesion: 0.19
 Nodes (8): closeTo(), filled(), near(), BIN, DOOM_MS, GLOBALS, PER_POINT, POINTS
 
-### Community 105 - "search.mjs"
-Cohesion: 0.20
-Nodes (12): change(), sameBefore(), Defect found (fixed), Headline claims, Other claims in the README, Tests of g1-1 (search from the human's lap), What is covered, countFlips() (+4 more)
+### Community 105 - "g1-4-beam-search/tests/TESTING.md"
+Cohesion: 0.15
+Nodes (10): a, b, head, PROJECT, rows, Check: the same command gives the same lap, recording and log, Did the README's claims hold?, g1-4 beam search: independent tests (+2 more)
 
 ### Community 106 - "g1-2-stitch-human-laps/README.md"
 Cohesion: 0.43
 Nodes (4): Best-of-sections theoretical bound (not a close one), Plan: dynamic programming over (boundary, lap) with switch cost, Section boundaries: planes across the road every 250 ms, State mismatch in millisecond-equivalents
 
 ### Community 107 - "g1-4-beam-search/README.md"
-Cohesion: 0.43
-Nodes (4): Beam of partial laps as save states, extended one 50 ms decision at a time, Next step: a learned ranking fitted to finish times, Periodic rollouts to the finish for a real lap time, Ranking measures (progress, value, look H, lookvalue H)
+Cohesion: 0.36
+Nodes (5): Beam of partial laps as save states, extended one 50 ms decision at a time, Next step: a learned ranking fitted to finish times, Periodic rollouts to the finish for a real lap time, Ranking measures (progress, value, look H, lookvalue H), Check: beam=1 returns the starting lap exactly
 
 ### Community 108 - "analyze.mjs"
 Cohesion: 0.25
@@ -667,9 +657,9 @@ Nodes (11): Cost of a full run, Design questions, Files, g2-4: look ahead while 
 Cohesion: 0.21
 Nodes (7): 5. Speed, memory, tick budget, Defects, g2-5 memory policy: independent tests, The README's claims, What is covered, clip(), TrackMemory
 
-### Community 117 - "route_store.mjs"
-Cohesion: 0.31
-Nodes (6): DEFAULTS, CACHE, ROUTE_VERSION, routeFor(), Reference-free RacingEnv mode (reference: 'route'), Drivable ground plane at y = 0
+### Community 117 - "test_1_raceline.mjs"
+Cohesion: 0.24
+Nodes (5): TOLERANCE, cross(), makeCorridor(), unit(), UP
 
 ### Community 119 - "Requests to the orchestrator (ideas/shared/REQUESTS.md)"
 Cohesion: 0.29
@@ -692,20 +682,16 @@ Cohesion: 0.06
 Nodes (13): _decode(), check(), finish(), one(), read_actor(), b64(), greedy_agreement(), part() (+5 more)
 
 ### Community 137 - "g1-6-offpolicy-rl/tests/run_tests.mjs"
-Cohesion: 0.32
+Cohesion: 0.38
 Nodes (5): HERE, PROJECT, t0, KNOWN, TESTS
 
-### Community 138 - "test_2_observation_sim.mjs"
-Cohesion: 0.28
-Nodes (6): fmt(), info, matrix(), route, toCar(), toWorld()
+### Community 138 - "test_4_car_vs_sim.mjs"
+Cohesion: 0.36
+Nodes (7): within(), accelAt(), car, crossing(), dist(), speedAt(), turnOf()
 
-### Community 139 - "watch_ghost.mjs"
-Cohesion: 0.18
-Nodes (6): HASHES, args, checkOnly, [name = 'summer1', run = 'baseline'], recordValue, trackId
-
-### Community 140 - "g1-6-offpolicy-rl/tests/test_author.mjs"
-Cohesion: 0.29
-Nodes (8): check(), failed, finish(), passed, same(), throws(), PROJECT, SCRIPTS
+### Community 139 - "fetch_laps.mjs"
+Cohesion: 0.22
+Nodes (9): allOfficial, amount, args, get(), officialDir, opt, outDir, sleep() (+1 more)
 
 ### Community 141 - "g1-4-beam-search/tests/run_tests.mjs"
 Cohesion: 0.38
@@ -727,56 +713,36 @@ Nodes (4): freshAfter, history, m, marked
 Cohesion: 0.83
 Nodes (3): keep_copies(), train_route_generalist.sh script, steps_done()
 
-### Community 153 - "test_4_car_vs_sim.mjs"
-Cohesion: 0.36
-Nodes (7): within(), accelAt(), car, crossing(), dist(), speedAt(), turnOf()
-
 ### Community 155 - "rl/: reinforcement learning on the headless simulator"
 Cohesion: 0.22
 Nodes (9): Design in brief, Files, Install, Known limits, Multi-track ("generalist") training, rl/: reinforcement learning on the headless simulator, Use, What was not tested (+1 more)
 
 ### Community 156 - "g1-3-search-train-rounds/tests/run_tests.mjs"
-Cohesion: 0.38
-Nodes (5): HERE, PROJECT, t0, KNOWN, TESTS
-
-### Community 157 - "node_scores.mjs"
-Cohesion: 0.29
-Nodes (6): [actorFile, obsFile, outFile, size], all, bytes, obsSize, out, policy
-
-### Community 158 - "capture_init.mjs"
-Cohesion: 0.29
-Nodes (3): OUT, page, postMessage()
-
-### Community 159 - "g2-3-explore-and-adapt/tests/run_tests.mjs"
-Cohesion: 0.33
-Nodes (3): ROOT, STAGES, t0
-
-### Community 160 - "g2-4-lookahead-driving/tests/run_tests.mjs"
-Cohesion: 0.33
-Nodes (3): ROOT, STAGES, t0
+Cohesion: 0.11
+Nodes (11): HERE, PROJECT, t0, KNOWN, TESTS, ROOT, STAGES, t0 (+3 more)
 
 ### Community 162 - "queue_untried.sh"
 Cohesion: 0.53
 Nodes (3): run_step(), say(), queue_untried.sh script
 
 ## Knowledge Gaps
-- **42 isolated node(s):** `./ideas/g2-2-track-generator/g2-2-features.mjs`, `Reference-free RacingEnv mode (reference: 'route')`, `g1-7 corridor (deferred)`, `Orchestrator duplication cleanup (rng, pool, policy)`, `Request: loadTrack cannot open generated tracks` (+37 more)
+- **42 isolated node(s):** `./ideas/g2-2-track-generator/g2-2-features.mjs`, `g1-7 corridor (deferred)`, `Orchestrator duplication cleanup (rng, pool, policy)`, `Request: loadTrack cannot open generated tracks`, `A short look ahead does not predict lap time` (+37 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1326 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **28 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **29 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `RacingEnv` connect `RacingEnv` to `Lookahead driver (driveLap)`, `env.mjs`, `laps.mjs`, `torch`, `shared/policy.mjs`, `._observe`, `track.mjs`, `hook.mjs`, `explore.mjs`, `train_ppo.py`, `attempts.mjs`, `g1-6-offpolicy-rl/README.md`, `recording.mjs`, `.demo`, `g2-1-route_mode_check.mjs`, `env_server.mjs`, `Polytrack-ML refactor plan`, `iqn_server.mjs`, `Route built from track geometry alone`, `createRng`, `ref_node_fs`, `replica_check.mjs`, `rl/smoke_test.mjs`, `ladder_test.mjs`, `progress`, `g2-5-memory-policy/README.md`, `g2-1: inputs that need no human lap`, `g2-4: look ahead while driving`, `TrackMemory`?**
+- **Why does `RacingEnv` connect `RacingEnv` to `Lookahead driver (driveLap)`, `env.mjs`, `laps.mjs`, `torch`, `.demo`, `track.mjs`, `hook.mjs`, `explore.mjs`, `train_ppo.py`, `attempts.mjs`, `g1-6-offpolicy-rl/README.md`, `recording.mjs`, `rotate`, `env_server.mjs`, `Polytrack-ML refactor plan`, `iqn_server.mjs`, `Route built from track geometry alone`, `createRng`, `ref_node_fs`, `rollout_child.mjs`, `replica_check.mjs`, `rl/smoke_test.mjs`, `ladder_test.mjs`, `._observe`, `progress`, `g2-5-memory-policy/README.md`, `g2-1: inputs that need no human lap`, `g2-4: look ahead while driving`, `TrackMemory`?**
   _High betweenness centrality (0.121) - this node is a cross-community bridge._
 - **Are the 15 inferred relationships involving `RacingEnv` (e.g. with `Phase 3: Deduplication (medium; each step gated by a fixed-seed comparison)` and `Phase 4 (optional, only with Phase 5 of "What is next"): split `racing_env.mjs``) actually correct?**
   _`RacingEnv` has 15 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `./ideas/g2-2-track-generator/g2-2-features.mjs`, `Reference-free RacingEnv mode (reference: 'route')`, `g1-7 corridor (deferred)` to the rest of the system?**
+- **What connects `./ideas/g2-2-track-generator/g2-2-features.mjs`, `g1-7 corridor (deferred)`, `Orchestrator duplication cleanup (rng, pool, policy)` to the rest of the system?**
   _42 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Lookahead driver (driveLap)` be split into smaller, more focused modules?**
   _Cohesion score 0.12367149758454106 - nodes in this community are weakly interconnected._
-- **Why does `createRng()` connect `createRng` to `laps.mjs`, `shared/policy.mjs`, `track.mjs`, `explore.mjs`, `stitch_laps.mjs`, `attempts.mjs`, `.demo`, `beam.mjs`, `g2-1-route_mode_check.mjs`, `env_server.mjs`, `search_rollout.mjs`, `search_sections.mjs`, `search_settings.mjs`, `Polytrack-ML refactor plan`, `iqn_server.mjs`, `generate.mjs`, `g1-4-beam-search/child.mjs`, `section_worker.mjs`, `ref_node_fs`, `calibrate.mjs`, `g2-4-lookahead-driving/tests/test_logic.mjs`, `progress`, `search_timeline.mjs`, `search.mjs`?**
-  _High betweenness centrality (0.056) - this node is a cross-community bridge._
+- **Why does `createRng()` connect `createRng` to `laps.mjs`, `shared/policy.mjs`, `.demo`, `track.mjs`, `test_logs.mjs`, `explore.mjs`, `stitch_laps.mjs`, `attempts.mjs`, `beam.mjs`, `rotate`, `env_server.mjs`, `search_rollout.mjs`, `search_sections.mjs`, `search_settings.mjs`, `Polytrack-ML refactor plan`, `iqn_server.mjs`, `generate.mjs`, `g1-4-beam-search/child.mjs`, `section_worker.mjs`, `ref_node_fs`, `calibrate.mjs`, `rollout_child.mjs`, `g1-4: beam search over block decisions`, `search.mjs`, `search_timeline.mjs`?**
+  _High betweenness centrality (0.060) - this node is a cross-community bridge._
 - **Are the 4 inferred relationships involving `loadTrack()` (e.g. with `Phase 3: Deduplication (medium; each step gated by a fixed-seed comparison)` and `Progress (16 October 2026): phases 1 to 3 done, not committed`) actually correct?**
   _`loadTrack()` has 4 INFERRED edges - model-reasoned connections that need verification._
 - **Should `env.mjs` be split into smaller, more focused modules?**

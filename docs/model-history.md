@@ -38,10 +38,24 @@ ppo_block.bc (imitation start)   block decisions
   -> ppo_blkgen -> ppo_blkgen2   block generalist    <- best: ppo_blkgen.best2.pt
        -> ppo_gblk_*             set 2 specialists
             -> ppo_sr1_* -> ppo_sr2_*   search, then train
+                 -> g1-3-<track>-r1     round 3 (rounds.mjs)
+                      -> g1-3-cand_desert4   towards near-best searched laps
        -> ppo_g3blk_*            set 3 specialists
+       -> g2-3-adapt_<track>     10 min towards an explored lap
+
+g2-1-route_bc (imitation start)  no human lap in the inputs
+  -> ppo_g2-1-route              route generalist
+       -> g2-5-mem_route         + memory inputs (no effect)
+       -> ppo_g2-2-route-gen     + 40 generated tracks
 
 g1-6-iqn_desert4                 off-policy learner, fresh
+  -> g1-6-iqn-g995_desert4       from s3, gamma 0.995 (no gain)
+g1-6-iqn-s5_desert4              fresh, 60 actions (10 ms timing)
+g1-6-iqn_winter2                 fresh, second track
+g1-6-iqn-route(2)_desert4        fresh, route inputs
 ```
+
+26 entries in all, numbered in the order trained.
 
 ## The models
 

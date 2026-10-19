@@ -11,7 +11,9 @@ the beam, so the result is never slower than what it started from.
 Status in one line: it runs, every lap it reports passes Verify, on 2-second
 stretches it finds laps 47 to 64 ms faster than the policy's own 22.061 s in
 about a minute on two processes, and it has **not** beaten the 21.907 s lap or
-been run over a whole lap.
+been run over a whole lap. *(Updated 18 October 2026: the whole-lap run on
+desert4 was made, beam 64 on 8 processes from the 21.880 s lap, and gained
+nothing: 21.880 s. See "The whole-lap run, result" below.)*
 
 ## Files
 
@@ -193,7 +195,7 @@ finish, best 21.942, mean 21.972 s. Result 21.880 s (the incumbent),
 verified. At 13.3 s the beam was 4.2 units ahead of the policy's own lap
 (854.0 against 849.5), which is the incumbent's lead, not a new one.
 
-**The full run** (not run; one job at a time, nothing else on the simulators):
+**The full run** (run 17 to 18 October; result in the next section; one job at a time, nothing else on the simulators):
 
 ```
 cd C:\Users\Henry\Documents\GitHub\Polytrack-ML
@@ -221,6 +223,25 @@ the child's `adopt` drives a decision list from the start line, at the
 measured 1.4 ms per decision about 0.3 s for a member in mid-lap. So a
 rebalance by `adopt` is the small change, if one is wanted; the parent does
 not call it for that yet.
+
+## The whole-lap run, result (17 to 18 October 2026, added by the main session)
+
+The command above (`beam=64 workers=8 seconds=0`, from
+`runs/rollout_r2_desert4.recording.json`, 21.880 s), with nothing else on the
+simulators. Log `runs/g1-4-wholelap_desert4.log`.
+
+- 438 decisions in 437 s (about 1 s per decision, twice the estimate);
+  119,043 candidates, 42 mid-lap rollouts (41 finished), 6.45M ticks at
+  15,000 ticks per second; one car used up and rebuilt.
+- At decision 420 the 64 members were 1768.5 to 1773.1 units along against
+  the policy's own 1755.85, but no finished lap beat the incumbent.
+- **Result 21.880 s, 0 ms faster** (the policy's own lap 22.039 s); verified,
+  `runs/g1-4-wholelap_desert4.recording.json`.
+
+So over a whole lap, as on 2-second stretches, the beam does not beat the
+lap it starts from once that lap has been searched. The fastest desert4 laps
+(21.709 s from the human, 21.720 s from IQN) are per-tick laps and cannot be
+its starting point (see above).
 
 ## A full run: cost and what it might gain
 

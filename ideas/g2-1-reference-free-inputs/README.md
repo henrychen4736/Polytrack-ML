@@ -2,7 +2,7 @@
 
 The agent's 352 inputs today include the human lap's line, speeds, orientation and keys, so it cannot run on a track that has no human lap. This folder builds a **route** from the track's geometry alone (start, checkpoints in order, finish), a **progress measure** along it, and a 334-number **observation** on top of it that uses no lap at all.
 
-Nothing here drives a car along the route or trains a policy on the observation. What was checked is how the route compares with the fastest human lap on each of the 17 official tracks, and that the observation can be built from a live car state.
+Nothing here drives a car along the route or trains a policy on the observation. *(Superseded: since 16 October route mode is in the training environment and three models have trained on it: `ppo_g2-1-route` (PPO, 90 of 170), `ppo_g2-2-route-gen` (PPO on generated tracks) and `g1-6-iqn-route2_desert4` (IQN, 21.846 s on desert4). See "Route mode in the training environment" below.)* What was checked is how the route compares with the fastest human lap on each of the 17 official tracks, and that the observation can be built from a live car state.
 
 ## Result in short
 
@@ -195,6 +195,26 @@ Driven again with the fix, the latest weights end 'off line' at 22.00 s with pro
 
 **Effect on models trained before it.** `ppo_g2-1-route` and `g2-5-mem_route` (PPO with the shaped reward) were already paid `finishBonus` (5) plus the time bonus only for a real finish, so missing the finish already cost them; and in the 170-attempt test of `ppo_g2-1-route.after_38989824` (and the g2-5 test) no attempt ended at 97% or more of the lap. Their training would have differed only in the last 20 units of each lap and in the rare missed finish. The IQN route run (`g1-6-iqn-route_desert4`) is the one it affected: paid progress only, it had no reason to finish.
 
+### The off-policy learner on route inputs (18 October 2026, added by the main session)
+
+`ideas/g1-6-offpolicy-rl/train_iqn.py --reference route` (the flag is carried
+through `iqn_server.mjs` and read back from the checkpoint by `eval_lap.py`),
+desert4, from nothing, 12M decisions, GPU, 6 simulators. Laps verified
+(Verify passes on the tick and fails one sooner).
+
+| Run | Route finish rule | Training episodes ending | Best lap |
+| --- | --- | --- | --- |
+| `g1-6-iqn-route_desert4` | before the fix | 80 to 97 of every 100 'off line' at 100% of the route | 22.041 s |
+| `g1-6-iqn-route2_desert4` | `finishHold` 20, `missedFinish` 10 | 100 of 100 finished | **21.846 s** |
+
+The rerun's lap is 96 ms behind the human (21.750 s) with no human lap in the
+inputs, against 21.792 s for the same learner with the human lap's inputs,
+and faster than every human-reference PPO model on desert4 (21.880 s with
+search). The g1-1 search seeded with it reached 21.801 s, then 21.800 s
+(`runs/g1-1-routeseed*`). Checkpoint
+`rl/checkpoints/g1-6-iqn-route2_desert4.pt`. The human lap still places the
+part-way starts. Only desert4 was tried.
+
 ### Checks
 
 - **Default mode unchanged** (`g2-1-default_mode_check.mjs`). It was recorded on the unmodified files, then compared after the change: 1521 block decisions and resets on desert4 with every start kind switched on (part-way, failure, own state, kick, rotating references; episodes ended 10 off line, 5 off track, 5 stalled), 803 old-scheme steps, a `demo()` of human lap 1 (435 decisions), 40 decisions after `mark()` and the same 40 after `rewind()`, and the server's start-up line. Every observation, reward, end flag and info was identical (SHA-1 per decision).
@@ -238,7 +258,7 @@ sh ideas/g2-1-reference-free-inputs/eval_route_generalist.sh rl/checkpoints/ppo_
 
 `train_route_generalist.sh` first makes the imitation start from the human laps (lap 0 of the 14 training tracks by default; `LAPS=10` uses all ten). It then runs PPO in stretches of 13M block decisions with the block generalist's settings, keeping copies as it goes. After a shutdown, rerunning it carries on. Its header lists every setting and output, and says which settings are reconstructed rather than known. summer4 is left out of practice because its route is wrong; desert5 stays in. `eval_route_generalist.sh` is the ten-attempt test plus one greedy attempt per track.
 
-Not tested:
+Not tested (as of 16 October; the first item is superseded: `ppo_g2-1-route` trained 39M decisions on 17 October, 90 of 170):
 - a full training run (nothing beyond the 4-update smoke run);
 - the training script's later stretches end to end;
 - any community track;

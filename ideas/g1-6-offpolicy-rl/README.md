@@ -8,11 +8,24 @@ costs. Every decision the simulators drive is reused about 32 times instead
 of PPO's 4, and the GPU learns while the simulators drive instead of waiting
 for them.
 
-**Status (17 October 2026): trained on desert4 for 39.2M decisions in six
-stretches (GPU, 6 simulators). Verified best lap 21.792 s against the human's
-21.750 s, reached at 21.2M; the last three stretches found nothing faster. `--resume` and
-`--save-laps` work at full size. Details: `docs/model-history.md` item 16.
-The sections below were written before any training run.**
+**Status (18 October 2026).** Every lap below passes the game's Verify on its
+tick and fails one tick sooner.
+
+- desert4: 39.2M decisions in six stretches (GPU, 6 simulators). Best lap
+  **21.792 s** against the human's 21.750 s, reached at 21.2M; stretches 4 to
+  6 found nothing faster. Levelled off at these settings.
+- Variants on desert4: `--gamma 0.995` (best 21.808 s) and `--slices 5`
+  (21.956 s in 12M decisions) gave no gain.
+- winter2 from nothing: **26.997 s** in 12M decisions (human 26.830 s), the
+  best any model has driven there.
+- `--reference route` (no human lap in the inputs): **21.846 s** on desert4,
+  100 of 100 training episodes finishing, after a fix to the route finish.
+- Its laps are good seeds for the g1-1 search: 21.792 to **21.720 s** on
+  desert4, 30 ms under the human.
+
+Details in "Results" at the end and `docs/model-history.md` items 16 and 21
+to 24. The sections between here and "Results" were written before any
+training run; statements in them that the results overturn are marked.
 
 ## Files
 
@@ -34,7 +47,7 @@ From the project root.
 .venv/Scripts/python ideas/g1-6-offpolicy-rl/test_units.py            # 32 checks, CPU, ~80 s on the busy machine
 .venv/Scripts/python ideas/g1-6-offpolicy-rl/smoke_test.py desert4    # 2 simulators, ~20 s
 
-# a real run (NOT done; 8 simulators and the GPU)
+# a real run (8 simulators and the GPU; see "Results" for the settings used)
 .venv/Scripts/python ideas/g1-6-offpolicy-rl/train_iqn.py --track desert4 --save-laps
 .venv/Scripts/python ideas/g1-6-offpolicy-rl/train_iqn.py --track desert4 --resume
 .venv/Scripts/python ideas/g1-6-offpolicy-rl/train_iqn.py --help
@@ -153,10 +166,14 @@ decision, about 100 decisions per second per process.
 
 - **No training run.** Nothing here shows the learner reaches a finish, let
   alone the human's time. Every setting is a reasoned first guess, untuned.
+  *(Superseded: see "Results". It finishes reliably and reaches 21.792 s on
+  desert4.)*
 - No lap has finished under this code, so `--save-laps` and the
   export-and-Verify step are untested. Only the finish reward's trigger was
   checked (winter2 from 95% round).
 - Never run on the GPU. Resume (`--resume`) is written but not exercised.
+  *(Superseded: every run since 10 October was on the GPU; `--resume` and
+  `--save-laps` work at full size.)*
 - No loader for `search_rollout.mjs` or `rl/evaluate.py`: the actor file is
   not a PPO actor, so "let the policy drive the rest" needs a small adapter
   around `greedy` in `iqn_server.mjs`.
@@ -165,6 +182,8 @@ decision, about 100 decisions per second per process.
   12-action network to 60, multi-track training.
 - Discounted progress is not exactly lap time: it prefers road covered now to
   road covered later. If laps finish but stay slow, raise `--gamma` (0.995).
+  *(Tried 17 October: one stretch at 0.995 from stretch 3, best 21.808 s, no
+  gain.)*
 
 ## Changes needed elsewhere
 
@@ -203,6 +222,9 @@ None are required to run this. These would help:
    slices 5 (3.6%). The g1-6 tests pass (157 of 157).
 3. A reference-free ruler (g2-1's route) in place of the human's line, so the
    cut-off and `off track` rules stop depending on where the human drove.
+   **Done (18 October 2026).** `--reference route` in `train_iqn.py`, carried
+   through `iqn_server.mjs` and read back from the checkpoint by
+   `eval_lap.py`. See "Results".
 4. A ladder of save states from the agent's own best lap (`refFile` already
    allows it by hand: `--ref-file runs/g1-6-iqn_<track>.recording.json`).
 
@@ -249,3 +271,62 @@ defect was found and fixed:
 Also now tested, which the lists above give as untested: the finish reward on
 real finishes (winter2, three episodes that cross the line) and `--resume` at
 toy size.
+
+## Results (added by the main session, 10 to 18 October 2026)
+
+All lap times pass the game's Verify on their tick and fail one tick sooner.
+GPU, 6 simulators unless stated.
+
+**desert4, default settings, in stretches.** First run 3 hours, 9.2M
+decisions: 21.977 s. Then 2-hour stretches of 6M decisions (`--resume
+--save-laps --total-decisions 6000000 --lr 1e-4 --lr-end 0 --envs 6`):
+
+| Stretch | Decisions at end | Best lap | End-of-stretch network |
+| --- | --- | --- | --- |
+| 3 | 21.2M | **21.792 s** | |
+| 4 | 27.2M | nothing faster | 21.838 s |
+| 5 | 33.2M | nothing faster | 21.811 s |
+| 6 | 39.2M | nothing faster | 21.909 s |
+
+About 40 ms gained per stretch up to stretch 3, then none: levelled off at
+these settings. Copies per stretch: `rl/checkpoints/g1-6-iqn_desert4.s<k>.*`.
+The lap that set a best is driven by `.best.actor.bin` (`eval_lap.py
+--actor`), not `.best.pt`.
+
+**Variants on desert4** (17 to 18 October, `scripts/queue_untried.sh`):
+
+| Run | Settings | Best lap | Verdict |
+| --- | --- | --- | --- |
+| `g1-6-iqn-g995_desert4` | `--gamma 0.995`, one 6M stretch from stretch 3 | 21.808 s (end of stretch 21.848 s) | no gain |
+| `g1-6-iqn-s5_desert4` | `--slices 5` (60 actions, 10 ms timing), from nothing, 12M decisions (paused at 10.56M, resumed with an empty buffer) | 21.956 s | no gain; the 12-action run had 21.977 s at 9.2M |
+
+**winter2 from nothing** (`g1-6-iqn_winter2`, default settings, 12M
+decisions, 2.3 hours): **26.997 s** (human 26.830 s); 99 of the last 100
+training episodes finished. The best any model had driven on winter2 before
+was 27.009 s (search-then-train). No tuning was needed for a second track.
+
+**Route inputs, no human lap** (`--reference route`: 334 inputs, progress and
+reward measured along the g2-1 route; the human lap only places part-way
+starts):
+
+- First run (`g1-6-iqn-route_desert4`): best lap 22.041 s, but 80 to 97 of
+  every 100 training episodes ended 'off line' at 100% of the route. A car
+  crossing the finish line beside the finish box was credited the whole
+  route, so finishing paid nothing more and the learner stopped finishing.
+- Fix, in route mode only: `finishHold` 20 units and `missedFinish` 10 units
+  in `rl/racing_env.mjs` (the default mode was checked unchanged).
+- Rerun (`g1-6-iqn-route2_desert4`): **21.846 s**, 100 of 100 training
+  episodes finished (`rl/checkpoints/g1-6-iqn-route2_desert4.pt`). That is
+  96 ms behind the human with no human lap in the inputs, and faster than
+  every human-reference PPO model on desert4 (21.880 s with search).
+
+**Its laps as seeds for search** (g1-1 `search_human.mjs seed=<recording>
+seconds=1200 workers=8`, two runs): desert4 21.792 to 21.733 to **21.720 s**
+(30 ms under the human); winter2 26.997 to 26.937 to 26.927 s; route desert4
+21.846 to 21.801 to 21.800 s. g1-5 fine timing found nothing more on the
+21.720 s lap. Files: `runs/g1-1-iqnseed*`, `runs/g1-1-routeseed*`.
+
+**What is left.** No IQN run beats the human by itself (42 ms short on
+desert4). Not tried: its own best lap as the ruler (`--ref-file`),
+`search_rollout.mjs` from its lap (needs an adapter), IQN on several tracks
+at once, or on route inputs over generated tracks.

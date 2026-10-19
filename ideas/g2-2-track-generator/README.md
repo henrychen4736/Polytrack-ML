@@ -23,7 +23,13 @@ drivability test work, and the training environment opens generated tracks.
   env_server, train_ppo.py, evaluate.py), simulators can rotate through
   more tracks than there are simulators, and a fixed set of 40 training + 10
   test tracks is made by `g2-2-make_set.sh` (50 of 50 kept, 53 s). Smoke
-  runs only: no real training run yet.
+  runs only: no real training run yet. *(Superseded 18 October: see the
+  next item.)*
+- **Trained (18 October 2026):** `ppo_g2-2-route-gen`, the route generalist
+  continued on 13 official + 40 generated tracks for 2 stretches of 12M
+  decisions, finishes **71 of 100** sampled attempts and 8 of 10 greedy on
+  the 10 generated test tracks it never saw (`ppo_g2-1-route`: 15 of 100, 1
+  of 10). desert3, summer3 and winter4 stay 0 of 30. Section 6, "Result".
 - Default behaviour is unchanged: the same seeds give the same 28 saved
   tracks and routes, `g2-1-default_mode_check.mjs` gives the same trace,
   `npm test` passes.
@@ -466,10 +472,43 @@ comparison says whether the generated tracks helped.
   a hill before the finish at 266 km/h and flew over the finish line, 7
   units above it; sampled on the jump track ended 'off line' at 89%).
 
+**Result (18 October 2026, added by the main session).** Training as above
+(`ppo_g2-2-route-gen`, from `ppo_g2-1-route.pt` at 38,989,824 decisions; 13
+official + 40 generated tracks; stretch 1 to 50,987,008, stretch 2 to
+62,984,192). It includes the route finish fix of g1-6 (`finishHold`,
+`missedFinish` in `rl/racing_env.mjs`). Test: `g2-2-eval_route_on_generated.sh`,
+seeds 10 to 19 plus one greedy attempt. Log `runs/queue2/g2-2.log`.
+
+| Track | `ppo_g2-1-route` (before) | `ppo_g2-2-route-gen` (after) | Fastest sampled after | Follower |
+| --- | --- | --- | --- | --- |
+| gen_s30000_d0_l600 | 0/10 | 3/10 | 12.428 s | 18.928 s |
+| gen_s30001_d11_l700_w | 1/10 | 8/10, greedy finishes | 12.467 s | 21.409 s |
+| gen_s30002_d22_l800_ws3 | 0/10 | 0/10 | | 23.895 s |
+| gen_s30003_d33_l900_bk2 | 0/10 | 9/10, greedy finishes | 19.263 s | 32.969 s |
+| gen_s30004_d44_l1000_j3 | 1/10 | 10/10, greedy finishes | 20.578 s | 32.637 s |
+| gen_s30005_d56_l1100_ws2_bk1_j2 | 3/10 | 10/10, greedy finishes | 21.289 s | 39.598 s |
+| gen_s30006_d67_l1200 | 0/10 | 8/10, greedy finishes | 23.591 s | 37.156 s |
+| gen_s32007_d78_l600_bk2 | 9/10, greedy finishes | 9/10, greedy finishes | 12.186 s | 29.526 s |
+| gen_s30008_d89_l700_j3 | 1/10 | 9/10, greedy finishes | 17.784 s | 25.191 s |
+| gen_s30009_d100_l800_ws2_bk1_j2 | 0/10 | 5/10, greedy finishes | 25.829 s | 44.29 s |
+| **10 generated test tracks** | **15/100, 1/10 greedy** | **71/100, 8/10 greedy** | | |
+| desert3, summer3, winter4 | 0/30, 0/3 greedy | 0/30, 0/3 greedy | | |
+
+Contact with walls fell from 3.29% to 1.55% of ticks. These laps are not
+put through Verify (they are finish counts, and the follower is far slower,
+so it is no yardstick for pace). Not tested: the 13 official training
+tracks, so a loss there would not show here. The generated tracks are
+easier than official ones: the first driving of unseen tracks with no human
+lap at all, but not yet of unseen official tracks.
+
 ## What is not done or not tested
 
 - **No training run** beyond the smoke runs above, so whether generated
-  tracks help on the held-out official tracks is not known.
+  tracks help on the held-out official tracks is not known. *(Superseded 18
+  October: trained; they help on unseen generated tracks, 15 to 71 of 100,
+  and not on the held-out official three, 0 to 0 of 30.)*
+- The official training tracks were not tested after training on generated
+  tracks, so whether the official-track driving got worse is not known.
 - **Blocks and planes, intersections, wall rides, loops**: not generated
   (section 5 for loops and wall rides). The official tracks are mostly blocks
   and planes (section 1).

@@ -6,7 +6,9 @@ Written by a tester who did not write the code. Run from the project root:
 node ideas/g2-4-lookahead-driving/tests/run_tests.mjs
 ```
 
-170 checks, 170 pass (after one fix, below), 1.5 to 3 minutes depending on
+170 checks, 170 pass (after one fix, below) as written; **3 fail since 18
+October 2026** for a known cause, see "Known failures" at the end. 1.5 to 3
+minutes depending on
 what else the machine is doing. At most two simulator processes at once, no
 single run over 90 s. `test_drive.mjs` writes `runs/g2-4-test-drv_winter4.*`
 and removes them.
@@ -123,3 +125,29 @@ Four of the author's logged laps took over 2 minutes of wall time each
 | Lazy leaves a good driver alone (desert4 specialist, 22.061 s, 0 of 42 replans) | Confirmed from the logs; the same property holds exactly in the toy world; not re-run |
 | Full / score / horizon tables | Numbers match the logs; not re-run |
 | "The fresh-car path is written but was never reached" | Reached in the toy world: the lap was right, the tick count was wrong (fixed) |
+
+## Known failures (18 October 2026, added by the main session)
+
+Three checks fail since `stepBlock` in `rl/racing_env.mjs` sends a whole 50 ms
+block to the simulator as one message (17 October; README of
+`ideas/g1-6-offpolicy-rl/`, "Changes needed elsewhere" item 1):
+
+| Check | Expected | Now |
+| --- | --- | --- |
+| `test_sim_a.mjs`, plain: `simTicks` = ticks counted by the tester's meter | 17270 | 17300 |
+| `test_sim_a.mjs`, lazy: `simTicks` = ticks counted (try-outs included) | 172540 | 172800 |
+| `test_drive.mjs`, the `log=` check (a plain attempt costs exactly its own ticks) | `simTicks` = tick - 1 | more |
+
+**Cause.** When an episode ends part-way through a block, the one-message
+`stepBlock` has already run the rest of that block in the simulator, so
+`simTicks` counts the remaining ticks of the block (30 to 260 more here),
+while the tester's meter counts only up to the episode's end. Rewards,
+episode ends, finish ticks and laps are unchanged (checked number for number
+when the change was made), so the laps, picks and Verify checks still pass;
+only the cost count differs. Not a defect in g2-4.
+
+**Not decided.** Henry has not decided whether to update the expected values
+(count the whole last block) or change `stepBlock` back to stopping at the
+episode's end. Until then they are known here, but `node ideas/run_all_tests.mjs` still
+reports them as failed (it counts a failure as known only when the test
+prints `KNOWN FAIL` or `FAIL (known defect`, and the tests were not changed).

@@ -89,7 +89,13 @@ the conventions, the state of every model, and how each one came to be.
   and the game's own Verify passes on that tick and fails one tick sooner
   (`scripts/export_recording.mjs`, or `ideas/shared/verify.mjs`).
 - **Tests.** `npm test` for the simulator; `node ideas/run_all_tests.mjs` for
-  the ideas (1885 checks pass, 4 known failures listed in each `tests/TESTING.md`, 17 October 2026).
+  the ideas. Last full count 17 October 2026: 1885 checks pass, 4 known
+  failures listed in each `tests/TESTING.md`. Since 18 October 4 more fail
+  (the runner reports them as failed, not known; they are written up in
+  those folders' `tests/TESTING.md`): 3 in g2-4 (one-message `stepBlock` runs
+  the rest of a block when an episode ends mid-block, so `simTicks` counts
+  more) and 1 in g2-3 (real `g2-3-adapt*` checkpoints now exist). Henry has
+  not decided whether to update the expected values.
   Tests for a piece of code are written by someone who did not write it.
 
 ## Training and testing practice
@@ -163,8 +169,8 @@ repository, so none has been tried.
 
 ## Model history
 
-`docs/model-history.md` is the full record of every model trained: 16
-families, each with what it was built from, what changed, the training, the
+`docs/model-history.md` is the full record of every model trained: 26
+entries, each with what it was built from, what changed, the training, the
 test results, and why it was kept or dropped. Read it when you need to know
 why a model exists or was abandoned, which checkpoint a model was copied
 from, what an earlier approach scored, or before proposing an approach that
@@ -279,7 +285,7 @@ Details in `docs/model-history.md` items 21 to 26 and `ideas/README.md`.
    tracks plus official ones (a generalist that learns per decision far
    faster than PPO), then g2-3-style explore and adapt on unseen tracks.
 2. A community track: Henry to add one to the repository by hand.
-3. desert4 by a model alone: 42 ms short; the search gains 60 to 70 ms from
+3. desert4 by a model alone: 42 ms short; the search gains 46 to 72 ms from
    IQN laps, so a model whose own lap is about 20 ms better would do it.
 4. The route generalist: fix the summer4 and desert5 routes and teach the
    route to take banked walls (desert2, summer5).

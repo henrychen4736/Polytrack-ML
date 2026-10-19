@@ -4,40 +4,58 @@ Local ML and search for fast PolyTrack 0.6.3 laps, run against the game's own
 physics headlessly in Node. Nothing here talks to Kodub's leaderboard server:
 bot runs are for local ghosts only and must not be submitted.
 
-## Where things stand (10 October 2026)
+## Where things stand (18 October 2026)
 
 Two goals: a lap faster than the best human lap on at least one track, and a
 generalist that can drive any track after a few attempts.
 
-**Faster than the best human lap, on four tracks.** These are the human's own
-laps with their key timings improved by search at 1 ms resolution, not laps a
-model drives. Each passes the game's own Verify and is rejected one tick
-sooner.
+**Faster than the best human lap, on five tracks, all by search.** Every lap
+below passes the game's own Verify on its tick and is rejected one tick
+sooner. On desert4 the search now also beats the human starting from a lap a
+model drove, not only from the human's lap.
 
-| Track | Best human | Best lap here | Faster by | File |
-| --- | --- | --- | --- | --- |
-| desert4 | 21.750 s | 21.709 s | 41 ms | `runs/g1-1-full2_desert4.recording.json` |
-| winter2 | 26.830 s | 26.775 s | 55 ms | `runs/g1-1-full2_winter2.recording.json` |
-| summer1 | 22.131 s | 22.104 s | 27 ms | `runs/g1-1-full2_summer1.recording.json` |
-| summer4 | 34.105 s | 34.069 s | 36 ms | `runs/g1-1-full2_summer4.recording.json` |
+| Track | Best human | Best lap here | Faster by | How | File |
+| --- | --- | --- | --- | --- | --- |
+| desert4 | 21.750 s | 21.709 s | 41 ms | human lap re-timed at 1 ms (g1-1) | `runs/g1-1-full2_desert4.recording.json` |
+| desert4 | 21.750 s | 21.720 s | 30 ms | IQN learner's 21.792 s lap re-timed (g1-1, two 20-minute passes) | `runs/g1-1-iqnseed2_desert4.recording.json` |
+| winter2 | 26.830 s | 26.775 s | 55 ms | human lap re-timed (g1-1) | `runs/g1-1-full2_winter2.recording.json` |
+| summer1 | 22.131 s | 22.104 s | 27 ms | human lap re-timed (g1-1) | `runs/g1-1-full2_summer1.recording.json` |
+| summer4 | 34.105 s | 34.069 s | 36 ms | human lap re-timed (g1-1) | `runs/g1-1-full2_summer4.recording.json` |
+| winter5 | 18.425 s | 18.374 s | 51 ms | sections of several human laps joined (g1-2) | `ideas/g1-2-stitch-human-laps/out/winter5.result` |
+
+The four g1-1 laps from the human's lap were re-verified on 17 October on the
+current code at the same ticks.
 
 **Laps a model drives by itself** are still behind the human:
 
-| Method | desert4 | Notes |
-| --- | --- | --- |
-| Off-policy learner (IQN), from scratch | 21.977 s | 3 hours, 9.2 million decisions, reward is distance only; passes Verify |
-| PPO specialist + model-guided search | 21.880 s | after two rounds of search-then-train |
-| PPO specialist alone | 22.0 to 22.1 s | imitation start, inherits from the generalist |
-| Best human | 21.750 s | |
+| Method | desert4 | winter2 | Notes |
+| --- | --- | --- | --- |
+| Off-policy learner (IQN), from nothing | **21.792 s** | 26.997 s | desert4: levelled off by 39M decisions; winter2: 12M decisions, 99 of the last 100 training episodes finished |
+| IQN with no human lap in its inputs (`--reference route`) | 21.846 s | | 100 of 100 training episodes finish |
+| PPO specialist + model-guided search | 21.880 s | 27.009 s | search-then-train has stalled |
+| PPO specialist alone | 22.0 to 22.1 s | | imitation start, inherits from the generalist |
+| Best human | 21.750 s | 26.830 s | |
 
-**Generalist.** The block-decision generalist was trained on 14 tracks. It
-finishes 139 of 170 attempts on those and 7 of 30 on the three it has not seen
-(desert3, summer3, winter4). With lookahead driving or save-state exploring it
-gets round all three, but its inputs still need a human lap, so it cannot run
-on a community track yet.
+IQN alone is 42 ms short on desert4. Re-timing its laps by search gains 46 to
+72 ms (desert4 21.792 to 21.720 s, winter2 26.997 to 26.927 s, route IQN
+21.846 to 21.800 s).
+
+**Generalist.** The block-decision generalist (`ppo_blkgen.best2.pt`) was
+trained on 14 tracks. It finishes 132 of 140 attempts on those and 7 of 30
+on the three it has not seen (desert3, summer3, winter4). Exploring from save
+states, then ten minutes of practice towards the lap found (g2-3), takes it
+to 10, 8 and 9 of 10 there; this still needs each track's human lap. The
+first generalist with no human lap in its inputs (`ppo_g2-1-route`) finishes
+90 of 170, none on the held-out three. Continued on 40 generated tracks with
+jumps, banked turns and wide roads (`ppo_g2-2-route-gen`), it finishes 71 of
+100 attempts on 10 generated tracks it never saw (15 of 100 before), still 0
+of 30 on the held-out official three. The generated tracks are easier than
+official ones. No community track is in the repository, so none has been
+tried.
 
 The fuller write-up, with every idea's result and what is left, is
-[`ideas/README.md`](ideas/README.md).
+[`ideas/README.md`](ideas/README.md); every model trained is in
+[`docs/model-history.md`](docs/model-history.md).
 
 ## Setup
 
@@ -101,8 +119,13 @@ use `.venv/Scripts/python` and `--device cuda` to train on the GPU.
    stepped live through `Env.step`.
 
 The ideas have their own tests, written by agents that did not write the code
-under test: 1884 checks, 5 known failures documented in each folder's
-`tests/TESTING.md`.
+under test. Last full count (17 October 2026): 1885 checks pass, 4 known
+failures documented in each folder's `tests/TESTING.md`. Since 18 October 4
+more fail (the runner still reports them as failed, not known; they are
+written up in those folders' `tests/TESTING.md`): 3 in g2-4, because one-message
+`stepBlock` runs the rest of a block when an episode ends mid-block, and 1 in
+g2-3, because the real fine-tune wrote `g2-3-adapt*` checkpoints. Whether to
+update those expected values is not decided.
 
 ```bash
 node ideas/run_all_tests.mjs    # every folder, one after another, about 25 minutes
@@ -149,6 +172,9 @@ last.
 # From the human's lap, at 1 ms key timing (the method behind the table above)
 node ideas/g1-1-human-seed-search/search_human.mjs desert4 seconds=1200 workers=8 out=full
 
+# The same search from a model's lap (how 21.720 s was found from IQN's lap)
+node ideas/g1-1-human-seed-search/search_human.mjs desert4 seed=runs/g1-6-iqn-s3best_desert4.recording.json seconds=1200 workers=8 out=iqnseed
+
 # From a specialist's lap: change a decision, let the policy drive the rest,
 # keep it only if the lap finishes sooner
 .venv/Scripts/python rl/export_actor.py rl/checkpoints/ppo_gblk_desert4.final.pt
@@ -159,7 +185,8 @@ sh scripts/search_round.sh desert4 rl/checkpoints/ppo_gblk_desert4.final.pt runs
 ```
 
 The search-then-train loop gained up to 189 ms in its first round and almost
-nothing in its second, so it is close to its limit as built.
+nothing in its second; a third round (`ideas/g1-3-search-train-rounds/rounds.mjs`)
+gained only on winter2 (27.020 to 27.009 s), so it has stalled as built.
 
 ## The off-policy learner
 
@@ -168,45 +195,76 @@ rewarded on distance along the track only, with no imitation and no reward
 for matching the human.
 
 ```bash
-.venv/Scripts/python -u ideas/g1-6-offpolicy-rl/train_iqn.py --track desert4 --envs 6 --device cuda --total-decisions 30000000
+# From nothing (each run is one stretch; the learning rate fades to --lr-end)
+.venv/Scripts/python -u ideas/g1-6-offpolicy-rl/train_iqn.py --track desert4 --envs 6 --device cuda --total-decisions 12000000
+
+# Another 2-hour stretch of an existing run, saving each new best lap
+.venv/Scripts/python -u ideas/g1-6-offpolicy-rl/train_iqn.py --track desert4 --envs 6 --device cuda --resume --save-laps --total-decisions 6000000 --lr 1e-4 --lr-end 0
+
+# With no human lap in its inputs (progress measured along the g2-1 route)
+.venv/Scripts/python -u ideas/g1-6-offpolicy-rl/train_iqn.py --track desert4 --envs 6 --device cuda --reference route --total-decisions 12000000
+
+# Drive the lap that set a best, from the start line
+.venv/Scripts/python ideas/g1-6-offpolicy-rl/eval_lap.py rl/checkpoints/g1-6-iqn_desert4.best.pt --actor rl/checkpoints/g1-6-iqn_desert4.best.actor.bin
 ```
 
-Its first run reached 21.977 s on desert4 (verified) in 3 hours from scratch and was
-stopped by the clock, not because it had levelled off. The GPU is its limit,
-not the simulators.
+Results (all laps verified):
+
+- desert4, six stretches to 39.2M decisions: 21.977 s at 9.2M, **21.792 s**
+  by 21.2M (stretch 3), then nothing faster (end-of-stretch networks 21.838,
+  21.811, 21.909 s). Levelled off at these settings.
+- `--gamma 0.995`, one stretch from stretch 3: best 21.808 s, no gain.
+- `--slices 5` (60 actions, 10 ms key timing), from nothing, 12M decisions:
+  best 21.956 s, no gain.
+- winter2 from nothing, 12M decisions: 26.997 s, 99 of the last 100
+  training episodes finished; the best any model had driven there.
+- `--reference route` on desert4: the first run reached 22.041 s, but 80 to
+  97 of every 100 training episodes ended 'off line' at 100% of the route,
+  because passing beside the finish box was credited the whole route. After
+  the route-mode finish fix (`finishHold` 20, `missedFinish` 10 in
+  `rl/racing_env.mjs`) the rerun reached **21.846 s** with 100 of 100
+  finishing (`rl/checkpoints/g1-6-iqn-route2_desert4.pt`).
+
+The GPU is its limit, not the simulators. Its laps make good seeds for the
+g1-1 search (`search_human.mjs <track> seed=<recording>`): see the table at
+the top.
 
 ## The twelve ideas
 
 Each folder under `ideas/` has its own README with commands and numbers.
 
-| Folder | What it is | Result so far |
+| Folder | What it is | Result so far (18 October 2026) |
 | --- | --- | --- |
-| `g1-1-human-seed-search` | Search from the human's lap at 1 ms | Under the human on four tracks |
-| `g1-2-stitch-human-laps` | Join the best sections of several human laps | desert4 21.730 s; nothing on the other three |
-| `g1-3-search-train-rounds` | Unattended, restartable search-then-train rounds | Tested in dry runs only |
-| `g1-4-beam-search` | Keep many partial laps alive at once | Does not beat the existing search |
-| `g1-5-fine-key-timing` | Re-time each key press to the millisecond | desert4 21.722 s from the human lap |
-| `g1-6-offpolicy-rl` | Off-policy learner, distance-only reward | desert4 21.977 s from scratch |
+| `g1-1-human-seed-search` | Search from a lap at 1 ms key timing | Under the human on four tracks from the human's lap; desert4 21.720 s from IQN's 21.792 s lap |
+| `g1-2-stitch-human-laps` | Join the best sections of several human laps | All 17 tracks: beats the human on desert4 (21.730 s) and winter5 (18.374 s) |
+| `g1-3-search-train-rounds` | Unattended, restartable search-then-train rounds | Round 3 gained only on winter2 (27.009 s); stalled |
+| `g1-4-beam-search` | Keep many partial laps alive at once | Does not beat the existing search; whole-lap desert4 run no gain (21.880 s) |
+| `g1-5-fine-key-timing` | Re-time each key press to the millisecond | desert4 21.722 s from the human lap; no change on the 21.720 s lap |
+| `g1-6-offpolicy-rl` | Off-policy learner, distance-only reward | desert4 21.792 s, winter2 26.997 s, desert4 with no human lap 21.846 s |
 | `g1-7-computed-racing-line` | Racing line from a fitted car model | Not faster than the human; the car model is reusable |
-| `g2-1-reference-free-inputs` | Route, progress and inputs with no human lap | Route correct on 15 of 17 tracks; not yet trained on |
-| `g2-2-track-generator` | Random tracks from the game's pieces | Narrow-road tracks only; a scripted driver finishes them all |
-| `g2-3-explore-and-adapt` | Retry from save states on an unseen track | Finishes winter4 in about 5 laps' worth of driving |
+| `g2-1-reference-free-inputs` | Route, progress and inputs with no human lap | PPO route generalist 90 of 170, 0 of 30 held out |
+| `g2-2-track-generator` | Random tracks from the game's pieces | Jumps, banks, wide roads; route generalist 71 of 100 on unseen generated tracks |
+| `g2-3-explore-and-adapt` | Retry from save states, then practise on an unseen track | 10, 8 and 9 of 10 on winter4, desert3, summer3 after 10 minutes |
 | `g2-4-lookahead-driving` | Try alternatives when the policy would crash | Finishes all three unseen tracks, at 9 to 39 times the cost |
-| `g2-5-memory-policy` | Inputs that remember earlier attempts | Built and tested; not trained |
+| `g2-5-memory-policy` | Inputs that remember earlier attempts | Trained; no effect (2 of 150 with memory, 0 of 150 without) |
 
 ## What is next
 
-1. Run the off-policy learner longer on desert4 and put its best lap through
-   Verify. It is the first model here that looks able to beat the human by
-   itself.
-2. ~~Send one message per block decision instead of five in
-   `rl/racing_env.mjs`.~~ Done 17 October 2026: identical results, 1.3
-   times faster with one process and 1.2 times with eight (1.8 ms to 1.4 ms
-   per decision, measured with a search running). The 11.4 ms measured
-   earlier was not reproduced; the simulator itself is most of the rest.
-3. Train a generalist on the inputs that need no human lap. Episodes must end
-   when there is no road under the car, or the model will learn to drive on
-   the ground beneath a raised road.
+1. Combine the two things that work: IQN on the route inputs over generated
+   tracks plus official ones (a generalist that learns per decision far
+   faster than PPO), then g2-3-style explore and adapt on unseen tracks.
+2. A community track: Henry to add one to the repository by hand (the
+   no-network rule forbids fetching one).
+3. desert4 by a model alone: IQN is 42 ms short. The search gains 70 to 72 ms
+   from human-reference IQN laps, so a model whose own lap is about 20 ms better would do it.
+4. The route generalist: fix the summer4 and desert5 routes and teach the
+   route to take banked walls (desert2, summer5).
+
+Done since the 10 October list: the off-policy learner was run to 39.2M
+decisions on desert4 and its laps verified (21.792 s); one message per block
+decision in `rl/racing_env.mjs` (17 October: identical results, 1.2 to 1.3
+times faster); a generalist on the inputs with no human lap
+(`ppo_g2-1-route`, `ppo_g2-2-route-gen`).
 
 ## Things that were not obvious
 

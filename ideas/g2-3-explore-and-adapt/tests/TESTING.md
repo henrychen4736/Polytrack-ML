@@ -115,3 +115,19 @@ No defect in `explore.mjs` or `analyze.mjs` was found, and no code was changed.
 | 73 to 131 cells per run; dropping `sample` still 8 of 8 on winter4, median 5.3 | Confirmed from the logs |
 | The car-replacement path "has never executed" | It has now, forced by the test hook, and it works |
 | Fine-tune steps 2 to 4 | Not run by the author, not run here |
+
+## Known failure (18 October 2026, added by the main session)
+
+One check in `test_logic.mjs` fails since the real fine-tune ran:
+"finetune_plan.sh runs nothing: no training log and no g2-3-adapt checkpoint
+appear". It checks that no file in `rl/checkpoints/` starts with
+`g2-3-adapt`. On 16 October `finetune_run.sh` trained `g2-3-adapt_winter4`,
+`_desert3` and `_summer3` for real (`docs/model-history.md` item 18), so
+those checkpoints exist whatever `finetune_plan.sh` does. The check cannot
+tell a file the dry run wrote from one that was there before. Not a defect in
+`finetune_plan.sh`.
+
+**Not decided.** Henry has not decided whether to change the check (for
+example, compare the folder before and after the dry run) or leave it as a
+known failure. `node ideas/run_all_tests.mjs` still reports it as failed (the
+test was not changed to print `KNOWN FAIL`).

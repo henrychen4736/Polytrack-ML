@@ -196,3 +196,20 @@ candidate driven a whole lap.
   exists.
 - Car tick budget: handled in `child.mjs` (a fresh car when 4.5 million ticks
   are used; the ladder of save states is rebuilt).
+
+## Later result: the 21.720 s lap from a model (18 October 2026, added by the main session)
+
+Run on the desert4 lap the g1-1 search made from the IQN learner's lap
+(`runs/g1-1-iqnseed2_desert4.recording.json`, 21.720 s, 30 ms under the
+human):
+
+```
+node ideas/g1-5-fine-key-timing/refine.mjs runs/g1-1-iqnseed2_desert4.recording.json from=13000 window=10 workers=8 seconds=900 name=g1-5-iqnseed log=runs/g1-5-iqnseed_desert4.log.json
+```
+
+The last 8.7 s of the lap (from tick 13000), window +-10 ticks, nudge and
+tail shift, 8 processes: **5090 drives, 0 changes**, 21.720 s in and out
+(Verify passes on tick 21720). It stopped after one pass, in 119 s of the 900
+allowed, because nothing changed. As on the searched 21.907 s lap above, a
+lap the g1-1 search has already been over has no one-flip gains left in this
+window. Log: `runs/g1-5-iqnseed_desert4.log`.

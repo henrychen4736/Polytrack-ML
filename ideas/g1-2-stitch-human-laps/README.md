@@ -7,10 +7,14 @@ folder measures where that is possible, plans which lap to follow in each
 section, and drives the plan with a repair step that pulls the car back onto
 the new player's path after each switch.
 
-**Result so far:** one verified lap faster than the best human lap we have:
-desert4 **21.730 s** against 21.750 s (20 ms), `runs/g1-2-stitch_desert4.json`.
-Nothing faster on summer4, summer1 or winter2. The idea works, but the gain
-available is small and the repair itself costs time; details below.
+**Result so far (18 October 2026):** run on all 17 tracks, two verified laps
+faster than the best human lap we have: desert4 **21.730 s** against 21.750 s
+(20 ms) and winter5 **18.374 s** against 18.425 s (51 ms),
+`runs/g1-2-all_<track>.recording.json`. Every other track is slower or keeps
+a human lap. The idea works, but the gain available is small and the repair
+itself costs time; details below, and the 17-track table at the end.
+(Earlier wording here said "nothing faster on summer4, summer1 or winter2";
+that still holds.)
 
 ## How to run
 
@@ -211,9 +215,11 @@ desert4 the plan from lap 0 has no switch at all and loses the 21.730 s lap
 ## Not done, not tested
 
 - Only desert4 gave a faster lap. summer4 gives no stitched lap faster than
-  its own human laps (34.374 s with `fallback=6`).
+  its own human laps (34.374 s with `fallback=6`). *(Superseded 18 October:
+  winter5 also gave one, 18.374 s; see the 17-track table.)*
 - **The run over all 17 tracks** (`g1-2-run_all.sh`) has been run on desert4
   and summer4 only; about 10 minutes expected for all 17 with 4 at a time.
+  *(Done 17 to 18 October; table at the end.)*
 - The backwards, finish-time version (decide the last switch first, then the
   one before it against that result) is not built; `judge=finish` is the
   forward version.
@@ -242,3 +248,42 @@ different branch was driven leaves the wrong keys in `sim.keys`;
 - The backwards, finish-time version sketched above: each candidate switch
   costs one repaired drive to the finish (5 to 40 s); 50 candidates per track
   on 8 processes is about 5 minutes per track.
+
+## All 17 tracks (17 to 18 October 2026, added by the main session)
+
+`sh ideas/g1-2-stitch-human-laps/g1-2-run_all.sh` (`judge=finish
+fallback=4`, 4 tracks at once), each saved lap checked again with
+`ideas/shared/verify_lap.mjs`. Gain = best human minus stitched, in ms
+(positive = faster). Every lap passes Verify on the stated tick. Result lines
+in `out/<track>.result`, logs in `out/<track>.log`, `runs/g1-2-all.log` and
+`runs/g1-2-all-3.log`; laps `runs/g1-2-all_<track>.recording.json`.
+
+| Track | Best human | Stitched | Gain | What happened |
+| --- | --- | --- | --- | --- |
+| desert1 | 25.259 s | 25.261 s | -2 | no switch kept: a human lap |
+| desert2 | 28.271 s | 28.379 s | -108 | switched |
+| desert3 | 20.302 s | 20.365 s | -63 | switched (second attempt; see below) |
+| desert4 | 21.750 s | **21.730 s** | **+20** | switched |
+| desert5 | 29.027 s | 29.098 s | -71 | switched |
+| summer1 | 22.131 s | 22.159 s | -28 | no switch kept: a human lap |
+| summer2 | 15.178 s | 15.178 s | 0 | no switch kept: a human lap |
+| summer3 | 20.276 s | 20.280 s | -4 | switched |
+| summer4 | 34.105 s | 34.270 s | -165 | no switch kept: a human lap |
+| summer5 | 49.872 s | 49.872 s | 0 | no switch kept: a human lap |
+| summer6 | 37.036 s | 37.180 s | -144 | no switch kept: a human lap |
+| summer7 | 31.142 s | 31.182 s | -40 | switched |
+| winter1 | 17.011 s | 17.043 s | -32 | switched |
+| winter2 | 26.830 s | 26.830 s | 0 | no switch kept: a human lap |
+| winter3 | 34.485 s | 34.621 s | -136 | switched |
+| winter4 | 19.311 s | 19.405 s | -94 | switched |
+| winter5 | 18.425 s | **18.374 s** | **+51** | switched |
+
+Two of 17 beat the human: desert4 (the same 21.730 s lap as before) and
+winter5, new. A "no switch kept" row can be slower than the best human
+because the lap begun on is the plan's choice, not always lap 0 (see the
+smoke above). The seven switched laps that are slower show again that the
+repair after a switch costs more than the switch wins on most tracks.
+
+**desert3 crashed on the first attempt** (exit 1, no result): `locate()` in
+`paths.mjs` returned tick -1 when asked for a point past the end of the donor
+lap. Fixed in `paths.mjs`; the rerun gave 20.365 s (-63 ms).
