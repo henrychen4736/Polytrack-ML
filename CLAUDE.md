@@ -27,8 +27,10 @@ the conventions, the state of every model, and how each one came to be.
   `ideas/g1-7-computed-racing-line/out/` and
   `ideas/g2-5-memory-policy/out/smoke.bin`, which derive from those laps. The
   repository is public (`github.com/henrychen4736/Polytrack-ML`); the history
-  was rewritten on 10 October 2026 to remove the first two paths.
-  `smoke.bin` was untracked on 16 October 2026 and is still in the history.
+  was rewritten on 10 October 2026 to remove the first two paths, and again
+  on 18 October 2026 to remove `smoke.bin`, the dated `graphify-out/20*/`
+  graph copies and `ideas/test_logs/` (backup bundle beside the repository:
+  `Polytrack-ML-history-backup-20261018.bundle`).
 - **Stopping training:** kill only processes whose command line contains
   `rl/train_ppo.py` (or `train_iqn.py`), then confirm the simulator processes
   have exited. Henry's own jobs (`transcribe.py`, an Adobe `node.exe`) stay
