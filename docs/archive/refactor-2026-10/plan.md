@@ -1,5 +1,10 @@
 # Polytrack-ML refactor plan
 
+> Archived 18 October 2026: carried out in commit 103b1e5 (16 October). Kept for
+> the record and for `fingerprint.mjs`, the bit-identical check. `fp_before.json`
+> is from before that refactor, so a new refactor needs a fresh baseline from
+> its own starting commit.
+
 ## Context
 
 Henry asked for an analysis of how the codebase could be refactored. Three lenses were applied:
@@ -100,7 +105,7 @@ I spot-checked these findings myself:
 
 Measured, not assumed:
 
-- **Fingerprint.** `node docs/refactor/fingerprint.mjs out.json` hashes the replies of `env_server`
+- **Fingerprint.** `node docs/archive/refactor-2026-10/fingerprint.mjs out.json` hashes the replies of `env_server`
   (block and old scheme, including an old-scheme rollout with a fixed pseudo-random 7-score
   network), `iqn_server`, and `rollout_child` through the pool. The refactored code gives exactly
   the hashes of the committed code (`fp_before.json`, recorded from a worktree of commit 07e830c).

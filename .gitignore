@@ -6,6 +6,12 @@ __pycache__/
 runs/
 graphify-out/cache/
 graphify-out/.graphify_*
+# Dated copies of the graph, one full graph.json each (about 3 MB); the current graph is enough
+graphify-out/20*/
+# Rewritten on every test run (node ideas/run_all_tests.mjs); the counts are in CLAUDE.md and tests/TESTING.md
+ideas/test_logs/
+# Working state of a search-then-train round (rounds.mjs); points at runs/, which is not published either
+ideas/*/work/
 # Not published: the game's captured geometry and other players' leaderboard laps
 data/
 # ... and files derived from those laps

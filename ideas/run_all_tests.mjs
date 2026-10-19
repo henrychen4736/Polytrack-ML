@@ -28,7 +28,8 @@
 // A runner that exits non-zero without printing any failure (it crashed), or
 // that prints no PASS at all, counts as one failure for its folder.
 //
-// The full output of every folder is kept in ideas/test_logs/<folder>.log.
+// The full output of every folder is kept in ideas/test_logs/<folder>.log
+// (on this machine only: the folder is in .gitignore since 18 October 2026).
 // Exit code 0 only if every folder had no failure of either kind.
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, readdirSync, writeFileSync, mkdirSync } from 'node:fs';

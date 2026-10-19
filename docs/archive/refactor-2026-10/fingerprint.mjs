@@ -8,8 +8,8 @@
 // refactor in plan.md. Takes about 10 s.
 //
 // Usage (from the project root):
-//   node docs/refactor/fingerprint.mjs out.json
-//   diff docs/refactor/fp_before.json out.json
+//   node docs/archive/refactor-2026-10/fingerprint.mjs out.json
+//   diff docs/archive/refactor-2026-10/fp_before.json out.json
 //
 // Local use only: drives the simulator; no network.
 import { spawn } from 'node:child_process';
