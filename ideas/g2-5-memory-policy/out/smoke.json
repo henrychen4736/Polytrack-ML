@@ -5,6 +5,7 @@
  "obsSize": 482,
  "baseObsSize": 352,
  "memSize": 130,
+ "reference": "human",
  "scores": 22,
  "report": [
   {

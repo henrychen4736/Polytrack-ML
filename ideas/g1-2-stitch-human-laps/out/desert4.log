@@ -1,0 +1,29 @@
+wasm streaming compile failed: TypeError: Cannot read properties of undefined (reading 'FinalizationRegistry')
+falling back to ArrayBuffer instantiation
+desert4: 10 human laps, 87 sections of about 250 ms of the fastest lap
+
+ms spent between boundaries ("-": the lap was on another line at one of the two)
+lap   time s       0-11   11-22   22-33   33-44   44-54   54-65   65-76   76-87   boundaries crossed
+  0   21.750       2750    2750    2750    2750    2500    2750    2750    2750   86/86
+  1   21.758       2751    2748    2753    2753    2495    2746    2756    2756   86/86
+  2   21.767       2750    2752    2750    2755    2492    2759    2760    2749   86/86
+  3   21.775       2751    2756    2747    2755    2505    2755    2760    2746   86/86
+  4   21.776       2751    2752    2753    2768    2501    2752    2758    2741   86/86
+  5   21.780       2751    2751    2747    2765    2503    2753    2758    2752   86/86
+  6   21.792       2750    2755    2745    2767    2521    2748    2752    2754   86/86
+  7   21.792       2751    2764    2748    2761    2511    2765    2754    2738   86/86
+  8   21.796       2751    2768    2740    2752    2504    2775    2767    2739   86/86
+  9   21.798       2753    2768    2740    2760    2507    2766    2765    2739   86/86
+
+best human lap                 21.750 s
+theoretical best of sections   21.680 s  (70 ms faster; assumes a switch is free wherever two laps cross the same boundary)
+planned route                  21.734 s  (16 ms faster if every switch were free): lap1@0 -> lap7@68
+
+stitching (a switch is kept only if the car that switched finishes the lap sooner than the car that did not):
+    5 s  boundary  68: lap1 -> lap7, to boundary 76: stay 2008 ms, switch 1998 ms (mismatch 2 ms); to the finish: stay 21.758 s, switch 21.730 s  KEPT
+
+1 switches kept, 0 refused: lap1 -> lap7@68
+wasm streaming compile failed: TypeError: Cannot read properties of undefined (reading 'FinalizationRegistry')
+falling back to ArrayBuffer instantiation
+stitched lap 21.730 s; best human 21.750 s (20 ms FASTER)
+PASS Verify: the game finishes it on tick 21730; saved runs/g1-2-all_desert4.json, runs/g1-2-all_desert4.recording.json

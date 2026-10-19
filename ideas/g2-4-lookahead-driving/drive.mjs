@@ -21,14 +21,22 @@
 //   out=           if given, the fastest finished lap is verified with the
 //                  game's Verify and saved as runs/g2-4-<out>_<track>.json
 //   log=           append one JSON line per attempt to this file
+//   keep=0         with out=: also write every different finished lap of the
+//                  attempts (all seeds) within this many ms of the fastest to
+//                  runs/g2-4-<out>_<track>.candidates.json, fastest first, as
+//                    { track, best, keep, count, laps: [{ frames, decisions, recording }] }
+//                  (the format of scripts/search_rollout.mjs keep=), for
+//                  imitation examples: ideas/g1-3-search-train-rounds/laps_bc.py
+//                  takes the file. Written only if the fastest lap passes
+//                  Verify; the others are not verified one by one. Off by default.
 //
 // A finished lap's time is printed as "verified" only after shared
 // verifyAndSave has passed it; without out= the fastest lap is still verified,
 // just not saved.
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, writeFileSync } from 'node:fs';
 import { openBlockEnv } from '../shared/block_rollout.mjs';
 import { loadPolicy, loadValue } from '../shared/policy.mjs';
-import { decisionsToKeys } from '../shared/laps.mjs';
+import { decisionsToKeys, keysToRecording } from '../shared/laps.mjs';
 import { verifyAndSave } from '../shared/verify.mjs';
 import { driveLap, DEFAULTS } from './lookahead.mjs';
 
@@ -59,9 +67,12 @@ const describe = settings.mode === 'plain' ? `plain policy (${settings.sample ? 
 console.log(`${track}, ${opt.actor}: ${describe}; reference lap ${(human / 1000).toFixed(3)} s`);
 
 let finishedCount = 0, fractionSum = 0, best = null, simTicks = 0, lapTicks = 0, seconds = 0;
+const keepMs = Number(opt.keep ?? 0);
+const finishedLaps = []; // keep=: { frames, decisions } of every finished attempt
 for (const seed of seeds) {
   const lap = await driveLap(renv, policy, { ...settings, value, seed });
   if (lap.finished) { finishedCount++; if (!best || lap.finishFrames < best.finishFrames) best = lap; }
+  if (lap.finished && keepMs > 0) finishedLaps.push({ frames: lap.finishFrames, decisions: lap.decisions });
   fractionSum += lap.finished ? 1 : lap.fraction;
   simTicks += lap.simTicks; lapTicks += lap.tick; seconds += lap.seconds;
   const end = lap.finished ? `FINISHED ${(lap.finishFrames / 1000).toFixed(3)} s` : `${lap.reason} at ${(lap.tick / 1000).toFixed(2)} s, ${(100 * lap.fraction).toFixed(1)}% of the line`;
@@ -85,6 +96,15 @@ if (best) {
   ok = r.ok && r.finishFrames === best.finishFrames;
   console.log(ok ? `verified: ${r.seconds.toFixed(3)} s (human ${(human / 1000).toFixed(3)} s)${r.files.length ? `, saved ${r.files.join(', ')}` : ''}`
     : `FAIL: Verify ${r.ok ? `gives ${r.finishFrames} ticks, the driver said ${best.finishFrames}` : 'did not pass'}`);
+  if (ok && keepMs > 0 && opt.out) {
+    const seen = new Set();
+    const laps = finishedLaps.filter((l) => l.frames <= best.finishFrames + keepMs).sort((a, b) => a.frames - b.frames)
+      .map(({ frames, decisions }) => ({ frames, decisions, recording: keysToRecording(decisionsToKeys(decisions)) }))
+      .filter((l) => !seen.has(l.recording) && seen.add(l.recording));
+    const file = `runs/g2-4-${opt.out}_${track}.candidates.json`;
+    writeFileSync(new URL(`../../${file}`, import.meta.url), JSON.stringify({ track, best: best.finishFrames, keep: keepMs, count: laps.length, laps }));
+    console.log(`kept ${laps.length} different finished laps within ${keepMs} ms of the fastest: ${file}`);
+  }
 }
 await renv.close();
 process.exit(ok ? 0 : 1);

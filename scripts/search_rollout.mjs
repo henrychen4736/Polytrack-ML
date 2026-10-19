@@ -58,7 +58,27 @@
 //   temperature=1  how random the policy's random choices are
 //   refFile=...    reference lap file for the environment, if the policy was
 //                  trained with one (see refFile in rl/racing_env.mjs)
+//   keep=0         if above 0: also write every different finished lap seen
+//                  (the policy's own laps and every finished candidate) that
+//                  is within this many ms of the final best lap to
+//                  runs/<out>_<track>.candidates.json, as
+//                    { track, best, keep, count,
+//                      laps: [{ frames, decisions, recording }, ...] }
+//                  fastest first, no two with the same keys. `recording` is the lap's keys
+//                  (decisionsToKeys in ideas/shared/laps.mjs, exact for block
+//                  decisions) in the game's string form, which is what
+//                  rl/lap_bc.py and ideas/g1-3-search-train-rounds/laps_bc.py
+//                  label through the environment's demo(). Why: one search
+//                  finishes thousands of candidates, and the ones close to
+//                  the best are many more imitation examples of nearly the
+//                  same driving (ideas/g1-3-search-train-rounds/README.md,
+//                  change 3). Off by default; with it off nothing else changes
+//                  (checked: same seed, same lap, same output).
+//                  The candidates are not verified one by one; their finish
+//                  ticks are the simulator's, from the same environment as
+//                  the best lap's.
 import { spawnSync } from 'node:child_process';
+import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createPool } from '../sim/pool.mjs';
 import { createRng } from '../sim/search.mjs';
@@ -75,6 +95,21 @@ const temperature = num('temperature', 1);
 const outName = opt.out ?? 'rollout';
 const rng = createRng(num('rngSeed', 1));
 const randInt = (n) => Math.floor(rng() * n); // 0 .. n-1
+
+// --- keep=: finished laps close to the best ----------------------------------
+// Only laps within keepMs of the best AT THE TIME are held: the best only
+// gets faster, so a lap outside that band can never come within keepMs of
+// the final best. That bounds the memory (a lap is about 5 KB of decisions).
+const keepMs = num('keep', 0);
+const near = new Map(); // decisions as text -> { frames, decisions }
+function remember(decisions, frames) {
+  if (frames > bestLap.frames + keepMs) return;
+  const key = decisions.join(';');
+  if (!near.has(key)) near.set(key, { frames, decisions });
+}
+function forgetSlow() {
+  for (const [key, lap] of near) if (lap.frames > bestLap.frames + keepMs) near.delete(key);
+}
 
 // The environment as the block-decision specialists were trained and tested
 // (rl/evaluate.py): 10 ms steps, 5 per decision.
@@ -150,6 +185,7 @@ for (let round = 0; round < 2; round++) {
     cmd: 'roll', horizon: 100000, sampleUntil: round === 0 && k === 0 ? 0 : 100000, seed: 1000 * round + k + num('rngSeed', 1), temperature,
   })));
   laps.forEach((lap, k) => { if (lap.finished) consider(lap.decisions, lap.finishFrames, round === 0 && k === 0 ? 'top choices' : 'random choices'); });
+  if (keepMs > 0 && bestLap) { for (const lap of laps) if (lap.finished) remember(lap.decisions, lap.finishFrames); forgetSlow(); }
 }
 if (!bestLap) { console.log('  none of them finished, so there is no lap to improve'); pool.close(); process.exit(1); }
 const startFrames = bestLap.frames;
@@ -189,6 +225,10 @@ for (let pass = 1; pass <= passes; pass++) {
         improvements++;
         bestLap = { decisions: [...prefix, ...winner.decisions], frames: winner.finishFrames };
       }
+      if (keepMs > 0) {
+        for (const r of runs) if (r.finished) remember([...prefix, ...r.decisions], r.finishFrames);
+        if (winner) forgetSlow();
+      }
     }
     if (bestLap.frames < before) {
       console.log(`  ${elapsed().toFixed(0).padStart(4)} s  pass ${pass}, ${(start * 0.05).toFixed(2)} s into the lap: ` +
@@ -209,6 +249,23 @@ pool.close();
 if (!saved.finished || saved.finishFrames !== bestLap.frames) {
   console.log(`FAIL: driven again from the start line, the lap ${saved.finished ? `takes ${saved.finishFrames} ticks, not ${bestLap.frames}` : 'does not finish'}`);
   process.exit(1);
+}
+if (keepMs > 0) {
+  // Loaded only here, so that without keep= the script runs exactly as before.
+  const { decisionsToKeys, keysToRecording } = await import('../ideas/shared/laps.mjs');
+  forgetSlow();
+  near.set(bestLap.decisions.join(';'), { frames: bestLap.frames, decisions: bestLap.decisions });
+  // Different decisions can hold the same keys on every tick (a switch slice
+  // means nothing when the control is already at its target): measured on a
+  // short desert4 search, 64 different decision lists were 15 different laps.
+  // Only the first (fastest) of each set of identical laps is written.
+  const seenKeys = new Set();
+  const laps = [...near.values()].sort((a, b) => a.frames - b.frames)
+    .map(({ frames, decisions }) => ({ frames, decisions, recording: keysToRecording(decisionsToKeys(decisions)) }))
+    .filter((lap) => !seenKeys.has(lap.recording) && seenKeys.add(lap.recording));
+  const file = `runs/${outName}_${name}.candidates.json`;
+  writeFileSync(new URL(`../${file}`, import.meta.url), JSON.stringify({ track: name, best: bestLap.frames, keep: keepMs, count: laps.length, laps }));
+  console.log(`kept ${laps.length} different finished laps within ${keepMs} ms of ${(bestLap.frames / 1000).toFixed(3)} s (slowest ${(laps.at(-1).frames / 1000).toFixed(3)} s): ${file}`);
 }
 const exported = spawnSync(process.execPath, [fileURLToPath(new URL('./export_recording.mjs', import.meta.url)), name, outName], { encoding: 'utf8' });
 console.log(exported.stdout.trim().split('\n').slice(-3).join('\n'));

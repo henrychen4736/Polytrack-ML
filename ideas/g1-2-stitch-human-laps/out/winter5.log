@@ -1,0 +1,30 @@
+wasm streaming compile failed: TypeError: Cannot read properties of undefined (reading 'FinalizationRegistry')
+falling back to ArrayBuffer instantiation
+winter5: 10 human laps, 74 sections of about 250 ms of the fastest lap
+
+ms spent between boundaries ("-": the lap was on another line at one of the two)
+lap   time s        0-9    9-19   19-28   28-37   37-46   46-56   56-65   65-74   boundaries crossed
+  0   18.425       2250    2500    2250    2250    2250    2500    2250    2175   73/73
+  1   18.427       2251    2498    2252    2254    2265    2503    2238    2166   73/73
+  2   18.432       2253    2494    2248    2252    2245    2499    2250    2191   73/73
+  3   18.434       2253    2493    2245    2247    2233    2506    2265    2192   73/73
+  4   18.456       2253    2496    2261    2243    2232    2518    2258    2195   73/73
+  5   18.466       2251    2483    2232    2247    2243    2518    2277    2215   68/73
+  6   18.476       2250    2487    2248    2252    2272    2524    2257    2186   73/73
+  7   18.481       2250    2503    2264    2250    2253    2513    2264    2184   73/73
+  8   18.511       2257    2493    2254    2254    2278    2518    2264    2193   69/73
+  9   18.512       2254    2500    2263    2262    2251    2527    2266    2189   70/73
+
+best human lap                 18.425 s
+theoretical best of sections   18.312 s  (113 ms faster; assumes a switch is free wherever two laps cross the same boundary)
+planned route                  18.352 s  (73 ms faster if every switch were free): lap5@0 -> lap3@34 -> lap1@51
+
+stitching (a switch is kept only if the car that switched finishes the lap sooner than the car that did not):
+   20 s  boundary  34: lap5 -> lap3, to boundary 42: stay 1997 ms, switch 2002 ms (mismatch 6 ms); to the finish: stay 18.466 s, switch 18.478 s  refused
+   25 s  boundary  46: lap5 -> lap1, to boundary 54: stay 2015 ms, switch 2010 ms (mismatch 5 ms); to the finish: stay 18.466 s, switch 18.374 s  KEPT
+
+1 switches kept, 1 refused: lap5 -> lap1@46
+wasm streaming compile failed: TypeError: Cannot read properties of undefined (reading 'FinalizationRegistry')
+falling back to ArrayBuffer instantiation
+stitched lap 18.374 s; best human 18.425 s (51 ms FASTER)
+PASS Verify: the game finishes it on tick 18374; saved runs/g1-2-all_winter5.json, runs/g1-2-all_winter5.recording.json

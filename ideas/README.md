@@ -150,8 +150,12 @@ back onto the new lap's path with small key corrections.
 `node ideas/g1-2-stitch-human-laps/stitch_laps.mjs desert4 joins=4`
 Result: desert4 21.730 s (20 ms under the human) from one switch. No gain on
 winter2 or summer1; no finished lap on summer4.
-Left: judging a switch by the finish time instead of 2 s ahead; a fallback
-when the car loses the path; the other 13 tracks.
+Since 17 October 2026: `judge=finish` (a switch is kept only if its lap ends
+sooner at the finish line) and `fallback=N` (undo the last kept switch when
+the car is lost), both off by default. Measured: on desert4 with loose
+settings 21.754 s instead of 21.794 s; summer4 now finishes (34.374 s, still
+slower than the human). `g1-2-run_all.sh` runs all 17 tracks with a table.
+Left: the run over all 17 tracks (about 10 minutes, 4 at a time).
 
 **g1-3 search-train rounds** — `ideas/g1-3-search-train-rounds/`
 A driver that repeats "search, train the specialist toward the searched lap,
@@ -170,9 +174,10 @@ every second of lap for a real time.
 `node ideas/g1-4-beam-search/beam.mjs desert4 start=120 depth=160 beam=8 out=g1-4-smoke`
 Result: desert4 21.997 s, 64 ms faster than the specialist's own 22.061 s,
 from 2 s of the lap. Not faster than the 21.907 s searched lap or the human.
-Left: a whole-lap run on 8 processes (7 to 9 minutes); a ranking measure
-that predicts finish time (none of the cheap ones does: agreement 0.35 to
-0.54).
+Left: a whole-lap run on 8 processes, prepared from the 21.880 s r2 lap
+(the 21.720 s lap is per-tick and cannot seed it; see its README; about 10 to
+15 minutes); a ranking measure that predicts finish time (none of the cheap
+ones does: agreement 0.35 to 0.54).
 
 **g1-5 fine key timing** — `ideas/g1-5-fine-key-timing/`
 Move each key change of a finished lap to its best millisecond by driving
@@ -337,6 +342,26 @@ grouped by the file they touch. The first three unblock the most.
   slowdown. This would speed up every block-decision training run and
   search by roughly 3 to 4 times. Rewards and cut-offs would then be worked
   out per block. (g1-4, g1-6, g2-4)
+  **Done (17 October 2026).** `stepBlock` now sends the block as one key
+  schedule (`Env.stepSchedule`, "key schedules" in `sim/worker_entry.mjs`)
+  and gets its 50 states back in one message; rewards and cut-offs are still
+  worked out per 10 ms slice, so results are identical number for number
+  (`g2-1-default_mode_check.mjs` and a trace of states, rewards, finish
+  ticks and stored keys over 9,000+ decisions, 12 finished laps included).
+  Measured on desert4 with an 8-process search running (about 90% CPU):
+  1.77 to 1.81 ms per decision before, 1.39 to 1.40 ms after with one
+  process (1.3 times faster); 2,404 to 2,456 decisions per second before,
+  2,905 to 2,946 after with eight (1.2 times). The 3 to 4 times expected
+  from the 11.4 ms measurement did not appear: here the five-message block
+  already cost 1.8 ms, and one 50 ms step 1.5 ms, so the simulator itself
+  is most of what is left.
+  One thing does change: when an episode ends inside a block, the simulator
+  has already run the rest of it, so `Env.frames` (the game's tick counter)
+  is up to 40 ticks further on per episode end. RacingEnv replaces its car
+  after the same episode as before (`_carUsedUp` leaves those ticks out;
+  checked over 120,000 decisions past a replacement), but g2-4 counts
+  simulated ticks from `Env.frames`, and three of its tests (exact tick
+  cost of an attempt) now fail by 30 to 260 ticks.
 - A reference-free mode (`reference: 'route'`) built on g2-1: in `create()`,
   `_locate()`, `_observe()` and `_info()` use the route and its observer;
   `OBS_SIZE` 352 → 334; `paceReward: 0` and the lane cost off or rewritten;
@@ -348,7 +373,17 @@ grouped by the file they touch. The first three unblock the most.
 - `save()`: use the base name when the track is a file path. (g2-2)
 - An option to end an attempt on a hard body contact or a collapse in speed,
   so a search does not pay 2 s for every wall. (g2-3)
+  **Done (17 October 2026):** `crashEnd` (off by default; `crashEnd=1` in
+  g2-3's explore.mjs). Cuts none of 51 human laps. On winter4 (8 seeds) an
+  attempt costs 0.07 laps of simulated time instead of 0.20, and the first
+  finish came after a median 3.9 laps instead of 5.5, 8 of 8 either way;
+  the laps found are cleaner (19.96 to 21.28 s against 19.92 to 25.54 s),
+  because the rule also cuts attempts that would have finished after a
+  wall hit. Details in g2-3's README.
 - A switch to skip the shaped reward terms. Small saving. (g1-6)
+  **Done (17 October 2026):** `shapedReward: 0`, used by `iqn_server.mjs`;
+  1.7% (slices 1) and 3.6% (slices 5) of the time per decision, nothing
+  else changes.
 
 **`sim/env.mjs`**
 - `loadTrack(name)`: when `name` ends in `.track.json`, read that file and
@@ -372,7 +407,11 @@ grouped by the file they touch. The first three unblock the most.
 
 **`sim/worker_entry.mjs`**
 - A save state that can be sent to another simulator process, so a beam can
-  be shared across processes. (g1-4)
+  be shared across processes. (g1-4) **Assessed 17 October 2026, not
+  built:** not small (no export/import of snapshot bytes, memory layout
+  across processes unchecked, the per-car JavaScript bookkeeping is outside
+  the snapshot); the key-schedule message does not help. Moving a member by
+  replaying its decisions (`adopt`, about 0.3 s mid-lap) is the cheap way.
 
 **`rl/train_ppo.py`**
 - `--resume` continues the weights but not the run: `--total-steps`, the
@@ -381,6 +420,11 @@ grouped by the file they touch. The first three unblock the most.
   (the shell wrappers now resume instead of starting over; see below). A
   `--target-steps` (stop at this step count, schedule over the whole run)
   would make an interrupted run resume exactly where it stopped. (g1-3)
+  **Done (17 October 2026):** `--target-steps`. A 12-update run killed
+  during its save at update 8 and relaunched continued at update 5 with the
+  uninterrupted run's learning rate, imitation weight and warm-up at every
+  update; without the flag the weights are bit-identical to before. Details
+  in g1-3's README.
 - `--ref-file` is one file for every track; training on a folder of
   generated tracks needs one per track (the `.lap.json` beside each). (g2-2)
 - For the memory policy: `--memory`, `--session-max`; pad `--bc-data`
@@ -411,7 +455,10 @@ grouped by the file they touch. The first three unblock the most.
   winter2's round-1 result was lost) and accept `start=<lap>` to continue
   from one. (g1-3)
 - Optionally keep the near-best finished candidates, as extra training
-  examples. (g1-3)
+  examples. (g1-3) **Done (17 October 2026):** `keep=<ms>` writes
+  `runs/<out>_<track>.candidates.json`; without it the output and lap are
+  identical (checked with the same seed); `laps_bc.py` reads the file and
+  `ideas/g1-3-search-train-rounds/g1-3-train_on_candidates.sh` uses it.
 
 **`scripts/train_block_specialist_from.sh`, `scripts/search_round.sh`**
 - (done, 16 October 2026) `train_block_specialist_from.sh` copied the base
@@ -474,3 +521,47 @@ exported or put through Verify yet.
 after round 2 against round 1: desert4 21.880 s (was 21.907), summer4 34.505
 (34.500), summer1 22.371 (22.334), winter2 27.031 (27.020). Only desert4
 improved, so no third round was run.
+
+## Results of the queue, 16 to 17 October 2026 (added by the main session)
+
+Everything that was built but never trained was run, one training at a time,
+by `scripts/queue_unfinished.sh`. Several statements higher up in this file
+(no IQN run, no whole-lap search, best lap 21.907 s) are out of date; this
+section and `docs/model-history.md` items 16 to 20 are current. Every lap
+time below passes the game's Verify and fails one tick sooner.
+
+| Idea | What ran | Result |
+| --- | --- | --- |
+| g1-6 off-policy learner | 5 more stretches on desert4 (to 39.2M decisions) | 21.977 to **21.792 s** by 21.2M, then no gain; human 21.750 s |
+| g1-3 search-train rounds | `rounds.mjs`, one round on each of 4 tracks | only winter2 gained, 27.020 to 27.009 s |
+| g2-3 explore and adapt | fine-tune (`finetune_run.sh`) on the 3 held-out tracks | finishes 1 to 10, 1 to 8, 5 to 9 of 10; searched laps 19.669 / 20.520 / 20.475 s |
+| g2-1 reference-free inputs | route mode in `rl/racing_env.mjs`; imitation start + 39M decisions of PPO | 90 of 170, 0 of 30 held out |
+| g2-5 memory policy | trainer changes; 13M decisions on the route generalist | no effect: 2 of 150 with memory, 0 of 150 without |
+
+Code changes, all opt-in (default mode checked identical by
+`ideas/g2-1-reference-free-inputs/g2-1-default_mode_check.mjs`):
+`reference: 'route'` and `--reference route` (g2-1); `memory`,
+`--memory`, `--session-max`, `--carry` (g2-5) in `rl/env_server.mjs`,
+`rl/train_ppo.py`, `rl/evaluate.py`, `rl/polytrack_env.py`; the g2-5
+session-end defect is fixed. `node ideas/run_all_tests.mjs`: 1885 passed,
+0 failed, 4 known failures.
+
+## Results of the second queue, 17 to 18 October 2026 (added by the main session)
+
+Every idea suggested in this file or the idea READMEs that nobody had tried
+was run, one at a time (`scripts/queue_untried.sh` plus a few chained runs).
+All lap times pass the game's Verify and fail one tick sooner.
+
+| What | Result |
+| --- | --- |
+| g1-1 search seeded with IQN's desert4 lap | 21.792 to **21.720 s** (human 21.750 s) |
+| g1-1 search seeded with IQN's winter2 lap | 26.997 to 26.927 s (human 26.830 s) |
+| g1-5 fine timing on the 21.720 s lap | no change |
+| g1-1 laps re-verified on today's code | all four still pass at the same ticks |
+| g1-2 on all 17 tracks, `judge=finish fallback=4` | beats the human on desert4 (21.730 s) and winter5 (18.374 s) |
+| g1-4 whole-lap beam search, desert4 | no gain (21.880 s) |
+| search candidates as training data (g1-3) | search 21.820 s; policy 21.987 to 21.961 s |
+| IQN gamma 0.995 / 60 actions / winter2 / route inputs | no gain / no gain / 26.997 s / 21.846 s after the finish fix |
+| g2-2 generated tracks with jumps, banks, wide roads; route generalist trained on them | 71 of 100 on unseen generated tracks (15 before) |
+| engine: one-message `stepBlock`, `crashEnd`, `--target-steps`, `shapedReward: 0` | 1.2 to 1.3x; median 5.5 to 3.9 laps; exact resume; 2 to 4% |
+| community track | not possible: none in the repository, no network |

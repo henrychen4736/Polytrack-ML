@@ -18,6 +18,15 @@
 //
 // The three "grips" are accelerations in units/s^2 and are set by
 // experiment; see README.md for the runs behind the defaults.
+//
+// JUMPS (tracks made with features.jumps; route.jumps and route.air). A jump
+// needs a speed window, not a limit, so on the 40 units before each take-off
+// the speed is held to the jump's target (generate.mjs / g2-2-features.mjs:
+// between 1.25 x its minimum and 0.9 x its maximum) whatever the speed scale,
+// and the corner and crest limits are not applied over the gap and the 15
+// units before it (the take-off edge is a "crest" that would otherwise slow
+// the car below the minimum). In the air the follower holds S (the air
+// brake, as players do) and the off-road rules wait until it is down again.
 import { DECISION_TICKS } from '../../sim/drive.mjs';
 import { createController } from '../../sim/controller.mjs';
 import { decodeState } from '../../sim/state.mjs';
@@ -63,10 +72,18 @@ export function routeToLine(route, options = {}) {
     if (side > 1e-4) limit[k] = Math.min(limit[k], Math.sqrt(cfg.sideGrip / side) * cfg.speedScale);
     if (crest > 1e-4) limit[k] = Math.min(limit[k], Math.sqrt(cfg.crestGrip / crest) * cfg.speedScale);
   }
+  // JUMPS: no corner or crest limit over the gap and the 15 units before it;
+  // the target speed on the 40 units before the edge.
+  for (const j of route.jumps ?? []) {
+    for (let k = Math.max(0, j.from - 15); k <= Math.min(n - 1, j.to); k++) limit[k] = (cfg.maxKmh / 3.6) * cfg.speedScale;
+    for (let k = Math.max(0, j.from - 40); k <= j.from; k++) limit[k] = j.targetKmh / 3.6;
+  }
   // Braking, worked backwards: the speed here may not exceed what can be
   // shed by the next point (v^2 = v_next^2 + 2 * braking * distance).
   for (let k = n - 2; k >= 0; k--) limit[k] = Math.min(limit[k], Math.sqrt(limit[k + 1] ** 2 + 2 * cfg.brakeGrip * route.spacing));
-  return { points: pts, speedKmh: Array.from(limit, (v) => v * 3.6), grounded: new Array(n).fill(true) };
+  // Over a gap the controller ignores the speeds (it only reads speeds where
+  // the line is on the ground).
+  return { points: pts, speedKmh: Array.from(limit, (v) => v * 3.6), grounded: route.air ? route.air.map((a) => !a) : new Array(n).fill(true) };
 }
 
 /** Speed scales tried in turn by driveTrack: the full profile, then slower. */
@@ -96,7 +113,8 @@ async function attempt(env, track, line, mesh) {
   env.reset(track.createCar);
   // Where the car last had the track's own surface under it (see the loop).
   let lastOnRoad = null;
-  const decide = createController(line, { crossTrackGain: 1 });
+  const jumps = !!track.route.jumps?.length;
+  const decide = createController(line, { crossTrackGain: 1, ...(jumps ? { airBrake: 1 } : {}) });
   // The first decision needs a state, and a state only exists after a tick.
   let state = decodeState((await env.step({}, 1))[0]);
   const keys = [{}];
@@ -121,10 +139,14 @@ async function attempt(env, track, line, mesh) {
     // road. (One miss is not enough: a ray can slip through the seam between
     // two parts; 4 units down allows for a hop over a crest.)
     const p = state.position;
+    // JUMPS: in the air (no wheel down) on a track with jumps, neither rule
+    // applies; they apply again from the first tick a wheel is down, so a
+    // car that came down short, on the ground below, is caught there.
+    const flying = jumps && !state.wheelContact.some(Boolean);
     if (mesh.raycast([p[0], p[1] + 0.5, p[2]], [0, -1, 0], 4.5) !== Infinity) lastOnRoad = p;
-    else if (lastOnRoad && Math.hypot(p[0] - lastOnRoad[0], p[1] - lastOnRoad[1], p[2] - lastOnRoad[2]) > OFF_SURFACE) { outcome = 'left the road'; break; }
+    else if (!flying && lastOnRoad && Math.hypot(p[0] - lastOnRoad[0], p[1] - lastOnRoad[1], p[2] - lastOnRoad[2]) > OFF_SURFACE) { outcome = 'left the road'; break; }
     if (state.finishFrames != null) { outcome = 'finished'; break; }
-    if (offLine > OFF_ROAD) { outcome = 'left the road'; break; }
+    if (!flying && offLine > OFF_ROAD) { outcome = 'left the road'; break; }
     if (state.frames - bestTick > 3000) { outcome = 'stalled'; break; } // 3 s without getting further
   }
   const finished = outcome === 'finished';

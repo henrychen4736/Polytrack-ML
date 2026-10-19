@@ -6,8 +6,9 @@ Written by a tester who did not write the code. Run from the project root:
 node ideas/g2-5-memory-policy/tests/run_tests.mjs
 ```
 
-115 checks: 114 pass, 1 fails and is a known defect (number 2 below), so the
-runner exits with code 1. About 1 minute with training running. CPU only, no
+115 checks, all pass since defect 2 below was fixed (16 October 2026; before
+that 114 passed and the runner exited with code 1). About 1 minute with
+training running. CPU only, no
 training, at most two simulator processes at once. Temporary files go to
 `tests/tmp/` and are removed.
 
@@ -84,8 +85,10 @@ each: they still pass after the fix below.
 
 - Training: none was run by anyone. Whether a policy learns to use the inputs
   is unknown.
-- `MemoryEnv` under `env_server.mjs` / `train_ppo.py`: the changes are a
-  written list, not code.
+- `MemoryEnv` under `env_server.mjs` / `train_ppo.py`: written after these
+  tests (16 October 2026) and checked only by their author's smoke runs
+  (README, "Trainer changes"); route mode (`reference: 'route'`, 464 inputs)
+  likewise. No independent tests of them yet.
 - `MemoryEnv.demo()` and `save()`: not exercised.
 - The claim that the memory's stretches are the SAME points as the
   observation's lookahead points: the test recomputes the edges with the same
@@ -106,7 +109,17 @@ each: they still pass after the fix below.
    acted on; a trainer that bootstraps from it would have seen it). Found by
    the comparison with the reference memory.
 
-2. NOT FIXED, known failure. `memory_env.mjs` line 152,
+2. FIXED on 16 October 2026, by the author of the trainer changes (not by
+   this tester), in both of the ways suggested below: (a) `memory_env.mjs`
+   `stepBlock` now reads `RacingEnv`'s counter and, when a `refLaps` switch
+   is due at the next `reset()`, ends the session there (so the memory is
+   cleared even if the same lap is drawn again) and sets the flag; in route
+   mode a reference change does not touch the memory's bins (they are on the
+   route), so it ends nothing; (b) `rl/env_server.mjs` gives the trainer its
+   session ends from the next reset's `info.attempt === 1`, exact also for a
+   `setReference()` from outside. The check below now passes (run: `1 2| 1 2
+   3| (new line) 1 2`). Original report:
+   `memory_env.mjs` line 152,
    `info.sessionEnd = this.attemptsLeft <= 0`. When `RacingEnv` switches
    reference inside `reset()` (`refLaps` training), the memory is cleared, but
    the attempt before it was not flagged `sessionEnd` (test run: `1 2 3 4| 1
@@ -149,7 +162,7 @@ Smaller observations, not counted as defects:
 | --- | --- |
 | On a first attempt all 130 inputs are zero | Confirmed after fix 1 (before it, false for the last observation of the attempt) |
 | The map classifies surviving and doomed stretches as specified, keeps the bracket, shows a crash bin in exactly one stretch, does not credit road before a part-way start | Confirmed on independent hand-built cases |
-| Sessions last 1 to `sessionMax` attempts; memory empty exactly on attempt 1; a reference change starts a new session | Confirmed, lengths predicted from the seed; `sessionEnd` is not set before a `refLaps` change (defect 2) |
+| Sessions last 1 to `sessionMax` attempts; memory empty exactly on attempt 1; a reference change starts a new session | Confirmed, lengths predicted from the seed; `sessionEnd` was not set before a `refLaps` change (defect 2, since fixed) |
 | The warm-started 482-input agent gives the 352-input checkpoint's outputs | Confirmed (weights bit for bit; outputs within 1e-4 on 4096 inputs; same top choices) |
 | Node and PyTorch agree on the actor's scores | Confirmed, also with non-zero memory weights |
 | `session_advantages` equals `compute_advantages` at carry 0; with carry only the ending step of an attempt inside a session changes | Confirmed against a slow reference; the change at that step is carry x the next first value, and it then flows back to the attempt's earlier steps through the usual recursion |

@@ -67,6 +67,10 @@
 //     out=g2-3-explore  run name: runs/<out>_<track>.json + .recording.json if a lap is found,
 //                       and the log ideas/g2-3-explore-and-adapt/out/<out>_<mode>_<track>.json
 //     refLap=-1         which human lap is the reference (see refLap in rl/racing_env.mjs)
+//     crashEnd=0        1: end an attempt as soon as the car hits a wall hard or loses more than
+//                       half its speed within 250 ms ('crashed'; crashEnd in rl/racing_env.mjs),
+//                       instead of letting the stall clock end it 2 s later. Saves simulated
+//                       time; see the README for what it saved on winter4.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { openBlockEnv, fromStart, needsFreshCar } from '../shared/block_rollout.mjs';
 import { loadPolicy, createRng } from '../shared/policy.mjs';
@@ -102,7 +106,10 @@ const MAX_SIDE_CELLS = 4;   // further out than 8 units all counts as one cell
 const GAIN = 5;             // units: the frontier "moved" if it moved by more than this
 
 const policy = loadPolicy(opt.actor ?? 'rl/checkpoints/ppo_blkgen.best2.actor.bin');
-const renv = await openBlockEnv(track, opt.refLap != null ? { refLap: num('refLap', -1) } : {});
+const renv = await openBlockEnv(track, {
+  ...(opt.refLap != null ? { refLap: num('refLap', -1) } : {}),
+  ...(num('crashEnd', 0) ? { crashEnd: 1 } : {}),
+});
 const lapTicks = renv.human.frames;                      // the human's lap, ms: the unit of the budget
 const lineLength = renv.line.length;                     // units
 const paceUnitsPerSecond = lineLength / (lapTicks / 1000); // the human's average speed, to turn "seconds back" into units
@@ -302,7 +309,7 @@ const searchSeconds = elapsed();
 
 // --- result --------------------------------------------------------------------
 const result = {
-  track, mode, actor: opt.actor ?? 'rl/checkpoints/ppo_blkgen.best2.actor.bin', seed: num('seed', 1),
+  track, mode, actor: opt.actor ?? 'rl/checkpoints/ppo_blkgen.best2.actor.bin', seed: num('seed', 1), crashEnd: num('crashEnd', 0),
   humanFrames: lapTicks, lineLength: +lineLength.toFixed(1),
   attempts: log.length, lapsUsed: +lapsUsed().toFixed(3), wallSeconds: +searchSeconds.toFixed(1),
   cells: archive.size, frontier: +(frontier / lineLength).toFixed(4),

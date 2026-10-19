@@ -1,0 +1,11 @@
+summer4: search-and-train rounds (ideas/g1-3-search-train-rounds/rounds.mjs)
+fastest verified lap: 34.500 s  runs/rollout_r1_summer4.recording.json
+rounds in a row that did not pay: 1
+
+round  starting lap  copy picked  finishes  policy alone  searched lap  gain (ms)
+    1      34.500 s        c1000     10/10      34.865 s      34.521 s        -21
+
+starting lap: the fastest verified lap before the round, which the round trained towards.
+copy picked: kept copy after that many updates of the round's practice; finishes: its sampled test attempts.
+policy alone: the fastest lap that copy drove by itself at the start of its searches.
+gain: starting lap minus searched lap; negative means the round's lap was slower and was not carried forward.

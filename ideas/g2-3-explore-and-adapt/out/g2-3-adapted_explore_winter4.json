@@ -1,0 +1,40 @@
+{
+ "track": "winter4",
+ "mode": "explore",
+ "actor": "rl/checkpoints/g2-3-adapt_winter4.actor.bin",
+ "seed": 1,
+ "humanFrames": 19311,
+ "lineLength": 1759,
+ "attempts": 1,
+ "lapsUsed": 1.031,
+ "wallSeconds": 1.1,
+ "cells": 69,
+ "frontier": 1,
+ "finished": true,
+ "finishFrames": 19874,
+ "verified": true,
+ "files": [
+  "runs/g2-3-adapted_winter4.json",
+  "runs/g2-3-adapted_winter4.recording.json"
+ ],
+ "log": [
+  {
+   "attempt": 1,
+   "laps": 1.031,
+   "kind": "greedy",
+   "level": 0,
+   "from": 0,
+   "fromLateral": 0,
+   "back": null,
+   "reached": 1759.5,
+   "reason": "finished",
+   "moved": true,
+   "endLateral": 3.07,
+   "endSpeed": 468.7,
+   "endTick": 19881,
+   "approachLateral": 3.21,
+   "approachSpeed": 470.8,
+   "frontier": 1
+  }
+ ]
+}

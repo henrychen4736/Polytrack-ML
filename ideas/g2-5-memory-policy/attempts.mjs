@@ -8,7 +8,10 @@
 //     policy     actor weights, path from the project root. Its input count
 //                decides how it is run: 482 inputs = a memory policy; 352 = a
 //                plain policy (it is shown the first 352 numbers only, the
-//                memory is still kept, so "do its crashes repeat?" can be read)
+//                memory is still kept, so "do its crashes repeat?" can be read).
+//                464 and 334: the same two with the route as reference
+//                (ROUTE MODE in rl/racing_env.mjs; trained with --reference route)
+//     reference  'human' or 'route'; by default taken from the input count
 //     attempts   attempts per session (default 5)
 //     sessions   sessions, the memory cleared before each (default 1)
 //     sample     1: draw decisions as training does; 0 (default): top choice.
@@ -25,13 +28,13 @@
 // Every attempt starts on the start line (startFraction 0), as a player's
 // attempts at a new track do.
 import { writeFileSync, statSync } from 'node:fs';
-import { MemoryEnv, MEMORY_OBS_SIZE, MEM_SIZE } from './memory_env.mjs';
+import { MemoryEnv, MEMORY_OBS_SIZE, MEMORY_OBS_SIZE_ROUTE, MEM_SIZE } from './memory_env.mjs';
 import { BIN } from './track_memory.mjs';
-import { OBS_SIZE } from '../../rl/racing_env.mjs';
+import { OBS_SIZE, OBS_SIZE_ROUTE } from '../../rl/racing_env.mjs';
 import { loadPolicy, createRng, NUM_SCORES } from '../shared/policy.mjs';
 import { BLOCK_ENV } from '../shared/block_rollout.mjs';
 
-const args = { track: 'desert3', policy: '', attempts: 5, sessions: 1, sample: 0, seed: 1, memory: 1, sabotage: 0, out: '' };
+const args = { track: 'desert3', policy: '', attempts: 5, sessions: 1, sample: 0, seed: 1, memory: 1, sabotage: 0, out: '', reference: '' };
 for (const arg of process.argv.slice(2)) {
   const [key, value] = arg.split('=');
   if (!(key in args) || value === undefined) throw new Error(`unknown argument "${arg}"`);
@@ -40,17 +43,27 @@ for (const arg of process.argv.slice(2)) {
 if (!args.policy) throw new Error('policy=<file.actor.bin> is required');
 
 // Which kind of policy is it? loadPolicy checks the file's size against the
-// input count, so trying the memory size first tells the two apart.
-let policy, policyInputs = MEMORY_OBS_SIZE;
-try { policy = loadPolicy(args.policy, { obsSize: MEMORY_OBS_SIZE }); } catch { policyInputs = OBS_SIZE; policy = loadPolicy(args.policy, { obsSize: OBS_SIZE }); }
-const seen = (obs) => (policyInputs === MEMORY_OBS_SIZE ? obs : obs.slice(0, OBS_SIZE));
+// input count, so trying each size in turn tells them apart (with 256 hidden
+// units a file fits exactly one of them). The input count also says which
+// reference the policy was trained with: 482 / 352 a human lap, 464 / 334 the
+// route.
+const KINDS = [[MEMORY_OBS_SIZE, 'human'], [OBS_SIZE, 'human'], [MEMORY_OBS_SIZE_ROUTE, 'route'], [OBS_SIZE_ROUTE, 'route']];
+let policy = null, policyInputs = 0, reference = 'human';
+for (const [size, kind] of KINDS) {
+  if (args.reference && args.reference !== kind) continue;
+  try { policy = loadPolicy(args.policy, { obsSize: size }); policyInputs = size; reference = kind; break; } catch { /* try the next size */ }
+}
+if (!policy) throw new Error(`${args.policy}: fits none of the input counts ${KINDS.map(([n]) => n).join(', ')}${args.reference ? ` for reference ${args.reference}` : ''}`);
 
-const menv = await MemoryEnv.create({ track: args.track, ...BLOCK_ENV, memory: args.memory, sessionMax: 0 });
+const menv = await MemoryEnv.create({ track: args.track, ...BLOCK_ENV, memory: args.memory, sessionMax: 0, ...(reference === 'route' ? { reference: 'route' } : {}) });
+// The environment's sizes: 352 + 130 = 482, or 334 + 130 = 464 in route mode.
+const BASE = menv.baseSize, FULL = menv.obsSize;
+const seen = (obs) => (policyInputs === FULL ? obs : obs.slice(0, BASE));
 const rng = createRng(args.seed);
 
 // One row per decision: observation, the 6 numbers of the decision, reward,
 // attempt ended (0/1), session ended (0/1), the policy's 22 scores.
-const ROW = MEMORY_OBS_SIZE + 6 + 3 + NUM_SCORES;
+const ROW = FULL + 6 + 3 + NUM_SCORES;
 const rows = [];
 const report = [];
 const started = performance.now();
@@ -64,8 +77,8 @@ for (let session = 1; session <= args.sessions; session++) {
     // ahead" input: what the smoke test checks.
     let memoryPeak = 0, crashAheadPeak = 0, r;
     for (let k = 0; ; k++) {
-      for (let j = OBS_SIZE; j < MEMORY_OBS_SIZE; j++) memoryPeak = Math.max(memoryPeak, Math.abs(obs[j]));
-      for (let p = 0; p < 21; p++) crashAheadPeak = Math.max(crashAheadPeak, obs[OBS_SIZE + 6 * p + 1]);
+      for (let j = BASE; j < FULL; j++) memoryPeak = Math.max(memoryPeak, Math.abs(obs[j]));
+      for (let p = 0; p < 21; p++) crashAheadPeak = Math.max(crashAheadPeak, obs[BASE + 6 * p + 1]);
       const scores = policy.scores(seen(obs));
       const decision = args.sabotage > 0 && attempt === 1 && k >= args.sabotage
         ? [1, 0, 1, 0, 0, 0]
@@ -93,7 +106,7 @@ for (let session = 1; session <= args.sessions; session++) {
 }
 
 // The table the idea is judged by.
-console.log(`\n${args.track}, ${args.sessions} session(s), policy with ${policyInputs} inputs, memory ${args.memory ? 'on' : 'off'}, ${args.sample ? 'sampled' : 'top choice'}:`);
+console.log(`\n${args.track}, ${args.sessions} session(s), policy with ${policyInputs} inputs (reference ${reference}), memory ${args.memory ? 'on' : 'off'}, ${args.sample ? 'sampled' : 'top choice'}:`);
 for (let attempt = 1; attempt <= args.attempts; attempt++) {
   const these = report.filter((a) => a.attempt === attempt);
   const laps = these.filter((a) => a.finished).map((a) => a.seconds);
@@ -118,7 +131,7 @@ if (args.out) {
   const flat = new Float32Array(rows.length * ROW);
   rows.forEach((row, k) => flat.set(row, k * ROW));
   writeFileSync(`${args.out}.bin`, Buffer.from(flat.buffer));
-  writeFileSync(`${args.out}.json`, JSON.stringify({ track: args.track, rows: rows.length, row: ROW, obsSize: MEMORY_OBS_SIZE, baseObsSize: OBS_SIZE, memSize: MEM_SIZE, scores: NUM_SCORES, report }, null, 1));
+  writeFileSync(`${args.out}.json`, JSON.stringify({ track: args.track, rows: rows.length, row: ROW, obsSize: FULL, baseObsSize: BASE, memSize: MEM_SIZE, reference, scores: NUM_SCORES, report }, null, 1));
   console.log(`  wrote ${args.out}.bin (${statSync(`${args.out}.bin`).size} bytes) and ${args.out}.json`);
 }
 await menv.close();

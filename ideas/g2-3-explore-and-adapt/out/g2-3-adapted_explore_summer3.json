@@ -1,0 +1,40 @@
+{
+ "track": "summer3",
+ "mode": "explore",
+ "actor": "rl/checkpoints/g2-3-adapt_summer3.actor.bin",
+ "seed": 1,
+ "humanFrames": 20276,
+ "lineLength": 1373,
+ "attempts": 1,
+ "lapsUsed": 1.038,
+ "wallSeconds": 2.3,
+ "cells": 69,
+ "frontier": 1,
+ "finished": true,
+ "finishFrames": 21017,
+ "verified": true,
+ "files": [
+  "runs/g2-3-adapted_summer3.json",
+  "runs/g2-3-adapted_summer3.recording.json"
+ ],
+ "log": [
+  {
+   "attempt": 1,
+   "laps": 1.038,
+   "kind": "greedy",
+   "level": 0,
+   "from": 0,
+   "fromLateral": 0,
+   "back": null,
+   "reached": 1373.5,
+   "reason": "finished",
+   "moved": true,
+   "endLateral": 1.9,
+   "endSpeed": 363.6,
+   "endTick": 21021,
+   "approachLateral": 2.06,
+   "approachSpeed": 359.8,
+   "frontier": 1
+  }
+ ]
+}

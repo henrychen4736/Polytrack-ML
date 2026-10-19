@@ -35,6 +35,31 @@
 //     acceptCost=40   ... and its mismatch against the donor is below this (ms)
 //     attempts=8      switches tried at most (each costs about `check` ms of
 //                     repaired driving, 5 to 10 s of wall time)
+//     judge=check     how a planned switch is judged:
+//                       check   (default, the original rule) both cars are
+//                               driven `check` ms on and compared there
+//                       finish  both cars are driven on to the FINISH LINE and
+//                               the switch is kept only if its lap ends at
+//                               least `margin` ms sooner. The run then goes on
+//                               from the chosen car's state `check` ms after
+//                               the switch, so later switches are still tried.
+//                               Why: repair goes on costing time after the
+//                               2 s look (on desert4, 3 switches each ahead
+//                               after 2 s made a lap 44 ms SLOWER). Costs two
+//                               repaired drives to the finish per switch tried
+//                               (5 to 40 s each). The fastest lap any judged
+//                               car finished is also kept, and is the result
+//                               if the stitch itself ends slower or lost.
+//     fallback=0      when the car loses the path, go back to the state just
+//                     before the last kept switch, forbid that switch (there
+//                     and for `check` ms of boundaries after), plan again from
+//                     there, and carry on; at most this many times (0 = off:
+//                     report NO LAP as before). An undone switch does not use
+//                     up one of `attempts`. Why: on summer4 three switches were
+//                     kept and the car then lost the path after boundary 116,
+//                     so the whole run gave no lap at all; with fallback=6 it
+//                     undid one switch and finished (34.374 s, Verify PASS,
+//                     still 269 ms slower than the best human lap).
 //     window, look, good, timeWeight, lostDistance   see FOLLOW_DEFAULTS in follow.mjs
 //     start=          the lap to begin on (default: the plan's choice; 0 = the
 //                     fastest lap, so that refused switches cannot leave a slower lap)
@@ -70,6 +95,9 @@ const attempts = num('attempts', 8);
 const acceptCost = num('acceptCost', 40);
 const margin = num('margin', 2);
 const runName = opt.name ?? 'g1-2-stitch';
+const judge = opt.judge ?? 'check';
+if (judge !== 'check' && judge !== 'finish') { console.error('judge must be check or finish'); process.exit(2); }
+const fallbacks = num('fallback', 0);
 const followOptions = {};
 for (const key of Object.keys(FOLLOW_DEFAULTS)) if (key in opt) followOptions[key] = Number(opt[key]);
 const rng = createRng(num('seed', 1));
@@ -127,7 +155,10 @@ const switchCost = (i, j, k) => {
   const m = mismatchAt(i, j, k);
   return m == null || m.cost > maxMismatch ? Infinity : switchPenalty + risk * m.cost;
 };
-const plan = planRoute(times, switchCost);
+// Switches undone by `fallback` ("boundary:from:to"): never planned again.
+const banned = new Set();
+const allowedCost = (i, j, k) => (banned.has(`${k}:${i}:${j}`) ? Infinity : switchCost(i, j, k));
+let plan = planRoute(times, allowedCost);
 const startLap = 'start' in opt ? Number(opt.start) : plan.toGo[0].indexOf(Math.min(...plan.toGo[0]));
 const describe = (routeLaps, first = 0) => {
   const parts = [];
@@ -139,13 +170,19 @@ const describe = (routeLaps, first = 0) => {
   console.log(`planned route                  ${sec(r.time)} s  (${bestHuman - r.time} ms faster if every switch were free): ${describe(r.laps)}`);
 }
 
+/** Which car the saved points belong to. renewCar() and a restore() of a dead
+ *  point start a new car, and every point of the old one dies with it. */
+let carGeneration = 0;
 /** A new car, driven again along the keys driven so far. Needed when the car
  *  has used up its tick budget (see "Car tick budget" in CONTRACT.md); every
- *  saved point is dead afterwards, so call it only when none is held. */
+ *  saved point is dead afterwards. A snapshot (below) of a dead car is
+ *  restored by driving its keys again, which gives the identical state
+ *  (tests/test_follow.mjs checks this after a repaired follow). */
 async function renewCar() {
   const keys = sim.keys.slice();
   const recent = sim.recent.slice();
   await sim.restart();
+  carGeneration++;
   await sim.drive(keys);
   if (!sim.recent.length) sim.recent = recent;
 }
@@ -206,48 +243,102 @@ if (joins > 0) {
 // SimSession.load() only shortens sim.keys to the point's tick. Here a point
 // is loaded after a DIFFERENT branch was driven from an earlier point, so the
 // keys have to be put back by hand.
-const snapshot = async () => ({ point: await sim.save(), keys: sim.keys.slice() });
-const restore = async (snap) => { await sim.load(snap.point); sim.keys = snap.keys.slice(); };
+const snapshot = async () => ({ point: await sim.save(), keys: sim.keys.slice(), car: carGeneration });
+const restore = async (snap) => {
+  if (snap.car === carGeneration) { await sim.load(snap.point); sim.keys = snap.keys.slice(); return; }
+  // Its car was replaced (tick budget) since: drive its keys again on a new one.
+  await sim.restart();
+  carGeneration++;
+  await sim.drive(snap.keys);
+};
+const release = (snap) => { if (snap && snap.car === carGeneration) sim.drop(snap.point); };
 
 if (doStitch) {
-  console.log('\nstitching (a switch is kept only if the car that switched reaches a later boundary sooner than the car that did not):');
+  console.log('\nstitching (a switch is kept only if the car that switched ' +
+    (judge === 'finish' ? 'finishes the lap sooner than the car that did not):' : 'reaches a later boundary sooner than the car that did not):'));
   await sim.restart();
   let lap = startLap;      // the lap being followed
   let k = 0;               // the boundary the car is at
   let at = 0;              // which tick of that lap the car is at
   let exact = true;        // true until the first switch: the car IS that lap, tick for tick
-  let kept = 0, refused = 0, failed = null;
+  let kept = 0, refused = 0, failed = null, undone = 0;
   const route = [];        // [lap, boundary] of every kept switch
-  /** Drive the present lap on to its tick `until` (Infinity = the finish).
-   *  Returns the follow() result, or a stand-in for the exact case. */
-  const advance = async (until) => {
-    if (exact) {
-      await sim.drive(paths[lap].keys.slice(sim.tick, until === Infinity ? undefined : until));
+  // fallback: for every kept switch, the car just before it (see `fallback=`).
+  const history = [];
+  // judge=finish: the fastest lap any judged car drove to the finish line.
+  let fastestJudged = null; // { keys, frames, switched }
+  /** Drive lap `l` from its tick `from` on to its tick `until` (Infinity =
+   *  the finish), exactly (the car IS that lap) or with repair. Returns the
+   *  follow() result, or a stand-in for the exact case. */
+  const advanceFrom = async (l, from, isExact, until) => {
+    if (isExact) {
+      await sim.drive(paths[l].keys.slice(sim.tick, until === Infinity ? undefined : until));
       return { donorTick: sim.tick, lost: false, cost: 0, finished: sim.finished };
     }
-    return follow(sim, paths[lap], at, until, 'repair', followOptions);
+    return follow(sim, paths[l], from, until, 'repair', followOptions);
   };
+  /** Drive the present lap on to its tick `until`. */
+  const advance = (until) => advanceFrom(lap, at, exact, until);
   /** The lap clock now, or the finish time once across the line. */
   const clock = () => (sim.finished ? sim.state.finishFrames : sim.tick);
+  /** judge=finish: drive on to the finish line; the finish tick, or null. */
+  const toFinish = async (l, from, isExact, switched) => {
+    if (!sim.budgetLeft) await renewCar();
+    if (!sim.finished) await advanceFrom(l, from, isExact, Infinity);
+    if (!sim.finished) return null;
+    const frames = sim.state.finishFrames;
+    if (!fastestJudged || frames < fastestJudged.frames) fastestJudged = { keys: sim.keys.slice(), frames, switched };
+    return frames;
+  };
+  /** The car is lost. With `fallback`, undo the last kept switch and carry on
+   *  from just before it; returns false when there is nothing to fall back to. */
+  const fallBack = async (why) => {
+    if (undone >= fallbacks || history.length === 0) return false;
+    const last = history.pop();
+    undone++; kept--; route.pop();
+    // Forbidden at that boundary and over the next `check` ms of boundaries:
+    // banning one boundary only was not enough (summer4: the same switch was
+    // planned again one boundary later, 250 ms on, and lost the path again).
+    for (let b = last.k; b <= last.k + Math.ceil(checkMs / sectionMs); b++) banned.add(`${b}:${last.lap}:${last.target}`);
+    plan = planRoute(times, allowedCost);
+    await restore(last.snap);
+    release(last.snap);
+    ({ lap, at, exact, k } = last);
+    console.log(`  ${elapsed()} s  ${why}: back to boundary ${k} on lap${lap}; the switch to lap${last.target} there is undone and not planned again`);
+    return true;
+  };
 
   while (!sim.finished) {
     if (!sim.budgetLeft) await renewCar();
+    // An undone switch does not use up an attempt (`fallback` bounds those),
+    // so that the run can still look for a switch that works instead.
     const ahead = kept + refused >= attempts ? [] : plan.route(k, lap).laps;
     // The next boundary at which the plan changes lap, if any.
     const step = ahead.findIndex((l, n) => l !== (n === 0 ? lap : ahead[n - 1]));
     if (step === -1) {
       const r = await advance(Infinity);
-      if (!sim.finished) failed = r.lost ? `lost lap${lap}'s path at its tick ${r.donorTick}` : `lap${lap}'s keys ran out before the finish line`;
+      if (!sim.finished) {
+        failed = r.lost ? `lost lap${lap}'s path at its tick ${r.donorTick}` : `lap${lap}'s keys ran out before the finish line`;
+        if (await fallBack(failed)) { failed = null; continue; }
+      }
       break;
     }
     const target = ahead[step];
     const r0 = await advance(ticks[lap][k + step]);
-    if (r0.lost || sim.finished) { if (r0.lost) failed = `lost lap${lap}'s path at its tick ${r0.donorTick}`; break; }
+    if (r0.lost || sim.finished) {
+      if (r0.lost) {
+        failed = `lost lap${lap}'s path at its tick ${r0.donorTick}`;
+        if (await fallBack(failed)) { failed = null; continue; }
+      }
+      break;
+    }
     k += step; at = r0.donorTick;
 
     // Two cars from the same state: one stays on its lap, one switches. Both
     // are driven to the same later boundary (the first one, at least `check`
     // ms on, that both laps crossed; else the finish) and the clocks compared.
+    // With judge=finish both then drive on to the finish line, and the
+    // finish times decide.
     let checkAt = Math.min(sections, k + Math.ceil(checkMs / sectionMs));
     while (ticks[lap][checkAt] == null || ticks[target][checkAt] == null) checkAt++;
     const toEnd = checkAt === sections;
@@ -255,20 +346,37 @@ if (doStitch) {
     const stay = await advance(toEnd ? Infinity : ticks[lap][checkAt]);
     const stayClock = clock(), stayOk = !stay.lost && (!toEnd || sim.finished);
     const stayed = await snapshot();
+    const stayFinish = judge === 'finish' && stayOk ? await toFinish(lap, stay.donorTick, exact, !exact) : null;
     await restore(here);
     const sw = await follow(sim, paths[target], ticks[target][k], toEnd ? Infinity : ticks[target][checkAt], 'repair', followOptions);
     const swClock = clock(), swOk = !sw.lost && (!toEnd || sim.finished);
-    // Kept if it got there sooner, and is no further from its donor's state
-    // than acceptCost (or than the car that stayed is from its own lap). A
-    // car that is ahead but in a worse state has borrowed the time, not won it.
-    const ok = swOk && (!stayOk || (swClock + margin <= stayClock && (toEnd || sw.cost <= Math.max(acceptCost, stay.cost))));
+    let switched = null, swFinish = null;
+    if (judge === 'finish' && swOk) {
+      switched = await snapshot();
+      swFinish = await toFinish(target, sw.donorTick, false, true);
+    }
+    // judge=check: kept if it got there sooner, and is no further from its
+    // donor's state than acceptCost (or than the car that stayed is from its
+    // own lap). A car that is ahead but in a worse state has borrowed the
+    // time, not won it. judge=finish: kept if its lap ends `margin` ms sooner
+    // (or the car that stayed never finishes).
+    const ok = judge === 'finish'
+      ? swFinish != null && (stayFinish == null || swFinish + margin <= stayFinish)
+      : swOk && (!stayOk || (swClock + margin <= stayClock && (toEnd || sw.cost <= Math.max(acceptCost, stay.cost))));
+    const finishes = judge === 'finish'
+      ? `; to the finish: stay ${stayFinish != null ? sec(stayFinish) + ' s' : 'NO LAP'}, switch ${swFinish != null ? sec(swFinish) + ' s' : 'NO LAP'}` : '';
     console.log(`  ${elapsed()} s  boundary ${String(k).padStart(3)}: lap${lap} -> lap${target}, to ${toEnd ? 'the finish' : `boundary ${checkAt}`}: ` +
-      `stay ${stayOk ? `${stayClock - here.keys.length} ms` : 'LOST'}, switch ${swOk ? `${swClock - here.keys.length} ms (mismatch ${sw.cost.toFixed(0)} ms)` : 'LOST'}  ${ok ? 'KEPT' : 'refused'}`);
+      `stay ${stayOk ? `${stayClock - here.keys.length} ms` : 'LOST'}, switch ${swOk ? `${swClock - here.keys.length} ms (mismatch ${sw.cost.toFixed(0)} ms)` : 'LOST'}${finishes}  ${ok ? 'KEPT' : 'refused'}`);
+    let keepHere = false;
     if (ok) {
       kept++; route.push([target, k]);
+      if (fallbacks > 0) { history.push({ snap: here, lap, at, exact, k, target }); keepHere = true; }
+      if (switched) await restore(switched); // judge=finish: back from the finish line to the boundary
       lap = target; at = sw.donorTick; exact = false;
     } else if (!stayOk) {
       failed = `lost lap${lap}'s path after boundary ${k}, and the switch to lap${target} failed too`;
+      release(stayed); release(switched);
+      if (await fallBack(failed)) { failed = null; release(here); continue; }
       break;
     } else {
       refused++;
@@ -276,23 +384,32 @@ if (doStitch) {
       at = stay.donorTick;
     }
     k = checkAt;
-    sim.drop(here.point); sim.drop(stayed.point);
+    if (!keepHere) release(here);
+    release(stayed); release(switched);
   }
 
   // --- 5. result ---------------------------------------------------------------
-  console.log(`\n${kept} switches kept, ${refused} refused` + (route.length ? `: lap${startLap} -> ${route.map(([l, b]) => `lap${l}@${b}`).join(' -> ')}` : `; the lap is lap${startLap} unchanged`));
-  if (failed || !sim.finished) {
+  console.log(`\n${kept} switches kept, ${refused} refused` + (undone ? `, ${undone} undone after the car was lost` : '') +
+    (route.length ? `: lap${startLap} -> ${route.map(([l, b]) => `lap${l}@${b}`).join(' -> ')}` : `; the lap is lap${startLap} unchanged`));
+  let keys = null, frames = null, hasSwitch = kept > 0;
+  if (!failed && sim.finished) { keys = sim.keys.slice(); frames = sim.state.finishFrames; }
+  // judge=finish: a car driven to the finish while judging may have been faster
+  // than the stitch that carried on (repair is not the same window by window
+  // when a drive is split at a boundary), or the stitch may have been lost.
+  if (fastestJudged && (frames == null || fastestJudged.frames < frames)) {
+    console.log(`the fastest lap driven while judging switches, ${sec(fastestJudged.frames)} s, is ${frames == null ? 'the result instead' : `faster than the stitch (${sec(frames)} s) and is the result`}`);
+    ({ keys, frames } = fastestJudged); hasSwitch = fastestJudged.switched; failed = null;
+  }
+  if (keys == null) {
     console.log(`NO LAP: ${failed ?? 'the car did not finish'}`);
     // The stitch was asked for and produced nothing: say so in the exit code
     // too, so a caller (a shell loop over tracks) does not take it for a lap.
     await sim.close();
     process.exit(1);
   } else {
-    const keys = sim.keys.slice();
-    const frames = sim.state.finishFrames;
     await sim.close();
     // A lap with no switch in it is one of the human laps: check it, do not save it as ours.
-    const v = await verifyAndSave({ track: name, keys, name: runName, save: kept > 0 });
+    const v = await verifyAndSave({ track: name, keys, name: runName, save: hasSwitch });
     console.log(`stitched lap ${sec(frames)} s; best human ${sec(bestHuman)} s (${frames < bestHuman ? `${bestHuman - frames} ms FASTER` : frames === bestHuman ? 'the same' : `${frames - bestHuman} ms slower`})`);
     console.log(`${v.ok ? 'PASS' : 'FAIL'} Verify: ${v.ok ? `the game finishes it on tick ${v.finishFrames}; ${v.files.length ? `saved ${v.files.join(', ')}` : 'not saved (no switch in it)'}` : JSON.stringify({ finished: v.finished, finishFrames: v.finishFrames, verified: v.verified, offByOneRejected: v.offByOneRejected })}`);
     process.exit(v.ok ? 0 : 1);

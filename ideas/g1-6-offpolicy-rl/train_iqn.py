@@ -138,6 +138,9 @@ def parse_args(argv=None) -> argparse.Namespace:
     p.add_argument("--kick", type=float, default=0.0, help="see kick in rl/racing_env.mjs")
     p.add_argument("--max-off-line", type=float, default=60.0,
                    help="distance from the reference line at which an attempt on the ground is cut off")
+    p.add_argument("--reference", default="human", choices=("human", "route"),
+                   help="route: the g2-1 inputs with no human lap in them (334), progress and the reward "
+                        "measured along the route built from the track geometry")
     p.add_argument("--ref-file", default="", help="another lap as the ruler for progress (refFile in racing_env.mjs)")
     p.add_argument("--reward-scale", type=float, default=0.1, help="reward per unit of road")
     # --- amount of training ---
@@ -192,6 +195,11 @@ def main(argv=None) -> None:
                    kick=args.kick, maxOffLine=args.max_off_line)
     if args.ref_file:
         options["refFile"] = args.ref_file
+    if args.reference == "route":
+        # maxOffLine is the human line's cut-off; route mode uses its own
+        # (maxOffRoute, 110 units by default in racing_env.mjs)
+        options["reference"] = "route"
+        del options["maxOffLine"]
     servers = IqnServers(args.envs, args.track, seed=args.seed, **options)
     N, T = args.envs, args.rollout
     learner = Learner(servers.obs_size, servers.num_actions, args, device)
@@ -219,6 +227,7 @@ def main(argv=None) -> None:
             # What is needed to rebuild the network and the environment.
             "obs_size": servers.obs_size, "num_actions": servers.num_actions, "hidden": args.hidden,
             "head": args.head, "track": args.track, "slices": args.slices, "human_inputs": args.human_inputs,
+            "reference": args.reference,
         }, temporary)
         temporary.replace(checkpoint_path)
 

@@ -67,8 +67,9 @@ def main() -> None:
         # One simulator, with the environment options the checkpoint was
         # trained under. The start options do not matter: an evaluation lap
         # always begins on the start line.
-        servers = IqnServers(1, saved["track"], slices=saved["slices"], humanInputs=saved["human_inputs"],
-                             maxOffLine=args.max_off_line)
+        route = saved.get("reference", "human") == "route"
+        extra = {"reference": "route"} if route else {"maxOffLine": args.max_off_line}
+        servers = IqnServers(1, saved["track"], slices=saved["slices"], humanInputs=saved["human_inputs"], **extra)
         try:
             lap = servers.evaluate(str(weights), save=args.save)
         finally:

@@ -210,6 +210,12 @@ closes it; that counts towards your simulator limit while it runs. With
 `env`, that simulator's car is replaced, so all its save states die: verify at
 the end, or on a separate Env.
 
+The same check as a command, for shell scripts (added 17 October 2026):
+`node ideas/shared/verify_lap.mjs <track> <lap file>` prints `PASS <finish tick>`
+or `FAIL <why>` and exits 0 / 1; the file's own claimed time must be the
+tick the game finishes it on. Used by g1-2's `g1-2-run_all.sh` and g1-3's
+`g1-3-train_on_candidates.sh`.
+
 ## Rules for working side by side
 
 **Files under `runs/`.** Run names start with your idea id and a dash:
@@ -305,7 +311,7 @@ the idea folder stays free to change its internals.
 | `route_progress.mjs` | `routeFor(info)` → route; `createTracker(route, mesh).update(state)` and `locate(route, mesh, state)` → `{ progress, fraction, index, offRoute, lateral, height, edgeLeft, edgeRight, overRoad, grounded }`, units along a 1-unit route | g2-1 | yes on 15 of 17 tracks; read the warnings |
 | `lookahead.mjs` | `driveLap(renv, policy, { mode: 'lazy' })` → `{ decisions, finished, finishFrames, simTicks, ... }`: a finished lap from a policy that does not finish alone | g2-4 | yes (5 of 16 laps re-driven, the rest from logs) |
 | `lap_paths.mjs` | `recordPath(env, track, lap)`, `mismatch(a, b)`, `stateAt`, `locate`, `crossings`, `sectionTimes`, `follow(sim, donorPath, donorTick, until, 'repair')` | g1-2 | yes |
-| `laps_bc.py` | `python ideas/shared/laps_bc.py <track> <out.npz> <lap> [<lap> ...]`: imitation examples from several laps | g1-3 | yes: one lap gives `rl/lap_bc.py`'s arrays |
+| `laps_bc.py` | `python ideas/shared/laps_bc.py <track> <out.npz> <lap> [<lap> ...] [--max-candidates N]`: imitation examples from several laps; a `<lap>` may also be a candidates file (`search_rollout.mjs keep=`, g2-4 `drive.mjs keep=`) | g1-3 | yes: one lap gives `rl/lap_bc.py`'s arrays |
 
 Examples are in each file's header. Three things to know before using them:
 

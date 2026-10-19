@@ -158,6 +158,70 @@ limits. It is untested.
   0.5 M per process on eight. One car (4.5 M) lasts a whole pass; the rebuild
   only matters for lookahead runs or several passes.
 
+## A whole-lap run on desert4, prepared (17 October 2026)
+
+**What it can start from.** `from=` takes a lap made of block decisions only:
+the file's keys are turned into decisions (`keysToDecisions`) and must give
+back the same keys on every tick, or the beam ignores the file and starts from
+the policy's own lap (it says so). The fastest verified desert4 lap,
+`runs/g1-1-iqnseed2_desert4.recording.json` (21.720 s), is a per-tick lap:
+310 of its 21 720 ticks do not fit block decisions, so it **cannot** be the
+incumbent. Starting from it would need an incumbent held as keys, not
+decisions, and members that continue from a per-tick prefix (the child's
+`adopt`, the rebuild and the final `decisionsToKeys` all assume decisions from
+the start line), and the elite guarantee breaks once the incumbent's rest is
+not a list of decisions. Not small; not done. The fastest lap that fits is
+`runs/rollout_r2_desert4.recording.json`, 21.880 s, 0 ticks off (the r2
+search with `ppo_sr2_desert4.final`); `g1-6-iqn-latest` (21.977 s) also fits.
+
+So the run uses the r2 checkpoint and its searched lap. Its critic was
+exported for this (`rl/checkpoints/ppo_sr2_desert4.final.critic.bin`, with
+`ideas/shared/export_critic.py`).
+
+**Smoke, 2 processes, beam 8, 75 s of extending** (one IQN trainer on the GPU
+with 6 simulators, and another agent's 3 processes):
+
+```
+node ideas/g1-4-beam-search/beam.mjs desert4 workers=2 beam=8 seconds=75 \
+  actor=rl/checkpoints/ppo_sr2_desert4.final.actor.bin from=runs/rollout_r2_desert4.recording.json out=g1-4-smoke-wholelap
+```
+
+The policy's own lap 22.039 s; started from 21.880 s; 266 decisions (13.3 s
+of lap) in 75 s, 0.28 s per decision, 9 114 candidates, 26 mid-lap rollouts
+(all finished, none faster). Stopped there and driven on by the policy: 7 of 7
+finish, best 21.942, mean 21.972 s. Result 21.880 s (the incumbent),
+verified. At 13.3 s the beam was 4.2 units ahead of the policy's own lap
+(854.0 against 849.5), which is the incumbent's lead, not a new one.
+
+**The full run** (not run; one job at a time, nothing else on the simulators):
+
+```
+cd C:\Users\Henry\Documents\GitHub\Polytrack-ML
+node ideas/g1-4-beam-search/beam.mjs desert4 workers=8 beam=64 seconds=0 actor=rl/checkpoints/ppo_sr2_desert4.final.actor.bin from=runs/rollout_r2_desert4.recording.json out=g1-4-wholelap
+```
+
+Expected 10 to 15 minutes: 438 decisions; the smoke did 0.28 s per decision
+with 4 members per process, and beam 64 on 8 processes is 8 per process, so
+about 0.5 s per decision, plus 22 rounds of 2 rollouts. It stops when a
+member crosses the line, and the lap is saved only after Verify.
+
+**A save state that can move between processes.** Assessed, not built. A
+save state is the physics memory: a full copy is about 24 MB, a delta about
+0.19 MB of 4 KB pages against a full "base" copy taken on the same car.
+Moving one needs: messages to read a snapshot's bytes out and write them in
+(none exist); the receiving process's memory to be laid out like the
+sender's, which deltas assume of their base and which nobody has checked
+across processes (a full 24 MB copy avoids the question at 24 MB a move);
+and the game's own JavaScript bookkeeping per car (car id, tick counter),
+which is outside the snapshot and is why `sim/env.mjs` refuses to load a
+handle of another car. The key-schedule message added to
+`sim/worker_entry.mjs` changes none of this: it removes round trips when
+stepping, not state. What is cheap already is moving a member by replay:
+the child's `adopt` drives a decision list from the start line, at the
+measured 1.4 ms per decision about 0.3 s for a member in mid-lap. So a
+rebalance by `adopt` is the small change, if one is wanted; the parent does
+not call it for that yet.
+
 ## A full run: cost and what it might gain
 
 Not run. Estimate for 8 processes, 10 minutes, rank=value, no lookahead:
@@ -180,8 +244,9 @@ Not run. Estimate for 8 processes, 10 minutes, rank=value, no lookahead:
 
 ## Not done or not tested
 
-- A whole-lap run, a run with 8 processes, any track other than desert4, any
-  checkpoint other than `ppo_sr1_desert4.u800`.
+- A whole-lap run (prepared above; the smoke went 13.3 s into the lap), a run
+  with 8 processes, any track other than desert4. Checkpoints used:
+  `ppo_sr1_desert4.u800` and, for the whole-lap smoke, `ppo_sr2_desert4.final`.
 - Tuning: beam width, `samples`, bucket sizes (`latBin`, `alongBin`,
   `perBucket` are first guesses; the beam's spread at one tick was 0.4 to 2.4
   units across and only 0.1 to 0.4 along), `rollEvery` / `rollTop`.
@@ -207,6 +272,19 @@ None to run this. Two that would make it faster:
   (the simulator takes per-tick keys) would bring candidates close to the bare
   simulator's speed. The per-step reward and off-line checks would have to be
   made per block.
+  **Done (17 October 2026).** `stepBlock` now sends the block as one key
+  schedule (`Env.stepSchedule`, "key schedules" in `sim/worker_entry.mjs`)
+  and gets its 50 states back in one message; rewards and cut-offs are still
+  worked out per 10 ms slice, so results are identical number for number
+  (`g2-1-default_mode_check.mjs` and a trace of states, rewards, finish
+  ticks and stored keys over 9,000+ decisions, 12 finished laps included).
+  Measured on desert4 with an 8-process search running (about 90% CPU):
+  1.77 to 1.81 ms per decision before, 1.39 to 1.40 ms after with one
+  process (1.3 times faster); 2,404 to 2,456 decisions per second before,
+  2,905 to 2,946 after with eight (1.2 times). The 3 to 4 times expected
+  from the 11.4 ms measurement did not appear: here the five-message block
+  already cost 1.8 ms, and one 50 ms step 1.5 ms, so the simulator itself
+  is most of what is left.
 - A save state that can be sent to another simulator process would let a beam
   be shared properly across processes instead of each process owning the
   members it made.

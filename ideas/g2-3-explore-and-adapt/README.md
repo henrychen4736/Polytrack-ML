@@ -144,7 +144,23 @@ in a row without a new frontier move the restart window further back. On
 winter4 the states inside the last 1.5 s before the 66.8% crash are the lost
 causes in practice: the laps that got through started 1.5 to 3 s back.
 
-## Fine-tune (dry run only)
+## Fine-tune: run on 16 October 2026
+
+`sh ideas/g2-3-explore-and-adapt/finetune_run.sh <track>` runs the four steps
+below for real (restartable; an unfinished test attempt is a result, not an
+error). Ten sampled attempts before / after, then the adapted policy's greedy
+lap and a 600 s `search_rollout.mjs`; laps verified:
+
+| Track | Before | After | Greedy after | Searched lap | Human |
+| --- | --- | --- | --- | --- | --- |
+| winter4 | 1/10 | 10/10 | 19.874 s | 19.669 s | 19.311 s |
+| desert3 | 1/10 | 8/10 | 20.878 s | 20.520 s | 20.302 s |
+| summer3 | 5/10 | 9/10 | 21.017 s | 20.475 s | 20.276 s |
+
+500,000 decisions took about 5 minutes each. Logs: `runs/queue/g2-3-<track>.log`,
+`out/train_<track>.log`. What follows is the plan as first written.
+
+## Fine-tune (the plan as written before it ran)
 
 `sh ideas/g2-3-explore-and-adapt/finetune_plan.sh winter4` prints four steps:
 the found lap to imitation examples (`rl/lap_bc.py`), `rl/train_ppo.py` from
@@ -187,6 +203,33 @@ None for what exists. Two that would help:
 
 - `rl/racing_env.mjs`: an option to end an attempt on a hard body contact or
   a collapse in speed, so a search does not pay 2 s for every wall.
+  **Done (17 October 2026): `crashEnd` in `rl/racing_env.mjs`, `crashEnd=1`
+  here.** Off by default, and with it off every result is identical (the
+  same checks as the one-message change). An attempt ends as `crashed` at the
+  end of the 10 ms step in which the car lost more than half its speed within
+  250 ms (from at least 60 km/h) or took a body impulse of 10,000 or more on
+  one tick. No human lap is cut: laps 0 to 2 of all 17 tracks (51 laps)
+  never fall below 0.708 of their 250 ms peak speed and never take more than
+  3,074 on one tick, and the rule never fires on them through `demo()`. The
+  generalist's wall hits fall to 0.08 to 0.48 of their peak with impulses of
+  5,800 to 38,000.
+
+  Measured: winter4, seeds 1 to 8, `laps=10`, everything else default.
+
+  | | runs with a lap | simulated laps to the first finish | attempts | laps found |
+  | --- | --- | --- | --- | --- |
+  | `crashEnd=0` | 8 of 8 | 2.66 to 9.37, median 5.51, mean 5.19 | 9 to 62, mean 26 | 19.920 to 25.539 s |
+  | `crashEnd=1` | 8 of 8 | 3.07 to 9.09, median 3.91, mean 4.94 | 31 to 122, mean 67 | 19.956 to 21.278 s |
+
+  (`crashEnd=0` repeats the table above exactly.) An attempt costs much less
+  (0.07 laps of simulated time on average against 0.20), but the first finish
+  comes only a little sooner: the rule also cuts attempts that would have
+  finished after hitting the wall. Four of the eight `crashEnd=0` laps (the
+  slow ones, 23.9 to 25.5 s) hit the wall near 15.2 s, recovered and
+  finished; the rule fires on all four and on none of the eight
+  `crashEnd=1` laps, which are all within 2 s of the human. Eight seeds per
+  side: median 5.5 against 3.9 laps is suggestive, not proven. Use it when a
+  clean lap is wanted; leave it off when any finish will do.
 - `scripts/train_block_specialist_from.sh`: take the checkpoint name as given
   (it forces `ppo_<prefix>_<track>.pt`), so idea runs can use it directly.
 

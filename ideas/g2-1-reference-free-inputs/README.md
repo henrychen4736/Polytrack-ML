@@ -53,6 +53,10 @@ const { obs, at } = observer.observe({ state, older, held, contact, pedalOpen })
 | `smoke_test.mjs` | Simulator checks. |
 | `human_traces.mjs` | The fastest human lap as car states, for validation only. Nothing else reads a lap. |
 | `plot_dump.mjs`, `plot_route.py` | A picture of a track from above with the route and the human lap. |
+| `g2-1-default_mode_check.mjs` | Records, then compares, a fixed drive of `RacingEnv`'s default mode: proof that route mode left it unchanged. |
+| `g2-1-route_mode_check.mjs` | Checks of route mode in `RacingEnv`: observation, starts, ends, demo labels, speed, the car under a raised road, a track with no human lap. |
+| `g2-1-human_laps_in_route_env.mjs` | The first human laps of every track driven in a route-mode `RacingEnv`: what its episode-end rules would do to them. |
+| `train_route_generalist.sh`, `eval_route_generalist.sh` | Imitation start and PPO for a route generalist, in restartable stretches; the ten-attempt test plus greedy for it. |
 
 ## How the route is found
 
@@ -137,11 +141,11 @@ Gone and not replaced: the human's speed at each point ahead, and the human's ke
 - The car numbers, contact flag, pedal flags and the 17 rays are equal to `RacingEnv`'s own observation on the same car states: largest difference 0 over 178 block decisions (desert4) and 144 (winter2).
 - Driving the fastest human lap's keys on `SimSession`, which has no reference lap: 435 observations (desert4) and 537 (winter2), all finite and within ±3; route progress never drops; progress equals the route's length on the tick the game reports the finish (21 750 ms and 26 830 ms).
 - 0.5 to 0.7 ms per observation.
-- A car holding only W on desert4 is seen to have no road under it from 3050 ms, with no human lap to compare against.
+- A car holding only W on desert4 is seen to have no road under it from 3050 ms, with no human lap to compare against. (Corrected 16 October: that is a flight off a ledge. The car lands at 4.25 s on road 15 units lower, where the route also goes; see the route-mode checks below.)
 
 ## Not done, not tested
 
-- **No policy has been trained on this observation.** Whether an agent can learn from it, and how much the missing speed and key inputs cost, is unknown.
+- **No policy has been trained on this observation** (the training environment now supports it; see Route mode below). Whether an agent can learn from it, and how much the missing speed and key inputs cost, is unknown.
 - **Nothing has driven the route.** Where it differs from the human (summer4, desert5, the flat turn-rounds on desert2), whether a car can follow it is not known. The flights are drag-free parabolas at an assumed speed: a real 384-unit flight came up 11% short of its parabola.
 - **No community track was tried.** There is none in the repository. The official tracks use at most 61 of the 186 part types each, so parts the search has never met are likely.
 - **The route is the shortest way, not the fastest.** It has no model of cornering speed. On open floors it hugs the inside of every corner, which is a poor line at speed, and it prefers a slow flat U-turn to a fast banked wall.
@@ -149,9 +153,100 @@ Gone and not replaced: the human's speed at each point ahead, and the human's ke
 - The search with headings is not guaranteed to find the cheapest path.
 - Peak memory for the largest track (summer5, 761 000 points) is 526 MB during the build; using a cached route needs a few MB.
 
+## Route mode in the training environment (16 October)
+
+The changes listed below under "Changes needed elsewhere" are made. `rl/racing_env.mjs` has a route mode, switched on with `reference: 'route'` (`reference=route` for `rl/env_server.mjs`, `--reference route` for `rl/train_ppo.py`, `rl/pretrain_bc.py` and `rl/lap_bc.py`). Without it every existing behaviour is unchanged, checked number for number (below). ROUTE MODE at the top of `rl/racing_env.mjs` gives the rules and their reasons. In short:
+
+| | Default (`reference: 'human'`) | Route mode |
+| --- | --- | --- |
+| Observation | 352 numbers | 334 numbers from `observation.mjs` (`OBS_SIZE_ROUTE`); entries 15, 16, 103, 144, 145 where they were |
+| Progress | along the human's line | along the route (`progress.mjs`), fenced by the game's gate counter |
+| Pace term | speed / human's speed | off (`paceReward` forced to 0) |
+| Blocked-lane cost | on (0.05) | **off** (`lanePenalty` forced to 0): it shifts the room beside the line by how far the car is off it, which fails 15 to 35 units off the route on open floors |
+| Steering costs | straightness of the human's line | straightness of the route (`lineStraightness(route, route.up)`), 0 where the route flies |
+| 'off line' | 20 units (60 over flights) | `maxOffRoute`, default **110** units, ground or air |
+| 'off track' | 2 units beyond the edge of the human's road | all four wheels down, the route on the road at the nearest point, no surface within 2 units under the car (`at.overRoad` false), for more than `offTrackTicks` ms (default 0) |
+| 'stalled' | 2 s without a unit of progress | the same, along the route |
+| Time limit | twice the human's lap | route length / `routeSpeed` (30 units/s): 2 to 3.5 times a human lap |
+| The finish | the human's line ends at the finish | progress held `finishHold` (20) units short of the route's end until the game counts the finish; more than `missedFinish` (10) units past the route's last point without a finish is 'off line' (since 18 October; see below) |
+| Part-way starts, ladder, kick, failure starts, `demo()` | human lap | human lap, only to place the car; on a track with no human lap every episode starts on the start line |
+
+Where this differs from the list below, the measurement behind it comes from `g2-1-human_laps_in_route_env.mjs`: the first three human laps of all 17 tracks driven with their own keys in a route-mode environment, with the end rules read every 10 ms.
+
+- **110 units, not 80.** The humans come up to 56 units from the route on 13 tracks, 79 on summer5, **86 on summer7** and **104 on desert2**. At 80, every human lap of summer7 and desert2 would be cut off. At 110, 46 of the 51 laps pass every end rule. The other five are on the two tracks whose route goes another way: all three of summer4's ('off line' at 8.4 s, 530 units off) and two of desert5's ('stalled' at 26.2 s, where the route turns round on the floor and the humans take the loop).
+- **All four wheels.** With "any wheel down", the rule `at.grounded && !at.overRoad` fires on human laps for up to 190 ms (summer1; 120 to 180 ms on desert1): a wheel on a kerb with the car's centre over the edge. With all four wheels down it fired for 0 ms on all 51 laps. In the air the rule says nothing, so a car that hops a bump is not ended.
+- The stall limit stays at 2 s. Human laps stall for 0.3 to 0.5 s on 15 tracks, against 2.5 s on desert5 and 11.5 s on summer4 (the same two tracks).
+- A track given as `createCar` (a community or generated track; JavaScript only) works in route mode. The route is built and cached under the track's hash, and with no human lap the only starts are the start line and the car's own earlier states.
+
+### Passing beside the finish paid as much as finishing (fixed 18 October)
+
+**Found by the off-policy learner** (g1-6, `train_iqn.py --reference route` on desert4, log `runs/queue2/iqn-route.log`): over 12M decisions 80 to 97 of every 100 episodes ended 'off line' at lap 100%, and the eval lap too; only a few finished (best 22.041 s). In human mode the same learner finishes 99 of 100.
+
+**Cause.** Progress is "the nearest route point", and after the last checkpoint the tracker may run all the way to the route's last point. So a car that passes the finish line *beside* the finish box was credited the whole route. The learner is paid progress only, and the finish top-up (`route length - progress`) was then 0, so missing the finish cost nothing. Driven greedily, its latest weights (`g1-6-iqn-route_desert4.actor.bin`) take the last straight 17 to 46 units left of the route, run off the road's edge at 21.4 s, and fly past the finish line at x = -1027 while the box spans -989 to -951 (centre -970, 38 wide): route progress 1984 of 1984 at 21.95 s, no finish, then 0.8 s of falling until off-route passes 110 units at 22.75 s. Its best weights (`.best.actor.bin`) stay on the road and finish in 22.041 s.
+
+**The route's end is not the problem.** On all 17 tracks the route's last point is within 2.2 units of the finish box (winter2's stops 2.2 short; 15 are inside or within 0.6). The first three human laps of every track, stepped 1 ms at a time, are 0 to 2.3 units short of the route's end on the tick before the finish, and at most 2.1 units past its last point (winter2 lap 0). The flaw is the same on every track; it matters where a car can reach the finish line's plane outside the box, as on desert4's wide last straight.
+
+**Fix** (route mode only, `rl/racing_env.mjs` `_locateOnRoute` and `step`):
+- `finishHold` (default 20 units): until the game counts the finish, progress stops 20 units short of the route's end. Crossing the line pays them (the finish top-up in the shaped reward and in `iqn_server.mjs` already pays `length - progress`), so missing the finish now costs 20 units (2.0 of the learner's reward). For a human lap that is the last 0.15 s.
+- `missedFinish` (default 10 units): a car more than 10 units beyond the route's last point, along the route's direction there, with no finish counted, is ended as 'off line'. That is 5 times the furthest a human lap goes past it, and it ends a missed finish at once instead of 0.8 s later.
+- The observation is unchanged (it reads the tracker's own numbers), so existing route checkpoints see the same inputs. `finishHold: 0, missedFinish: Infinity` gives the old behaviour.
+
+Driven again with the fix, the latest weights end 'off line' at 22.00 s with progress 1964 of 1984 (fraction 0.99, no longer 100%); the best weights still finish in 22.041 s.
+
+**Effect on models trained before it.** `ppo_g2-1-route` and `g2-5-mem_route` (PPO with the shaped reward) were already paid `finishBonus` (5) plus the time bonus only for a real finish, so missing the finish already cost them; and in the 170-attempt test of `ppo_g2-1-route.after_38989824` (and the g2-5 test) no attempt ended at 97% or more of the lap. Their training would have differed only in the last 20 units of each lap and in the rare missed finish. The IQN route run (`g1-6-iqn-route_desert4`) is the one it affected: paid progress only, it had no reason to finish.
+
+### Checks
+
+- **Default mode unchanged** (`g2-1-default_mode_check.mjs`). It was recorded on the unmodified files, then compared after the change: 1521 block decisions and resets on desert4 with every start kind switched on (part-way, failure, own state, kick, rotating references; episodes ended 10 off line, 5 off track, 5 stalled), 803 old-scheme steps, a `demo()` of human lap 1 (435 decisions), 40 decisions after `mark()` and the same 40 after `rewind()`, and the server's start-up line. Every observation, reward, end flag and info was identical (SHA-1 per decision).
+- **Route mode** (`g2-1-route_mode_check.mjs`). All checks pass:
+  - over 1500 random block decisions with every start kind, the observation is always 334 numbers, finite and within ±3;
+  - the time limit on desert4 is 66 133 ms (1984 units / 30);
+  - a part-way start half-way through the human's lap begins at route progress 653.9, the same as a memoryless `locate()` gives;
+  - `mark` and `rewind` repeat exactly;
+  - `demo()` of the fastest human lap gives 434 decisions, with labels identical to the default mode's, and reaches 1975.7 of 1984 units at its last whole block;
+  - on the g2-2 generated track with a piece taken out, the 'off track' rule fires on 2513 of the 2513 four-wheels-down samples of the car driving on the ground beneath the road, starting with the first one (2521 ms), and on 0 samples of a car that stays on the road. That was the open defect in `tests/TESTING.md` (progress credited under a raised road); now it ends the episode;
+  - the same generated track, which has no human lap, runs from the start line even with randomStart 1.
+- **The smoke test's "no road under it from 3050 ms"** (above) for a car holding only W on desert4 is a flight, not the car leaving the road. The car goes off a ledge at 2.85 s and lands at 4.25 s on road 15 units lower, where the route also goes. Route mode does not end the episode there; the car stalls against a wall at 11.06 s.
+- **Speed** is about the same as the default mode. In one process on desert4 with the same driver: 328 against 277 block decisions per second for a random driver, 335 against 411 with W held. The off-policy learner was running on the same machine at the time.
+- **Smoke run** (2 to 3 simulators at a time, CPU):
+  - `pretrain_bc.py --reference route` on desert4 and winter2, 2 laps each, 5 epochs: 1941 examples, 14 s;
+  - `train_ppo.py --reference route` from that start, 2 environments, 4 updates (2048 decisions): 258 decisions/s, and every kind of episode end occurred;
+  - `evaluate.py`, greedy and sampled (it builds the route environment from the checkpoint), `export_actor.py`, and `loadPolicy(..., { obsSize: OBS_SIZE_ROUTE })` all work on the result;
+  - `train_ppo.py --resume` with the wrong `--reference` stops with a message.
+  - `eval_route_generalist.sh` on that 4-update checkpoint: 187 attempts (17 tracks, 10 sampled and 1 greedy each) in 12.6 minutes, 3 at a time; none finished, as expected after 4 updates (the greedy attempts ended stalled on 14 tracks, off track on 3).
+  - `train_route_generalist.sh` end to end with its outputs in a scratch folder (`CK`, `LOGS`), 1 or 2 simulators, three stretches of 512 to 1024 decisions: the imitation start on all 14 tracks (7235 examples from lap 0, about 1 minute), the copy, the critic-only start, a new stretch per call, `.after_<steps>.pt` after each, and a kept copy left by an interrupted stretch renamed to `.s<k>.u<update>.pt`.
+
+### Files changed
+
+- `rl/racing_env.mjs`: route mode (`reference`, `maxOffRoute`, `routeSpeed`, `offTrackTicks`, and since 18 October `finishHold`, `missedFinish`; `createCar`; `OBS_SIZE_ROUTE`, `routeOffRoad`). The route modules are imported only in route mode.
+- `rl/env_server.mjs`: `reference` as a text option. The observation size comes from the environment (`renv.obsSize`), also for the actor it runs. The start-up line adds `reference`, gives the route's length as `lineLength`, and gives `humanFrames: null` when there is no human lap.
+- `rl/train_ppo.py`: `--reference` and `--max-off-route`. Checkpoints record `reference` (and `max_off_route`). `--resume` and `--bc-data` refuse a checkpoint or examples of the other size.
+- `rl/evaluate.py`: builds the environment the checkpoint was trained in (`reference`, `max_off_route`); adds `--max-off-route`.
+- `rl/pretrain_bc.py`: `--reference route` (each lap once; the reference lap is not switched) and `--workers`. The checkpoint records `reference`.
+- `rl/lap_bc.py`: argparse, `--reference route`.
+- `rl/export_actor.py`: prints `obsSize` and `reference`.
+- `rl/polytrack_env.py`: documentation only (it already took the size from the server).
+- `rl/policy.mjs`, `ideas/shared/policy.mjs`: the error message names the route size; `OBS_SIZE` and `OBS_SIZE_ROUTE` are re-exported.
+
+### Training it
+
+```
+cd C:\Users\Henry\Documents\GitHub\Polytrack-ML
+sh ideas/g2-1-reference-free-inputs/train_route_generalist.sh
+sh ideas/g2-1-reference-free-inputs/eval_route_generalist.sh rl/checkpoints/ppo_g2-1-route.after_<steps>.pt
+```
+
+`train_route_generalist.sh` first makes the imitation start from the human laps (lap 0 of the 14 training tracks by default; `LAPS=10` uses all ten). It then runs PPO in stretches of 13M block decisions with the block generalist's settings, keeping copies as it goes. After a shutdown, rerunning it carries on. Its header lists every setting and output, and says which settings are reconstructed rather than known. summer4 is left out of practice because its route is wrong; desert5 stays in. `eval_route_generalist.sh` is the ten-attempt test plus one greedy attempt per track.
+
+Not tested:
+- a full training run (nothing beyond the 4-update smoke run);
+- the training script's later stretches end to end;
+- any community track;
+- the searches (`scripts/search_rollout.mjs` and the callers of `ideas/shared/block_rollout.mjs`) with a route checkpoint. They need `{ reference: 'route' }` in the environment options and `obsSize: OBS_SIZE_ROUTE` in `loadPolicy`, and nothing passes those yet.
+
 ## Changes needed elsewhere
 
-`rl/racing_env.mjs` was not touched. To switch it to these modules it would need:
+The list as written before route mode existed (done 16 October, see above). To switch `rl/racing_env.mjs` to these modules it would need:
 
 1. **`create()`**: an option such as `reference: 'route'`. In that mode build `info = loadTrackInfo(cfg.track)`, `route = routeFor(info)`, `observer = createObserver(info, route, { lapFraction, minGap, gapSeconds })`, and skip `setReference()`.
 2. **`_locate()`**: replace the body with `this.at = this.observer.tracker.update(this.state)`, then `progress = at.progress`, `progressIndex = at.index`, `offLine = at.offRoute`, `edgeLeft = at.edgeLeft`, `edgeRight = at.edgeRight`.

@@ -11,7 +11,7 @@
 //
 // Do not copy geometry out of here into files that leave this machine: the
 // part shapes are Kodub's (BRIEF.md rule 4).
-import { loadTrack } from '../../sim/env.mjs';
+import { loadTrack, isTrackFile, trackLabel } from '../../sim/env.mjs';
 import { decodeSaveString, parseTrack, buildPath } from '../../sim/track.mjs';
 import { buildTrackMesh } from '../../sim/trackmesh.mjs';
 
@@ -21,7 +21,9 @@ const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
  * Everything known about a track without driving it.
  *
  *   track   a track name, or CreateCar inputs { trackData, ... } / a bare
- *           save string for a track of your own (e.g. a generated one)
+ *           save string for a track of your own (e.g. a generated one), or
+ *           the path of a generated .track.json file (sim/env.mjs
+ *           isTrackFile; name is then the file's base name)
  *
  * Returns
  *   name         the name, or null
@@ -41,8 +43,11 @@ const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
  *   progress(state)   see below
  */
 export function loadTrackInfo(track) {
-  const name = typeof track === 'string' && track.length < 40 ? track : null;
-  const createCar = name ? loadTrack(name)
+  // A .track.json path is checked first: a path can be longer than 40
+  // characters, and the test below would take it for a save string.
+  const file = isTrackFile(track);
+  const name = file ? trackLabel(track) : typeof track === 'string' && track.length < 40 ? track : null;
+  const createCar = file ? loadTrack(track) : name ? loadTrack(name)
     : typeof track === 'string' ? { trackData: track, mountainVertices: new Float32Array(0), mountainOffset: { x: 0, y: 0, z: 0 } }
       : track;
   const parsed = parseTrack(decodeSaveString(createCar.trackData));

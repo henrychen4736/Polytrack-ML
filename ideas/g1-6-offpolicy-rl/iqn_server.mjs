@@ -5,7 +5,10 @@
 //
 //   1. THE REWARD IS PROGRESS ONLY. The environment's own reward (pace against
 //      the human's speed, key-press costs, contact and lane costs, time bonus)
-//      is computed by RacingEnv and thrown away here. What is reported is
+//      is not used, so RacingEnv is told not to work it out (shapedReward 0;
+//      until 17 October 2026 it was computed and thrown away here, which
+//      cost 1.7% of the time per decision with slices=1 and 3.6% with
+//      slices=5, measured on desert4). What is reported is
 //          rewardScale x (distance gained along the reference line, in units)
 //      per 50 ms decision, and on the finish the rest of the line's length, so
 //      every finished lap has collected the same total. Nothing in it knows
@@ -29,7 +32,10 @@
 //      five 10 ms steps. With 12 the keys do not change inside the block, so
 //      it is ONE 50 ms step (RacingEnv with ticks=50): one message to the
 //      simulator thread instead of five. Measured on desert4 with the
-//      machine busy training: 2.5 ms per decision against 11.4 ms. The only
+//      machine busy training: 2.5 ms per decision against 11.4 ms.
+//      (Since 17 October 2026 stepBlock also sends its five slices as one
+//      message, and the two cost about the same: 1.40 against 1.48 ms per
+//      decision, measured on desert4 with a search running.) The only
 //      other difference is that the end-of-episode rules are then looked at
 //      every 50 ms instead of every 10; a finish is still timed to the tick
 //      (checked on winter2: both ways report 26831).
@@ -109,6 +115,7 @@ const options = {
   // 'stalled' still end hopeless attempts early.
   maxOffLine: 60, maxOffLineAir: 100,
   lanePenalty: 0,               // its cost is discarded here; skipping it saves the work
+  shapedReward: 0,              // the whole shaped reward is discarded here; see 1. at the top
 };
 const own = { ...OWN };
 for (const arg of process.argv.slice(2)) {
@@ -117,7 +124,7 @@ for (const arg of process.argv.slice(2)) {
   const at = arg.indexOf('=');
   const key = arg.slice(0, at), value = arg.slice(at + 1);
   if (at < 0 || !(key in DEFAULTS || key in OWN)) { send({ error: `unknown argument "${arg}"` }); process.exit(2); }
-  const text = !(key in OWN) && (key === 'track' || key === 'refFile');
+  const text = !(key in OWN) && (key === 'track' || key === 'refFile' || key === 'reference');
   if (!text && (value.trim() === '' || Number.isNaN(Number(value)))) { send({ error: `argument "${arg}": not a number` }); process.exit(2); }
   if (key in OWN) own[key] = Number(value);
   else options[key] = text ? value : Number(value);
@@ -136,9 +143,16 @@ try {
   send({ error: `could not start the simulator: ${err.message}` });
   process.exit(1);
 }
+// Route mode (reference=route, g2-1): 334 inputs with no human lap in them,
+// and progress measured along the route built from the track's geometry,
+// so the reward ruler is the route too. The human lap (on official tracks)
+// only places part-way starts there.
+const ROUTE = !!renv.route;
+const SIZE = renv.obsSize ?? OBS_SIZE;
+const RULER = ROUTE ? renv.route.length : renv.line.length;
 send({
-  ready: true, obsSize: OBS_SIZE, numActions: NUM_ACTIONS, slices: own.slices,
-  track: renv.cfg.track, maxTicks: renv.cfg.maxTicks, lineLength: renv.line.length, humanFrames: renv.human.frames,
+  ready: true, obsSize: SIZE, numActions: NUM_ACTIONS, slices: own.slices,
+  track: renv.cfg.track, maxTicks: renv.cfg.maxTicks, lineLength: RULER, humanFrames: renv.human?.frames ?? null, reference: ROUTE ? 'route' : 'human',
 });
 
 // ---- observation -----------------------------------------------------------
@@ -152,7 +166,8 @@ const HUMAN_DOING = [OBS_S_HELD + 2, OBS_S_HELD + 2 + 9 * (1 + LOOKAHEAD_POINTS)
  *  human's doings zeroed when humanInputs=0. */
 function view(obs) {
   const out = Float32Array.from(obs);
-  if (!own.humanInputs) { out.fill(0, ...HUMAN_SPEEDS); out.fill(0, ...HUMAN_DOING); }
+  // (route mode has no human entries to zero)
+  if (!own.humanInputs && !ROUTE) { out.fill(0, ...HUMAN_SPEEDS); out.fill(0, ...HUMAN_DOING); }
   return out;
 }
 
@@ -203,7 +218,7 @@ function loadNet(file) {
   const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
   const [magic, obsSize, hidden, head, K, actions] = new Int32Array(buffer, 0, 6);
   if (magic !== MAGIC) throw new Error(`${file} is not an IQN actor file`);
-  if (obsSize !== OBS_SIZE || actions !== NUM_ACTIONS) throw new Error(`${file} is for ${obsSize} inputs and ${actions} actions; this server has ${OBS_SIZE} and ${NUM_ACTIONS}`);
+  if (obsSize !== SIZE || actions !== NUM_ACTIONS) throw new Error(`${file} is for ${obsSize} inputs and ${actions} actions; this server has ${SIZE} and ${NUM_ACTIONS}`);
   const all = new Float32Array(buffer, 24);
   let o = 0;
   const take = (n) => { const part = all.subarray(o, o + n); o += n; return part; };
@@ -267,7 +282,7 @@ async function drive(action) {
   let reward = own.rewardScale * (renv.progress - before);
   // The finish line is rarely exactly at the line's last point; top up so
   // that every finished lap has earned rewardScale x the line's length.
-  if (r.info.reason === 'finished') reward += own.rewardScale * (renv.line.length - renv.progress);
+  if (r.info.reason === 'finished') reward += own.rewardScale * (RULER - renv.progress);
   return { r, reward };
 }
 
@@ -283,14 +298,14 @@ async function begin(resetOptions = {}) {
 
 async function rollout({ steps, weights, epsilon = 0 }) {
   const net = loadNet(weights);
-  const obsOut = new Float32Array(steps * OBS_SIZE);
+  const obsOut = new Float32Array(steps * SIZE);
   const actions = new Uint8Array(steps), rewards = new Float32Array(steps), stops = new Uint8Array(steps);
   const episodes = [];
   let actMs = 0, stepMs = 0;
   if (currentObs == null) await begin();
 
   for (let t = 0; t < steps; t++) {
-    obsOut.set(currentObs, t * OBS_SIZE);
+    obsOut.set(currentObs, t * SIZE);
     const t0 = performance.now();
     const action = rng() < epsilon ? randomAction() : greedy(net, currentObs);
     const t1 = performance.now();

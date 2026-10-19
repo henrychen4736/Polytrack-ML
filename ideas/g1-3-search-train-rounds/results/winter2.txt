@@ -1,0 +1,11 @@
+winter2: search-and-train rounds (ideas/g1-3-search-train-rounds/rounds.mjs)
+fastest verified lap: 27.009 s  runs/g1-3-r1s2_winter2.recording.json
+rounds in a row that did not pay: 0
+
+round  starting lap  copy picked  finishes  policy alone  searched lap  gain (ms)
+    1      27.020 s        c1220     10/10      27.185 s      27.009 s        +11
+
+starting lap: the fastest verified lap before the round, which the round trained towards.
+copy picked: kept copy after that many updates of the round's practice; finishes: its sampled test attempts.
+policy alone: the fastest lap that copy drove by itself at the start of its searches.
+gain: starting lap minus searched lap; negative means the round's lap was slower and was not carried forward.

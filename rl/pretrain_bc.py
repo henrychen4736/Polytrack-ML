@@ -31,6 +31,15 @@ to see the previous keys learns exactly that and nothing about the road. It
 then never presses anything by itself. With those inputs blanked it has to
 work out the keys from the situation. Their connections are left at zero, so
 PPO can start using them later.
+
+With --reference route the examples are made in route mode (ROUTE MODE in
+rl/racing_env.mjs): the car is still driven by the human's real keys and the
+labels are the same, but what the network sees is the 334-number route
+observation, which contains nothing of any human lap. There is then no
+reference lap to rotate, so each human lap is driven once (it would look the
+same against any reference), and a lap stops being recorded where it leaves
+the route by more than maxOffRoute (on summer4 and desert5, whose routes go
+another way than the humans).
 """
 from __future__ import annotations
 
@@ -51,7 +60,8 @@ from train_ppo import Agent, block_imitation_loss
 PREVIOUS_KEYS = [OBS_PEDAL, OBS_STEER, OBS_S]
 
 
-def collect(track: str, laps: int, lap_fraction: int, pedal_every: int, seed: int, block: int = 0):
+def collect(track: str, laps: int, lap_fraction: int, pedal_every: int, seed: int, block: int = 0,
+            reference: str = "human"):
     """Drive human laps of one track; returns (observations, actions).
 
     Each of the `laps` laps takes a turn as the REFERENCE (the lap the agent
@@ -62,8 +72,11 @@ def collect(track: str, laps: int, lap_fraction: int, pedal_every: int, seed: in
       - one other player's lap: the car is a little off the reference, at a
         slightly different speed, and the right keys are that player's own.
         These are the examples of following a reference one is not exactly on.
+    With reference "route" each lap is driven once instead (see the top of the file).
     """
-    server = EnvServer(track=track, lapFraction=lap_fraction, pedalEvery=pedal_every, block=block)
+    route = reference == "route"
+    server = EnvServer(track=track, lapFraction=lap_fraction, pedalEvery=pedal_every, block=block,
+                       **({"reference": "route"} if route else {}))
     obs_size = server.spec["obsSize"]
     width = 6 if block else 1  # numbers per label: a block decision has six
     rng = np.random.default_rng(seed)
@@ -71,8 +84,10 @@ def collect(track: str, laps: int, lap_fraction: int, pedal_every: int, seed: in
     try:
         for ref in range(laps):
             other = (ref + 1 + int(rng.integers(laps - 1))) % laps if laps > 1 else ref
-            for lap in dict.fromkeys((ref, other)):
-                reply = server.request(cmd="demo", lap=lap, ref=ref)
+            # Route mode: the observation does not depend on the reference
+            # lap, so each lap once, and the reference is left as it is.
+            for lap in ((ref,) if route else dict.fromkeys((ref, other))):
+                reply = server.request(cmd="demo", lap=lap, **({} if route else {"ref": ref}))
                 obs.append(np.frombuffer(base64.b64decode(reply["obs"]), dtype=np.float32).reshape(-1, obs_size))
                 actions.append(np.frombuffer(base64.b64decode(reply["actions"]), dtype=np.uint8).reshape(-1, width))
     finally:
@@ -119,18 +134,25 @@ def main() -> None:
                         "slices (see BLOCK DECISIONS in rl/racing_env.mjs)")
     p.add_argument("--save-data", default=None,
                    help="also write the examples to this .npz file, for train_ppo.py --bc-data")
+    p.add_argument("--reference", choices=["human", "route"], default="human",
+                   help="'route': make the examples (and the network) for the 334-number route observation "
+                        "(ROUTE MODE in rl/racing_env.mjs) instead of the human-reference one")
+    p.add_argument("--workers", type=int, default=8,
+                   help="simulator processes at once while making the examples (one per track)")
     args = p.parse_args()
     torch.manual_seed(args.seed)
     rng = np.random.default_rng(args.seed)
     tracks = args.track.split(",")
 
     # ---- 1. examples: all tracks at once, one process each -----------------
-    with ThreadPoolExecutor(max_workers=8) as pool:
-        results = list(pool.map(lambda t: collect(t, args.laps, args.lap_fraction, args.pedal_every, args.seed + tracks.index(t), args.block), tracks))
+    with ThreadPoolExecutor(max_workers=args.workers) as pool:
+        results = list(pool.map(lambda t: collect(t, args.laps, args.lap_fraction, args.pedal_every, args.seed + tracks.index(t),
+                                                  args.block, args.reference), tracks))
     spec = results[0][3]
     for track, obs, actions, _ in results:
         w = actions[:, 2].mean() if args.block else ((actions // 3) % 2).mean()
-        print(f"  {track}: {len(actions)} decisions with {args.laps} laps as reference, W down on {100 * w:.0f}%")
+        what = f"{args.laps} laps" if args.reference == "route" else f"{args.laps} laps as reference"
+        print(f"  {track}: {len(actions)} decisions with {what}, W down on {100 * w:.0f}%")
     obs = np.concatenate([r[1] for r in results])
     actions = np.concatenate([r[2] for r in results]).astype(np.int64)
     obs[:, PREVIOUS_KEYS] = 0  # hidden during imitation, see the top of this file
@@ -179,7 +201,7 @@ def main() -> None:
         "model": agent.state_dict(), "optimizer": None, "steps": 0, "best_finish": None,
         "obs_size": spec["obsSize"], "num_actions": spec["numActions"], "hidden": args.hidden,
         "track": args.track, "ticks": spec["ticks"], "lap_fraction": args.lap_fraction,
-        "pedal_every": args.pedal_every, "block": args.block,
+        "pedal_every": args.pedal_every, "block": args.block, "reference": args.reference,
     }, path)
     print(f"saved {path}")
 

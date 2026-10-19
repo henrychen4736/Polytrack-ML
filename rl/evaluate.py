@@ -16,6 +16,24 @@ which is the format the existing tools read:
     node scripts/export_recording.mjs <track> <run>    # encode + the game's Verify
     node scripts/watch_ghost.mjs <track> <run>         # watch it in the real client
 
+A checkpoint trained with --reference route (334 inputs, see ROUTE MODE in
+rl/racing_env.mjs) is driven in a route-mode environment: the checkpoint
+records which kind it is, and the environment is built to match. The human
+lap time printed alongside is only for comparison; such a policy never sees it.
+
+--track may be a generated track file (ideas/g2-2-track-generator, a path
+ending in .track.json, from the project root). It has no human lap, so a
+route checkpoint is the one to use; the lap is saved as
+runs/<run>_<file's base name>.json.
+
+A checkpoint with the memory of earlier attempts (ideas/g2-5-memory-policy,
+train_ppo.py --memory; 482 or 464 inputs) is driven in a memory environment.
+One run of this script is one attempt from the start line, so it is attempt 1
+of a session and every memory input is zero: the ten-attempt test of such a
+checkpoint measures how it drives a track cold. Whether it gets better over
+the attempts of a session is measured by ideas/g2-5-memory-policy/attempts.mjs
+(eval_memory.sh there runs it on the held-out tracks).
+
 Bot laps are for local viewing only. Do not submit them to the leaderboards.
 """
 from __future__ import annotations
@@ -25,14 +43,15 @@ from pathlib import Path
 
 import numpy as np
 
-from polytrack_env import PolytrackEnv, OBS_PEDAL, OBS_STEER, OBS_CONTACT, OBS_S
+from polytrack_env import PolytrackEnv, OBS_PEDAL, OBS_STEER, OBS_CONTACT, OBS_S, track_label
 
 CHECKPOINT_DIR = Path(__file__).resolve().parent / "checkpoints"
 
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    p.add_argument("--track", default="summer1")
+    p.add_argument("--track", default="summer1",
+                   help="an official track name, or a generated .track.json file (path from the project root)")
     p.add_argument("--checkpoint", default=None, help="default rl/checkpoints/ppo_<track>.pt")
     p.add_argument("--run", default="rl", help="name used for the saved file: runs/<run>_<track>.json")
     p.add_argument("--policy", choices=["greedy", "sample", "random"], default="greedy",
@@ -49,7 +68,11 @@ def parse_args() -> argparse.Namespace:
                         "before choosing, so that keeping the current keys is favoured and a change "
                         "needs a clear reason. 0 = off. 3 makes a stray change about 20 times rarer")
     p.add_argument("--max-off-line", type=float, default=None,
-                   help="override the distance from the line at which an attempt is cut off (default 20 units)")
+                   help="override the distance from the line at which an attempt is cut off (default 20 units; "
+                        "human-reference checkpoints)")
+    p.add_argument("--max-off-route", type=float, default=None,
+                   help="route-reference checkpoints: override the distance from the route at which an attempt "
+                        "is cut off (default: what the checkpoint was trained with, else 110 units)")
     return p.parse_args()
 
 
@@ -65,14 +88,32 @@ def main() -> None:
         import torch
         from train_ppo import Agent
 
-        path = Path(args.checkpoint) if args.checkpoint else CHECKPOINT_DIR / f"ppo_{args.track}.pt"
+        path = Path(args.checkpoint) if args.checkpoint else CHECKPOINT_DIR / f"ppo_{track_label(args.track)}.pt"
         saved = torch.load(path, map_location="cpu", weights_only=True)
         if args.track not in saved["track"].split(","):
             print(f"note: this checkpoint was trained on {saved['track']}, evaluating on {args.track}")
         agent = Agent(saved["obs_size"], saved["num_actions"], saved["hidden"])
         agent.load_state_dict(saved["model"])
         agent.eval()
-        print(f"loaded {path} ({saved['steps']} training steps)")
+        reference = saved.get("reference", "human")  # checkpoints from before route mode are human
+        print(f"loaded {path} ({saved['steps']} training steps, reference {reference}, {saved['obs_size']} inputs)")
+        # Route mode: the same environment the policy was trained in. Nothing
+        # is passed for a human-reference checkpoint, so those run as before.
+        route_options = {}
+        if reference == "route":
+            off = args.max_off_route if args.max_off_route is not None else saved.get("max_off_route")
+            route_options = {"reference": "route", **({} if off is None else {"maxOffRoute": off})}
+        # Memory checkpoints: recorded by train_ppo.py --memory, or recognised
+        # by their size (130 inputs more than the plain observation: a file
+        # widened by rl/extend_checkpoint_inputs.py before any training).
+        # sessionMax 0: the memory is never cleared by the environment; with
+        # one attempt per run that does not matter. Nothing is passed for any
+        # other checkpoint.
+        plain_size = 334 if reference == "route" else 352
+        memory = saved.get("memory", 1 if saved["obs_size"] == plain_size + 130 else None)
+        memory_options = {} if memory is None else {"memory": memory, "sessionMax": 0}
+        if memory is not None:
+            print(f"memory policy (memory {memory}): this attempt is attempt 1 of a session, its memory inputs are zero")
         # Same decision interval as in training: the policy learned what its
         # keys do over that many ticks.
         # .get: checkpoints saved before the lap-fraction switch existed had it on.
@@ -82,7 +123,8 @@ def main() -> None:
                            pedalEvery=saved.get("pedal_every", 1), refLap=args.ref_lap,
                            block=saved.get("block", 0),
                            **({"refFile": args.ref_file} if args.ref_file else {}),
-                           **({} if args.max_off_line is None else {"maxOffLine": args.max_off_line}))
+                           **({} if args.max_off_line is None else {"maxOffLine": args.max_off_line}),
+                           **route_options, **memory_options)
         # Those older agents also pick one of 9 actions, 3 * pedal + steer with
         # pedal 0 = throttle, 1 = coast, 2 = brake. Translate to today's
         # numbering, steer + 3 * W + 6 * S.
@@ -136,15 +178,17 @@ def main() -> None:
                   f"{info['speedKmh']:.0f} km/h, {info['offLine']:.1f} off the line")
             next_report += 0.1
 
-    human = env.spec_info["humanFrames"]
+    human = env.spec_info["humanFrames"]  # None on a track with no human lap (route mode)
     print(f"body contact on {contact_steps} of {steps} decisions")
     if info["reason"] == "finished":
         frames = info["finishFrames"]
-        print(f"FINISHED in {frames / 1000:.3f} s (human {human / 1000:.3f} s, {frames / human:.2f}x), "
+        against = f"human {human / 1000:.3f} s, {frames / human:.2f}x" if human else "no human lap"
+        print(f"FINISHED in {frames / 1000:.3f} s ({against}), "
               f"{steps} decisions, total reward {total:.2f}")
         saved_lap = env.save_lap(args.run)
         print(f"saved {saved_lap['saved']}")
-        print(f"next: node scripts/export_recording.mjs {args.track} {args.run}")
+        if args.track == track_label(args.track):  # the exporter knows official tracks only
+            print(f"next: node scripts/export_recording.mjs {args.track} {args.run}")
     else:
         print(f"DID NOT FINISH ({info['reason']}) at {info['frames'] / 1000:.2f} s: reached "
               f"{100 * info['fraction']:.1f}% of the line, {info['speedKmh']:.0f} km/h, "
@@ -153,7 +197,8 @@ def main() -> None:
         # what went wrong. It is marked as unfinished in the file.
         saved_lap = env.save_lap(args.run, unfinished=True)
         print(f"saved {saved_lap['saved']} (unfinished attempt, for watching)")
-        print(f"next: node scripts/export_recording.mjs {args.track} {args.run}")
+        if args.track == track_label(args.track):
+            print(f"next: node scripts/export_recording.mjs {args.track} {args.run}")
     env.close()
     raise SystemExit(0 if info["reason"] == "finished" else 1)
 

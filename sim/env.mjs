@@ -4,7 +4,10 @@
 //   env.reset(track);
 //   const states = await env.step({ up: true }, 10);   // 10 physics ticks, 10 states
 //   const run = await env.replay(track, recordingString, 30000);
-import { existsSync } from 'node:fs';
+//   loadTrack('ideas/g2-2-track-generator/sets/train/gen_s1_d0_l800.track.json')  // a generated track
+import { existsSync, readFileSync } from 'node:fs';
+import { basename, isAbsolute } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { bootWorker, loadCaptured, Ki } from './host.mjs';
 import { loadTrackSaveString } from '../vendor/polyrl/node/sim_host.mjs';
 import { stateFrames, stateFinished, decodeState } from './state.mjs';
@@ -17,10 +20,36 @@ import { stateFrames, stateFinished, decodeState } from './state.mjs';
  *  count is checked. rl/racing_env.mjs keeps its own, 5,000,000 (see there). */
 export const CAR_TICK_BUDGET = 4_500_000;
 
+/** True for a generated track given by its file: a path ending in
+ *  ".track.json" (ideas/g2-2-track-generator writes these). Anything else is
+ *  an official track's name. */
+export const isTrackFile = (name) => typeof name === 'string' && name.endsWith('.track.json');
+
+/** The short name of a track, for file names and log lines: the name itself
+ *  for an official track, the file's base name without ".track.json" for a
+ *  generated one ("ideas/.../gen_s500_d0_l600.track.json" -> "gen_s500_d0_l600"). */
+export const trackLabel = (name) => (isTrackFile(name) ? basename(name, '.track.json') : name);
+
+/** Where a track file is: an absolute path as given, a relative one from the
+ *  project root (where every script is run from, and the cwd that
+ *  rl/polytrack_env.py gives its servers). */
+export const trackFilePath = (name) => (isAbsolute(name) ? name : fileURLToPath(new URL(`../${name.replace(/\\/g, '/')}`, import.meta.url)));
+
 /** CreateCar inputs for a track: the real client's capture when we have one,
  *  otherwise polyrl's track string with no mountains (fine unless the car can
- *  reach the backdrop terrain). */
+ *  reach the backdrop terrain).
+ *
+ *  `name` may also be a generated track file (isTrackFile). Its `trackData`
+ *  is the whole track: generated tracks have no mountains, the same choice
+ *  made here for official tracks without a capture. Official track names
+ *  never end in ".track.json", so this branch cannot change what an official
+ *  name loads. */
 export function loadTrack(name) {
+  if (isTrackFile(name)) {
+    const meta = JSON.parse(readFileSync(trackFilePath(name), 'utf8'));
+    if (typeof meta.trackData !== 'string') throw new Error(`${name}: no trackData (not a g2-2 .track.json file?)`);
+    return { trackData: meta.trackData, mountainVertices: new Float32Array(0), mountainOffset: { x: 0, y: 0, z: 0 } };
+  }
   if (existsSync(new URL(`../data/createcar_${name}.json`, import.meta.url))) {
     const { trackData, mountainVertices, mountainOffset } = loadCaptured(`createcar_${name}.json`);
     return { trackData, mountainVertices, mountainOffset };
@@ -68,6 +97,33 @@ export class Env {
       };
       this.worker.setControls(this.carId, controls);
       this.worker.send({ messageType: Ki.StartCar, carId: this.carId, targetSimulationTimeFrames: this.frames + n });
+    });
+  }
+
+  /**
+   * Hold controls[0] for `every` ticks, then controls[1] for `every` ticks,
+   * and so on, all in ONE message to the simulator; resolves with all
+   * controls.length * every resulting states, in order.
+   *
+   * Gives exactly the same states as calling step(controls[k], every) for each
+   * k in turn (the simulator reads keys per tick either way; see "key
+   * schedules" in sim/worker_entry.mjs), but waits once instead of once per
+   * run. Measured for rl/racing_env.mjs stepBlock (five 10 ms runs per 50 ms
+   * decision): see the numbers there.
+   *
+   * It always simulates every tick of the schedule: a caller that stops
+   * caring part-way (an episode that ended in slice 2) gets the later states
+   * too, and the car has moved on to the end of the schedule.
+   */
+  stepSchedule(controls, every) {
+    const n = controls.length * every;
+    return new Promise((resolve) => {
+      const out = [];
+      this._onState = (u8) => {
+        out.push(u8);
+        if (out.length === n) { this._onState = null; this.frames += n; resolve(out); }
+      };
+      this.worker.worker.postMessage({ __pt: 'schedule', carId: this.carId, from: this.frames, every, controls, target: this.frames + n });
     });
   }
 

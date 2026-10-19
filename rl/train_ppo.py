@@ -4,13 +4,15 @@ Usage (from the project root):
     python rl/train_ppo.py                       # summer1, 8 environments
     python rl/train_ppo.py --total-steps 20000   # a short trial run
     python rl/train_ppo.py --resume              # continue from the checkpoint
+    python rl/train_ppo.py --resume --target-steps 7500000   # a run that can be interrupted and resumed exactly
     python rl/train_ppo.py --help                # every setting
 
 What it does, in a loop ("update"):
 
   1. COLLECT. Run the current policy in N simulators at once for `--rollout`
      decisions each. The policy is a small neural network that looks at the
-     observation (352 numbers, see rl/racing_env.mjs) and gives probabilities
+     observation (352 numbers, see rl/racing_env.mjs; 334 with --reference route,
+     see ROUTE MODE there) and gives probabilities
      for three separate choices: W down or up, S down or up, and steering
      straight, left or right. Each is drawn from its probabilities, so the
      car tries slightly different things every time.
@@ -28,6 +30,28 @@ What it does, in a loop ("update"):
 The checkpoint (the network weights) is written to
 rl/checkpoints/ppo_<track>.pt every few updates; rl/evaluate.py loads it.
 
+GENERATED TRACKS AND ROTATION (opt-in; ideas/g2-2-track-generator). An item
+of --track may be a generated .track.json file, a folder of them or a .txt
+list (expand_tracks in rl/polytrack_env.py). With more tracks than
+environments, --rotate-every N gives environment k every track j with
+j % envs == k and has it switch to its next one every N episodes (TRACK
+ROTATION in rl/env_server.mjs); without it the extra tracks would never be
+driven (a warning is printed). Per-track counts and checkpoint names use the
+short name (track_label). Generated tracks have no human lap: use them with
+--reference route.
+
+MEMORY (--memory, opt-in; ideas/g2-5-memory-policy). The environment keeps a
+map of what earlier attempts on the same track did and shows it to the policy
+as 130 more inputs (482 with the human reference, 464 with --reference
+route). Attempts are grouped into sessions of 1..--session-max attempts that
+share one memory. The network is the same; only its first layer is wider. To
+start from a trained policy, widen it first with zero weights for the new
+inputs (rl/extend_checkpoint_inputs.py; ideas/g2-5-memory-policy/
+train_memory.sh does it). The progress line then also gives the finish rate
+by attempt number, and --carry lets value pass from one attempt of a session
+to the next (session_advantages below). Without --memory nothing here
+changes.
+
 This is a compact single-file PPO written directly in PyTorch (numpy and
 torch are the only dependencies) rather than a library call, so that every
 step is visible and commented here.
@@ -44,7 +68,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from polytrack_env import PolytrackVecEnv, OBS_PEDAL, OBS_STEER, OBS_S, PEDAL_OPEN
+from polytrack_env import PolytrackVecEnv, OBS_PEDAL, OBS_STEER, OBS_S, PEDAL_OPEN, expand_tracks, track_label
 
 CHECKPOINT_DIR = Path(__file__).resolve().parent / "checkpoints"
 
@@ -218,7 +242,14 @@ def parse_args() -> argparse.Namespace:
     # --- environment ---
     p.add_argument("--track", default="summer1",
                    help="one track, or several separated by commas for a multi-track (generalist) agent; "
-                        "use as many --envs as tracks so each track has its own environment")
+                        "use as many --envs as tracks so each track has its own environment, or --rotate-every. "
+                        "An item may also be a generated .track.json file, a folder of them or a .txt list of tracks "
+                        "(paths from the project root)")
+    p.add_argument("--rotate-every", type=int, default=0,
+                   help="with more tracks than --envs: each environment drives its share of the tracks "
+                        "(track j goes to environment j %% envs) in turn, switching after this many episodes "
+                        "(about 0.5 s per switch onto a generated track, 2 s onto an official one). "
+                        "0 = off: one track per environment for its whole life, as before")
     p.add_argument("--own-start", type=float, default=0.0,
                    help="after a crash, probability that the next episode restarts from the agent's own "
                         "state a few seconds earlier (see ownStart in rl/racing_env.mjs)")
@@ -256,7 +287,30 @@ def parse_args() -> argparse.Namespace:
                         "road; above 1 pays for it, up to this limit")
     p.add_argument("--max-off-line", type=float, default=20.0,
                    help="distance from the reference line at which an attempt on the ground is cut off; "
-                        "larger leaves room for a different line from the reference's")
+                        "larger leaves room for a different line from the reference's (human reference only)")
+    p.add_argument("--reference", choices=["human", "route"], default="human",
+                   help="what the agent is shown and measured against: 'human' (a human lap, the 352 inputs "
+                        "every model so far was trained on) or 'route' (the track's own route from "
+                        "ideas/g2-1-reference-free-inputs, 334 inputs, no human lap in the observation or the "
+                        "reward; see ROUTE MODE in rl/racing_env.mjs). The checkpoint records it")
+    p.add_argument("--memory", type=int, choices=[0, 1], default=None,
+                   help="memory of earlier attempts (ideas/g2-5-memory-policy): 1 = 130 more inputs showing what "
+                        "earlier attempts of the same session did on this track; 0 = the same wider observation "
+                        "with those inputs held at zero (a baseline). Absent (default) = no memory, the "
+                        "observation every model so far was trained on. The checkpoint must have the matching "
+                        "input count (rl/extend_checkpoint_inputs.py)")
+    p.add_argument("--session-max", type=int, default=6,
+                   help="with --memory: a session (attempts sharing one memory) lasts a random 1 to this many "
+                        "attempts; at 6, two attempts in seven are a first try (MemoryEnv in "
+                        "ideas/g2-5-memory-policy/memory_env.mjs)")
+    p.add_argument("--carry", type=float, default=0.0,
+                   help="with --memory: at the end of an attempt that is not its session's last, add this times "
+                        "the critic's value of the next attempt's first observation (which shows the updated "
+                        "memory), so a crash that teaches the next attempt something is worth something. "
+                        "0 (default) = every attempt is an ordinary episode (session_advantages)")
+    p.add_argument("--max-off-route", type=float, default=110.0,
+                   help="route reference only: distance from the route, in units, at which an attempt is cut "
+                        "off (maxOffRoute in rl/racing_env.mjs; the human laps come up to 104 units from it)")
     p.add_argument("--ref-file", default="",
                    help="use this lap file ({frames, recording}, path from the project root) as the "
                         "reference instead of a human lap (see refFile in rl/racing_env.mjs)")
@@ -265,7 +319,8 @@ def parse_args() -> argparse.Namespace:
                         "random steering, so the agent practises recovering from off the line everywhere "
                         "(see kick in rl/racing_env.mjs)")
     p.add_argument("--lane-penalty", type=float, default=0.05,
-                   help="most the blocked-lane cost can be per step (see REWARD in rl/racing_env.mjs); 0 = off")
+                   help="most the blocked-lane cost can be per step (see REWARD in rl/racing_env.mjs); 0 = off. "
+                        "Always off with --reference route")
     p.add_argument("--block", type=int, default=0,
                    help="if > 0, drive with block decisions of this many 10 ms slices (5 = one decision "
                         "per 50 ms; see BLOCK DECISIONS in rl/racing_env.mjs). Needs a network made for it")
@@ -277,6 +332,13 @@ def parse_args() -> argparse.Namespace:
     # --- amount of training ---
     p.add_argument("--total-steps", type=int, default=5_000_000,
                    help="decisions to collect in total, summed over all environments")
+    p.add_argument("--target-steps", type=int, default=None,
+                   help="stop when the checkpoint's step counter reaches this many decisions (it counts earlier "
+                        "runs too), and lay the learning-rate line (--lr to --lr-end), the imitation weight "
+                        "(--bc-coef to --bc-coef-end), --critic-warmup and the .u<update> copy names over the "
+                        "WHOLE run from where it began, not over this process. Relaunching an interrupted run "
+                        "with --resume and the same options then continues it exactly where the last save left "
+                        "it. Replaces --total-steps. Absent (default): every process is a run of its own, as before")
     p.add_argument("--rollout", type=int, default=256, help="decisions per environment per update")
     # --- PPO settings (standard values unless noted) ---
     p.add_argument("--lr", type=float, default=3e-4, help="learning rate; shrinks linearly to 0 over the run")
@@ -395,33 +457,95 @@ def compute_advantages(rewards, values, dones, last_value, gamma, lam):
     return advantages, advantages + values
 
 
+def session_advantages(rewards, values, dones, session_ends, last_value, gamma, lam, carry=0.0):
+    """compute_advantages above, with one addition, for --memory --carry.
+
+    All of shape (T, N) except last_value (N,). dones[t] = 1: the attempt
+    ended with the action at t. session_ends[t] = 1: it was also the last
+    attempt of its session (the memory is cleared before the next one).
+
+    The environment starts the next attempt at once, so values[t + 1] after a
+    done is the critic's value of the NEXT attempt's first observation, which
+    shows the memory with this attempt added. Where an attempt ended but its
+    session goes on, carry x that value is added to the reward of the ending
+    step: an attempt is then also credited with what it taught the next one
+    (CARRY in ideas/g2-5-memory-policy/memory_agent.py). Nothing else crosses
+    an attempt's end, and nothing at all crosses a session's end. With
+    carry = 0 this is compute_advantages exactly (checked in
+    ideas/g2-5-memory-policy/tests/test_agent.py).
+
+    At the last step of a rollout (t = T - 1) the next value is last_value,
+    the critic's value of the observation the next rollout starts from, which
+    is the next attempt's first one when the attempt ended there.
+    """
+    advantages = torch.zeros_like(rewards)
+    running = torch.zeros_like(last_value)
+    for t in reversed(range(rewards.shape[0])):
+        next_value = last_value if t == rewards.shape[0] - 1 else values[t + 1]
+        alive = 1.0 - dones[t]
+        goes_on = dones[t] * (1.0 - session_ends[t])
+        delta = rewards[t] + gamma * next_value * alive + carry * next_value * goes_on - values[t]
+        running = delta + gamma * lam * alive * running
+        advantages[t] = running
+    return advantages, advantages + values
+
+
 def main() -> None:
     args = parse_args()
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     device = torch.device(args.device)
-    tracks = args.track.split(",")
+    # Names, generated track files, folders and .txt lists (expand_tracks);
+    # a plain comma list expands to itself.
+    tracks = expand_tracks(args.track)
     multi = len(tracks) > 1
     # A multi-track checkpoint is named "general", not after one of its tracks.
-    default_name = "ppo_general.pt" if multi else f"ppo_{args.track}.pt"
+    default_name = "ppo_general.pt" if multi else f"ppo_{track_label(tracks[0])}.pt"
+    # Opt-in rotation (GENERATED TRACKS AND ROTATION above). Without it every
+    # environment keeps one track, as it always did.
+    track_sets = None
+    if args.rotate_every > 0 and len(tracks) > args.envs:
+        track_sets = [tracks[k::args.envs] for k in range(args.envs)]
+    elif len(tracks) > args.envs:
+        # Kept as it always was (a warning, not a refusal), so existing commands still run.
+        print(f"warning: {len(tracks)} tracks but {args.envs} environments: tracks after the first "
+              f"{args.envs} are never driven; add --rotate-every N or more --envs", flush=True)
     checkpoint_path = Path(args.checkpoint) if args.checkpoint else CHECKPOINT_DIR / default_name
     lap_fraction = 0 if args.no_lap_fraction else 1
+    if args.carry and args.memory is None:
+        raise SystemExit("--carry needs --memory: without a memory there is nothing to carry from one attempt to the next")
 
     envs = PolytrackVecEnv(args.envs, track=tracks, ticks=args.ticks, seed=args.seed,
+                           **({"track_sets": track_sets, "switch_every": args.rotate_every} if track_sets else {}),
                            randomStart=args.random_start, lapFraction=lap_fraction,
                            failureStart=args.failure_start, ownStart=args.own_start,
                            pedalEvery=args.pedal_every, refLaps=args.ref_laps, refEvery=args.ref_every,
                            block=args.block, kick=args.kick, lanePenalty=args.lane_penalty,
                            paceCap=args.pace_cap, maxOffLine=args.max_off_line,
-                           **({"refFile": args.ref_file} if args.ref_file else {}))
+                           **({"refFile": args.ref_file} if args.ref_file else {}),
+                           # Route mode only; with the default reference the servers get exactly
+                           # the arguments they always had.
+                           **({"reference": "route", "maxOffRoute": args.max_off_route}
+                              if args.reference == "route" else {}),
+                           # Memory only (--memory); without it the servers get exactly the
+                           # arguments they always had. Each server seeds its own session
+                           # lengths from its seed (rl/env_server.mjs).
+                           **({"memory": args.memory, "sessionMax": args.session_max}
+                              if args.memory is not None else {}))
     N, T = args.envs, args.rollout
     batch_size = N * T                                  # decisions collected per update
     num_updates = max(1, args.total_steps // batch_size)
-    print(f"{args.track}: {N} environments x {T} decisions = {batch_size} per update, {num_updates} updates"
+    print(f"{args.track}: {N} environments x {T} decisions = {batch_size} per update"
+          + (f", {num_updates} updates" if args.target_steps is None else "")
           + ("" if multi else f"; human lap {envs.spec_info['humanFrames']} ticks, tick limit {envs.spec_info['maxTicks']}"))
     # Multi-track only: the last episodes of each track, to report how each is
     # going. Entries are (finished?, fraction of the lap reached).
-    per_track = {name: deque(maxlen=30) for name in tracks}
+    per_track = {track_label(name): deque(maxlen=30) for name in tracks}
+    # Memory only: the last 100 episodes of each attempt number (1, 2, 3, 4
+    # or later in its session), finished or not. The memory can only show its
+    # effect as a finish rate that rises with the attempt number.
+    memory_spec = envs.spec_info.get("memory")
+    per_attempt = {key: deque(maxlen=100) for key in ("1", "2", "3", "4+")}
 
     agent = Agent(envs.obs_size, envs.num_actions, args.hidden).to(device)
     agent.steer_entropy_scale = args.steer_entropy
@@ -431,12 +555,35 @@ def main() -> None:
         loaded = np.load(args.bc_data)
         bc_obs = torch.as_tensor(loaded["obs"].astype(np.float32), device=device)
         bc_actions = torch.as_tensor(loaded["actions"].astype(np.int64), device=device)
+        # With --memory the examples (made by rl/pretrain_bc.py without one)
+        # are 130 numbers short. A human lap driven once is a first attempt
+        # as far as the memory is concerned, and on a first attempt every
+        # memory input is zero, so the examples are padded with zeros.
+        if memory_spec and bc_obs.shape[1] == memory_spec["baseObsSize"]:
+            bc_obs = torch.cat([bc_obs, bc_obs.new_zeros(len(bc_obs), envs.obs_size - bc_obs.shape[1])], dim=1)
+            print(f"imitation examples padded with {memory_spec['size']} zero memory inputs (a first attempt)")
+        # Examples made for the other kind of observation (352 against 334
+        # numbers) cannot be fed to this network.
+        if bc_obs.shape[1] != envs.obs_size:
+            envs.close()
+            raise SystemExit(f"--bc-data {args.bc_data} has {bc_obs.shape[1]} inputs per example, the environment "
+                             f"{envs.obs_size}; make the examples with the same --reference")
         print(f"imitation term: {len(bc_actions)} human decisions from {args.bc_data}")
     optimizer = torch.optim.Adam(agent.parameters(), lr=args.lr, eps=1e-5)
     steps_done = 0        # decisions collected so far, including earlier runs when resuming
     best_finish = None    # fastest finished lap seen in training, in ticks
     if args.resume:
         saved = torch.load(checkpoint_path, map_location=device, weights_only=True)
+        # Checkpoints from before route mode have no "reference": they are human.
+        if saved.get("reference", "human") != args.reference or saved["obs_size"] != envs.obs_size:
+            envs.close()
+            hint = ""
+            if memory_spec and saved["obs_size"] == memory_spec["baseObsSize"]:
+                hint = (f"; to give it the memory inputs: python rl/extend_checkpoint_inputs.py {checkpoint_path} "
+                        f"<new.pt> --obs-size {envs.obs_size}")
+            raise SystemExit(f"{checkpoint_path} was made for reference '{saved.get('reference', 'human')}' with "
+                             f"{saved['obs_size']} inputs; this run is --reference {args.reference} with "
+                             f"{envs.obs_size} inputs{hint}")
         agent.load_state_dict(saved["model"])
         # A checkpoint made by rl/widen_checkpoint.py has no optimizer state
         # (the old one does not fit the larger network); start it fresh.
@@ -444,6 +591,38 @@ def main() -> None:
             optimizer.load_state_dict(saved["optimizer"])
         steps_done, best_finish = saved["steps"], saved["best_finish"]
         print(f"resumed {checkpoint_path} at {steps_done} steps")
+
+    # --- which updates this process runs ---------------------------------------
+    # Without --target-steps (as before): updates 1..num_updates of a run that
+    # begins now; the learning-rate line, the critic warm-up and the copy names
+    # all count from the start of this process.
+    #
+    # With --target-steps: the run began when the checkpoint's step counter
+    # was run_start (recorded in the checkpoint as "target_run" on the first
+    # save), and it is num_updates long in all. A process resumed after an
+    # interruption starts at the run's next update, so the learning rate,
+    # imitation weight and warm-up have the values they would have had, and
+    # its kept copies are named by the run's update number. Why: Henry's
+    # machine shuts down without warning, and a relaunch used to practise the
+    # whole --total-steps again from the full learning rate (ideas/g1-3-search-
+    # train-rounds worked around this with trainPlan in lib.mjs).
+    # A checkpoint whose record names another target (or none) starts a new
+    # run at its current step counter.
+    first_update = 1
+    run_start = steps_done
+    if args.target_steps is not None:
+        recorded = saved.get("target_run") if args.resume else None
+        if recorded and recorded["target_steps"] == args.target_steps:
+            if recorded["batch"] != batch_size:
+                envs.close()
+                raise SystemExit(f"{checkpoint_path} is part of a run of {recorded['batch']} decisions per update "
+                                 f"(--envs x --rollout); this launch has {batch_size}. Use the same --envs and --rollout")
+            run_start = recorded["run_start"]
+        num_updates = max(1, (args.target_steps - run_start) // batch_size)
+        first_update = (steps_done - run_start) // batch_size + 1
+        print(f"run to {args.target_steps} steps: began at {run_start}, {num_updates} updates in all, "
+              f"{first_update - 1} done" + (", nothing left to do" if first_update > num_updates else
+                                             f", continuing at update {first_update}"))
 
     def save_checkpoint() -> None:
         checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
@@ -455,8 +634,21 @@ def main() -> None:
             "best_finish": best_finish,
             # What evaluate.py needs to rebuild the same network and environment.
             "obs_size": envs.obs_size, "num_actions": envs.num_actions, "hidden": args.hidden,
-            "track": args.track, "ticks": args.ticks, "lap_fraction": lap_fraction,
+            "track": ",".join(tracks), "ticks": args.ticks, "lap_fraction": lap_fraction,
             "pedal_every": args.pedal_every, "block": args.block,
+            # What the observation is measured against ('human' or 'route'),
+            # so that evaluate.py, export_actor.py and the searches rebuild
+            # the same environment.
+            "reference": args.reference,
+            **({"max_off_route": args.max_off_route} if args.reference == "route" else {}),
+            # With --memory: the observation ends with the 130 memory inputs,
+            # so evaluate.py and the searches must build a memory environment.
+            **({"memory": args.memory, "session_max": args.session_max, "carry": args.carry}
+               if args.memory is not None else {}),
+            # With --target-steps: which run this checkpoint is part of, so a
+            # resumed process can continue it (see "which updates" above).
+            **({"target_run": {"target_steps": args.target_steps, "run_start": run_start, "batch": batch_size}}
+               if args.target_steps is not None else {}),
         }, temporary)
         # Written under a temporary name and then renamed: if the run is killed
         # in the middle of a save, the previous checkpoint is still intact.
@@ -489,8 +681,9 @@ def main() -> None:
     start_time = time.perf_counter()
     collect_seconds = 0.0  # time spent waiting for the simulators, to report where the time goes
     try:
-        for update in range(1, num_updates + 1):
-            # Learning rate falls in a straight line from --lr to 0 over this run.
+        for update in range(first_update, num_updates + 1):
+            # Learning rate falls in a straight line from --lr to --lr-end over
+            # the run (this process, or with --target-steps the whole run).
             done_share = (update - 1) / num_updates
             optimizer.param_groups[0]["lr"] = args.lr + (args.lr_end - args.lr) * done_share
             bc_coef = args.bc_coef + (args.bc_coef_end - args.bc_coef) * done_share
@@ -510,7 +703,11 @@ def main() -> None:
 
             for k, info in data["episodes"]:
                 recent.append((info["episodeReward"], info["fraction"], info["reason"]))
-                per_track[envs.tracks[k]].append((info["reason"] == "finished", info["fraction"]))
+                # With rotation the server says which track the episode was on.
+                per_track[info.get("track", track_label(envs.tracks[k]))].append((info["reason"] == "finished", info["fraction"]))
+                if memory_spec:
+                    attempt = info["attempt"]
+                    per_attempt["4+" if attempt >= 4 else str(attempt)].append(info["reason"] == "finished")
                 if info["reason"] == "finished" and info["startTick"] <= 1:
                     # Only laps driven from the start line count as lap times.
                     if best_finish is None or info["finishFrames"] < best_finish:
@@ -534,7 +731,14 @@ def main() -> None:
                 _, flat_logprob, _, flat_value = agent.act(obs_buf.reshape(batch_size, -1), flat(action_buf))
                 logprob_buf, value_buf = flat_logprob.reshape(T, N), flat_value.reshape(T, N)
                 last_value = agent.value(last_obs)
-            advantages, returns = compute_advantages(reward_buf, value_buf, done_buf, last_value, args.gamma, args.gae_lambda)
+            if args.carry:
+                # --carry: value may pass from one attempt to the next one of
+                # the same session (session_advantages above).
+                session_end_buf = torch.as_tensor(data["session_ends"], device=device)
+                advantages, returns = session_advantages(reward_buf, value_buf, done_buf, session_end_buf, last_value,
+                                                         args.gamma, args.gae_lambda, args.carry)
+            else:
+                advantages, returns = compute_advantages(reward_buf, value_buf, done_buf, last_value, args.gamma, args.gae_lambda)
 
             # ---- 3. LEARN --------------------------------------------------
             # Flatten [step, environment] into one long batch.
@@ -582,12 +786,23 @@ def main() -> None:
 
             # ---- progress line ---------------------------------------------
             elapsed = time.perf_counter() - start_time
-            line = f"update {update}/{num_updates}  steps {steps_done}  {update * batch_size / elapsed:.0f} steps/s"
+            line = f"update {update}/{num_updates}  steps {steps_done}  {(update - first_update + 1) * batch_size / elapsed:.0f} steps/s"
+            if args.target_steps is not None:
+                # The schedule's values, so a resumed run can be checked against an uninterrupted one.
+                line += (f"  lr {optimizer.param_groups[0]['lr']:.6g}  bc {bc_coef:.6g}"
+                         + ("  critic only" if update <= args.critic_warmup else ""))
             if recent:
                 rewards_, fractions, reasons = zip(*recent)
                 counts = {r: reasons.count(r) for r in sorted(set(reasons))}
                 line += (f"  last {len(recent)} episodes: reward {np.mean(rewards_):.1f}, "
                          f"lap {100 * np.mean(fractions):.1f}%, ended {counts}")
+            if memory_spec and any(per_attempt.values()):
+                # Finished / episodes over the last 100 of each attempt
+                # number. Part-way starts are included (they are easier), so
+                # compare the attempt numbers with each other, not with the
+                # ten-attempt test.
+                line += "  finished by attempt " + " ".join(
+                    f"{key}:{sum(eps)}/{len(eps)}" for key, eps in per_attempt.items() if eps)
             # A single best lap time only means something on a single track.
             if best_finish is not None and not multi:
                 line += f"  best lap {best_finish / 1000:.3f} s"

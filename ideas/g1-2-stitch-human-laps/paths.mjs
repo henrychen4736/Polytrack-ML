@@ -176,7 +176,11 @@ export const stateAt = (path, t) => ({
  */
 export function locate(path, position, from, to) {
   let best = -1, bestD2 = Infinity;
-  for (let t = Math.max(1, from); t <= Math.min(path.frames, to); t++) {
+  // A window that starts past the donor's last tick (a car that has driven
+  // on beyond the end of the donor lap; seen on desert3 with judge=finish,
+  // 17 Oct 2026) would be empty and return tick -1, which crashed stateAt.
+  // Start it no later than the last tick, so the end of the lap is used.
+  for (let t = Math.max(1, Math.min(from, path.frames)); t <= Math.min(path.frames, Math.max(to, from)); t++) {
     const p = path.position[t];
     const d2 = (p[0] - position[0]) ** 2 + (p[1] - position[1]) ** 2 + (p[2] - position[2]) ** 2;
     if (d2 < bestD2) { bestD2 = d2; best = t; }

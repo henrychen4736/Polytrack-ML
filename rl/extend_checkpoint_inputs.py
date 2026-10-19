@@ -15,6 +15,15 @@ those are non-zero from the first update.
 
 The optimizer's state is dropped (it is shaped like the old first layer);
 train_ppo.py starts a fresh one on resume.
+
+The memory of earlier attempts (ideas/g2-5-memory-policy) is used the same
+way: its 130 inputs come after the plain observation, so
+
+    python rl/extend_checkpoint_inputs.py rl/checkpoints/ppo_blkgen.best2.pt rl/checkpoints/g2-5-mem.pt --obs-size 482
+    python rl/extend_checkpoint_inputs.py rl/checkpoints/ppo_g2-1-route.pt rl/checkpoints/g2-5-mem_route.pt --obs-size 464
+
+(352 -> 482 with the human reference, 334 -> 464 with the route). Everything
+else in the checkpoint, the reference it was made for included, is kept.
 """
 from __future__ import annotations
 

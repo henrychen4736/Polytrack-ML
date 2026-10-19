@@ -12,3 +12,5 @@ data/
 ideas/g1-1-human-seed-search/out/
 ideas/g1-7-computed-racing-line/out/
 ideas/g2-5-memory-policy/out/smoke.bin
+# ... and generated track sets: routes measured on Kodub's part geometry, laps driven on it (g2-2-make_set.sh)
+ideas/g2-2-track-generator/sets/

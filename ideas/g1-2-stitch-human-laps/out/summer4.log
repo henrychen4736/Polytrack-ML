@@ -1,0 +1,36 @@
+wasm streaming compile failed: TypeError: Cannot read properties of undefined (reading 'FinalizationRegistry')
+falling back to ArrayBuffer instantiation
+summer4: 10 human laps, 136 sections of about 250 ms of the fastest lap
+
+ms spent between boundaries ("-": the lap was on another line at one of the two)
+lap   time s       0-17   17-34   34-51   51-68   68-85  85-102 102-119 119-136   boundaries crossed
+  0   34.105       4250    4250    4250    4250    4250    4250    4250    4355   135/135
+  1   34.207       4261    4275    4262    4241    4256    4235    4259    4418   135/135
+  2   34.218       4257    4289    4274    4364    4171       -       -       -   99/135
+  3   34.234       4252    4270    4264    4260    4267    4252    4256    4413   135/135
+  4   34.254       4256    4289    4289    4214    4295       -       -       -   98/135
+  5   34.258       4263    4209    4306    4275    4299    4262    4219    4425   135/135
+  6   34.269       4265    4214    4265    4252    4345    4269    4251    4408   135/135
+  7   34.270       4249    4280    4282    4241    4266       -       -       -   98/135
+  8   34.283       4269    4338    4289    4181    4316    4242    4243    4405   135/135
+  9   34.286       4268    4269    4261    4281    4253    4295    4307    4352   135/135
+
+best human lap                 34.105 s
+theoretical best of sections   33.505 s  (600 ms faster; assumes a switch is free wherever two laps cross the same boundary)
+planned route                  33.637 s  (468 ms faster if every switch were free): lap7@0 -> lap5@18 -> lap3@24 -> lap0@39 -> lap8@47 -> lap4@61 -> lap2@65 -> lap0@91 -> lap8@92 -> lap5@107 -> lap0@116
+
+stitching (a switch is kept only if the car that switched finishes the lap sooner than the car that did not):
+   18 s  boundary  18: lap7 -> lap5, to boundary 26: stay 2037 ms, switch 1972 ms (mismatch 8 ms); to the finish: stay 34.270 s, switch NO LAP  refused
+   32 s  boundary  26: lap7 -> lap9, to boundary 34: stay 1995 ms, switch 1995 ms (mismatch 55 ms); to the finish: stay 34.270 s, switch NO LAP  refused
+   40 s  boundary  34: lap7 -> lap0, to boundary 42: stay 2020 ms, switch 2020 ms (mismatch 18 ms); to the finish: stay 34.270 s, switch NO LAP  refused
+   45 s  boundary  47: lap7 -> lap8, to boundary 55: stay 1998 ms, switch 2001 ms (mismatch 83 ms); to the finish: stay 34.270 s, switch NO LAP  refused
+   58 s  boundary  57: lap7 -> lap4, to boundary 65: stay 1984 ms, switch 1987 ms (mismatch 48 ms); to the finish: stay 34.270 s, switch NO LAP  refused
+   75 s  boundary  65: lap7 -> lap2, to boundary 73: stay 2004 ms, switch 2017 ms (mismatch 107 ms); to the finish: stay 34.270 s, switch NO LAP  refused
+   82 s  boundary  81: lap7 -> lap2, to boundary 89: stay 1999 ms, switch 1982 ms (mismatch 4 ms); to the finish: stay 34.270 s, switch NO LAP  refused
+   83 s  boundary  91: lap7 -> lap8, to the finish: stay 11469 ms, switch LOST; to the finish: stay 34.270 s, switch NO LAP  refused
+
+0 switches kept, 8 refused; the lap is lap7 unchanged
+wasm streaming compile failed: TypeError: Cannot read properties of undefined (reading 'FinalizationRegistry')
+falling back to ArrayBuffer instantiation
+stitched lap 34.270 s; best human 34.105 s (165 ms slower)
+PASS Verify: the game finishes it on tick 34270; not saved (no switch in it)

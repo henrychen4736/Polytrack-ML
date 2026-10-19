@@ -1,0 +1,29 @@
+wasm streaming compile failed: TypeError: Cannot read properties of undefined (reading 'FinalizationRegistry')
+falling back to ArrayBuffer instantiation
+summer2: 10 human laps, 61 sections of about 250 ms of the fastest lap
+
+ms spent between boundaries ("-": the lap was on another line at one of the two)
+lap   time s        0-8    8-15   15-23   23-31   31-38   38-46   46-53   53-61   boundaries crossed
+  0   15.178       2000    1750    2000    2000    1750    2000    1750    1928   60/60
+  1   15.204       2001    1749    2004    2011    1770    1966    1774    1929   60/60
+  2   15.217       2003    1749    2000    2012    1774    1965    1746    1968   60/60
+  3   15.218       2003    1748    2003    2003    1785    1950    1781    1945   60/60
+  4   15.219       2001    1749    1999    2011    1762    1979    1771    1947   60/60
+  5   15.220       2001    1750    2001    2034    1761    1982    1743    1948   60/60
+  6   15.223       2001    1749    2004    2020    1771    1975    1758    1945   60/60
+  7   15.226       2001    1749    2002    2022    1793    1924    1753    1982   60/60
+  8   15.226       2001    1750    2000    2023    1770    1945    1782    1955   60/60
+  9   15.226       2005    1747    2004    2024    1767    1945    1766    1968   60/60
+
+best human lap                 15.178 s
+theoretical best of sections   15.054 s  (124 ms faster; assumes a switch is free wherever two laps cross the same boundary)
+planned route                  15.089 s  (89 ms faster if every switch were free): lap0@0 -> lap7@39 -> lap0@49
+
+stitching (a switch is kept only if the car that switched finishes the lap sooner than the car that did not):
+    5 s  boundary  39: lap0 -> lap7, to boundary 47: stay 2000 ms, switch LOST; to the finish: stay 15.178 s, switch NO LAP  refused
+
+0 switches kept, 1 refused; the lap is lap0 unchanged
+wasm streaming compile failed: TypeError: Cannot read properties of undefined (reading 'FinalizationRegistry')
+falling back to ArrayBuffer instantiation
+stitched lap 15.178 s; best human 15.178 s (the same)
+PASS Verify: the game finishes it on tick 15178; not saved (no switch in it)

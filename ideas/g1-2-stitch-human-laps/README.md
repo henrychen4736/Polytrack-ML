@@ -33,6 +33,15 @@ All options are listed at the top of `stitch_laps.mjs`. The useful ones:
 | `risk=0.3 switchPenalty=10 maxMismatch=60` | how readily the planner proposes a switch |
 | `check=2000 margin=2 acceptCost=40 attempts=8` | how a proposed switch is judged |
 | `start=0` | begin on the fastest lap rather than the plan's choice |
+| `judge=finish` | judge each switch by driving both cars to the finish line (off by default: `judge=check`) |
+| `fallback=4` | when the car is lost, undo the last kept switch and carry on, up to 4 times (off by default: 0) |
+
+All 17 tracks, each lap checked again from its file, one table at the end
+(restartable; skips tracks already done):
+
+```
+sh ideas/g1-2-stitch-human-laps/g1-2-run_all.sh
+```
 
 Files:
 
@@ -41,6 +50,9 @@ Files:
 - `follow.mjs`: `follow(sim, donor, donorTick, until, mode)` with the three
   modes `raw`, `resync`, `repair`.
 - `stitch_laps.mjs`: the script.
+- `g1-2-run_all.sh`: the script on every track (default `judge=finish
+  fallback=4`, 4 tracks at once), each saved lap checked again with
+  `ideas/shared/verify_lap.mjs`; logs and one result line per track in `out/`.
 - `scratch/tune.mjs`, `scratch/trace.mjs`: the two throwaway scripts behind the
   tuning numbers below (one join under several settings; a per-window trace of
   one follow). Not needed to run anything.
@@ -149,24 +161,67 @@ switch pays when what it gains is larger than what the repair loses over the
 rest of the lap, and on these four tracks the gains on offer between laps that
 share a line are 5 to 20 ms each.
 
+### Judging by finish time, and falling back (17 October 2026)
+
+Two options, both off by default (the default run still writes the 21.730 s
+lap key for key; checked):
+
+- `judge=finish`: at each planned switch both cars (stay, switch) are driven
+  with repair to the finish line, and the switch is kept only if its lap ends
+  `margin` ms sooner. The run then carries on from the chosen car's state
+  `check` ms after the switch, so later switches are still tried (unlike
+  `check=99999`, which stopped after the first). The fastest lap any judged
+  car finished is kept too and is the result if the stitch that carries on
+  ends slower or lost. This is the forward, greedy version of the finish-time
+  test; the backwards version (decide the last switch first) is not built.
+- `fallback=N`: when the car loses the path, go back to the state just before
+  the last kept switch, forbid that switch there and for `check` ms of
+  boundaries after it, plan again from there, and carry on; at most N times.
+  An undone switch does not use up one of `attempts`. Save points that die
+  when the car is renewed (tick budget) are restored by driving their keys
+  again, which gives the identical state.
+
+Measured, one simulator each, three at a time, with an IQN trainer on the GPU:
+
+| Track, settings | `judge=check` (the rule before) | new option | Time |
+| --- | --- | --- | --- |
+| desert4, defaults | 21.730 s | `judge=finish`: the same switch kept (stay 21.758, switch 21.730 to the finish), 21.730 s | 9 s |
+| desert4, `risk=0.1 switchPenalty=3` | 3 kept, 2 refused: 21.794 s (+44 ms on the human) | `judge=finish`: the first switch refused (2 s ahead, but 21.843 against 21.758 at the finish), one kept: 21.754 s (+4 ms) | 62 s |
+| summer4, defaults | 3 kept, then lost after boundary 116: NO LAP | `fallback=6`: one switch undone, then a different one kept: **34.374 s, Verify PASS** (+269 ms on the human). With `fallback=3` and a one-boundary ban: still NO LAP (the same switch was planned again 250 ms later) | 55 s |
+| summer4, defaults | as above | `judge=finish fallback=6`: all 8 switches refused, every switching car lost before the finish; lap 7 unchanged, 34.270 s | 100 s |
+
+So judging by finish time does what it should (it refused the switch that
+was ahead after 2 s and cost 85 ms by the line), and fallback turns summer4's
+"no lap" into a lap. Neither has produced a lap faster than the 21.730 s
+already found. On summer4 no switch survives repair to the finish at all.
+
+`g1-2-run_all.sh` smoke (desert4 and summer4, two at a time, 96 s):
+
+```
+track       human s stitched s    gain  what happened
+desert4      21.750     21.730      20  switched, Verify PASS on tick 21730
+summer4      34.105     34.270    -165  no switch kept: a human lap, Verify PASS
+```
+
+The lap begun on is the plan's choice, so the gain can be negative (summer4
+keeps lap 7). `start=0` in `STITCH_OPTS` makes the gain never negative, but on
+desert4 the plan from lap 0 has no switch at all and loses the 21.730 s lap
+(measured), so it is not the default.
+
 ## Not done, not tested
 
-- Only desert4 gave a faster lap. summer4 gives no finished stitched lap at
-  all with the present repair.
-- The switch test looks 2 s ahead, but repair goes on costing time to the
-  finish, so a kept switch can still make the lap slower (desert4 and winter2
-  with loose settings). The honest test is to follow both cars to the finish
-  (`check=99999` does that, for the first planned switch only). The proper
-  version works backwards from the finish: decide the last switch by real
-  finish time, then the one before it against that result.
-- No fallback when the car loses the path after kept switches (summer4): the
-  run reports "NO LAP" rather than going back to the last good state.
+- Only desert4 gave a faster lap. summer4 gives no stitched lap faster than
+  its own human laps (34.374 s with `fallback=6`).
+- **The run over all 17 tracks** (`g1-2-run_all.sh`) has been run on desert4
+  and summer4 only; about 10 minutes expected for all 17 with 4 at a time.
+- The backwards, finish-time version (decide the last switch first, then the
+  one before it against that result) is not built; `judge=finish` is the
+  forward version.
 - The repair corrections are one fixed set and one round per window. Not
   tried: two corrections in one window, corrections placed before a jump
   rather than after it, a longer look-ahead over jumps.
 - The mismatch weights for spin, steering and wheels are guesses.
 - Survival with repair to the finish was measured on 6 desert4 joins only.
-- The other 13 tracks were not run.
 - The stitched lap as a reference for a specialist (`refFile`) was not tried.
 
 ## Changes needed elsewhere

@@ -1,0 +1,28 @@
+wasm streaming compile failed: TypeError: Cannot read properties of undefined (reading 'FinalizationRegistry')
+falling back to ArrayBuffer instantiation
+winter2: 10 human laps, 107 sections of about 250 ms of the fastest lap
+
+ms spent between boundaries ("-": the lap was on another line at one of the two)
+lap   time s       0-13   13-27   27-40   40-54   54-67   67-80   80-94  94-107   boundaries crossed
+  0   26.830       3250    3500    3250    3500    3250    3250    3500    3330   106/106
+  1   26.839       3249    3497    3251    3516    3247    3249    3500    3330   98/106
+  2   26.857       3250    3499    3250    3511    3252    3254    3516    3325   95/106
+  3   26.880       3277    3508    3253    3509    3248    3252    3496    3337   106/106
+  4   26.898       3249    3499    3251    3517    3263    3272    3513    3334   106/106
+  5   26.908       3255    3503    3251    3519    3250    3265    3522    3343   106/106
+  6   26.913       3250    3499    3251    3529    3266    3273       -       -   93/106
+  7   26.913       3250    3498    3250    3505    3268    3297       -       -   93/106
+  8   26.916       3250    3499    3251    3504    3262    3306    3513    3331   106/106
+  9   26.922       3247    3498    3251    3523    3267    3277    3528    3331   95/106
+
+best human lap                 26.830 s
+theoretical best of sections   26.778 s  (52 ms faster; assumes a switch is free wherever two laps cross the same boundary)
+planned route                  26.830 s  (0 ms faster if every switch were free): lap0@0
+
+stitching (a switch is kept only if the car that switched finishes the lap sooner than the car that did not):
+
+0 switches kept, 0 refused; the lap is lap0 unchanged
+wasm streaming compile failed: TypeError: Cannot read properties of undefined (reading 'FinalizationRegistry')
+falling back to ArrayBuffer instantiation
+stitched lap 26.830 s; best human 26.830 s (the same)
+PASS Verify: the game finishes it on tick 26830; not saved (no switch in it)

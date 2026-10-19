@@ -9,7 +9,10 @@ the same feed-forward network; it gets better over a handful of attempts
 because its inputs change, not its weights.
 
 Nothing here has been trained. What exists is the memory, the environment
-wrapper, the agent, the measurement script and their tests.
+wrapper, the agent, the measurement script and their tests, and (since 16
+October 2026) the trainer changes that make it trainable, with both kinds of
+reference: `train_memory.sh` and `eval_memory.sh` run the first experiment
+and its test (see "Trainer changes" and "How to run").
 
 ## Which design, and why
 
@@ -99,7 +102,12 @@ known. On a first attempt all 130 are zero.
 Indexing is by `renv.progress`, distance along the reference line. Only
 `MemoryEnv._sample` and `_extend` read it (`progress`, `lateral`,
 `progressIndex`, the lookahead gap), so g2-1's human-free route replaces it
-there and nowhere else. The two ideas fit: after one finished attempt,
+there and nowhere else. That is now done: with `reference: 'route'`
+(RacingEnv's route mode) the bins are on the route (`progressLine`), the
+observation is 334 + 130 = 464, the lookahead stretches are the route's
+points by the same formula as `observation.mjs`, and a `refLaps` change of
+the human lap that only places the car does not clear the memory. Lateral
+offsets are then from the route; shown /10 and clipped at 30 units. The two ideas fit: after one finished attempt,
 `passSpeed` / `passLat` over the whole track are a lap the car drove itself,
 the same kind of input the human reference supplies today, and on a community
 track it is the only one there will be.
@@ -154,6 +162,27 @@ node ideas/g2-5-memory-policy/memory_test.mjs                    # map and sessi
 node ideas/g2-5-memory-policy/attempts.mjs track=desert3 policy=rl/checkpoints/ppo_blkgen.best2.actor.bin attempts=5 sessions=3 sample=1
 ```
 
+Training and its test (16 simulators, about 2 hours a stretch; restartable):
+
+```
+sh ideas/g2-5-memory-policy/train_memory.sh                     # from ppo_blkgen.best2.pt -> rl/checkpoints/g2-5-mem.pt
+REFERENCE=route sh ideas/g2-5-memory-policy/train_memory.sh     # from ppo_g2-1-route.pt -> rl/checkpoints/g2-5-mem_route.pt
+sh ideas/g2-5-memory-policy/eval_memory.sh rl/checkpoints/g2-5-mem.after_<steps>.pt
+```
+
+`train_memory.sh` widens the starting checkpoint once (only if
+`g2-5-mem[_route].pt` does not exist yet), then runs `STRETCHES` (default 1)
+stretches of `STEPS` (default 13 million) decisions with the first
+experiment's settings; a rerun after a stop starts a new stretch from the
+last save. Its header gives every setting and why (learning rate 5e-5, no
+imitation term, from CLAUDE.md's lesson on widened inputs). `eval_memory.sh`
+runs `attempts.mjs` on desert3, summer3 and winter4 with `memory=1` and
+`memory=0`, 10 sessions of 5 sampled attempts each, and prints finishes per
+attempt number side by side. `rl/evaluate.py` also drives a memory
+checkpoint (one attempt: attempt 1, memory empty), so
+`scripts/eval_generalist.sh`'s ten-attempt test measures its first-try
+driving; the session test is `eval_memory.sh`.
+
 `attempts.mjs` is the measurement: per attempt number, finish rate, mean lap
 time and mean share of the lap, with the memory carried across the attempts of
 a session. `memory=0` runs the same policy with the memory inputs held at zero
@@ -165,7 +194,7 @@ several sessions: with top choices the simulator repeats exactly, so one
 session per track is all there is. Lap times it prints are not verified laps;
 run `scripts/export_recording.mjs` on a saved lap before quoting one.
 
-Files: `track_memory.mjs` (the map), `memory_env.mjs` (`MemoryEnv`, wraps
+Files: `train_memory.sh`, `eval_memory.sh` (training and its test), `track_memory.mjs` (the map), `memory_env.mjs` (`MemoryEnv`, wraps
 `RacingEnv`), `memory_agent.py` (`MemoryAgent` subclasses `Agent`;
 `from_checkpoint`, `write_actor`, `session_advantages`, `ppo_loss`),
 `attempts.mjs`, `memory_test.mjs`, `smoke_test.py`, `toy_probe.py`. `out/`
@@ -201,59 +230,99 @@ All on CPU, one simulator at a time, the longest run 104 s.
 ## Not done, not tested
 
 - No training. Whether a policy learns to use these inputs, and how much
-  finish rate it buys on attempt 2 to 5, is not known.
-- `MemoryEnv` has not been run under `env_server.mjs` / `train_ppo.py`; the
-  changes below are written down, not made. `MemoryEnv.demo` and `step()`
-  without blocks are untested (the latter is refused).
-- `carry` > 0 is tested for arithmetic only.
+  finish rate it buys on attempt 2 to 5, is not known. The trainer runs
+  (below); only smoke runs of a few updates were made.
+- No route-reference generalist exists yet (`rl/checkpoints/ppo_g2-1-route.pt`
+  is made by `ideas/g2-1-reference-free-inputs/train_route_generalist.sh`), so
+  route mode was smoke-tested on a network with fresh weights only.
+- `carry` > 0 is tested for arithmetic and for running (5 updates); its
+  effect on learning is unknown.
+- `MemoryEnv.demo` (imitation examples with a zero memory) is untested; the
+  trainer pads examples itself instead. `step()` without blocks is refused.
 - winter4 was not measured. The crash-repeat figures are 30 attempts in all.
-- The Node actor's extra cost is an estimate from the layer sizes.
+- `rl/rollout_child.mjs`, `scripts/search_rollout.mjs` and the other
+  searches cannot use a memory policy: they assume 352 (or 334) inputs. A
+  search would also need a memory that persists across its rollouts, which
+  is a design question, not a size change.
 - Design A was not built.
 
-## Changes needed elsewhere
+## Trainer changes (made 16 October 2026)
 
-`rl/env_server.mjs`
-1. Argument parsing rejects keys not in `DEFAULTS`: also accept `memory`,
-   `sessionMax`, `sessionSeed` (`MEMORY_DEFAULTS` in `memory_env.mjs`).
-2. Create `MemoryEnv.create(options)` instead of `RacingEnv.create(options)`
-   when `memory` is given. It has the fields and methods the server uses
-   (`cfg`, `line`, `human`, `state`, `reset`, `stepBlock`, `demo`, `save`,
-   `setReference`, `close`).
-3. Replace the constant `OBS_SIZE` by `renv.obsSize ?? OBS_SIZE` in three
-   places: the `ready` message, `loadActor` (`w1: take(hidden * obsSize)`) and
-   `rollout` (`obsOut` and its `set` offset). The actor code itself does not
-   change.
-4. In `rollout`, also return `sessionEnds` (a `Uint8Array`, 1 where
-   `r.info.sessionEnd`), and keep `info.attempt` in `episodes` for logging.
+All opt-in: without `memory` / `--memory` every file behaves exactly as
+before (checked, see below).
 
-`rl/polytrack_env.py`: `rollout()` to decode `sessionEnds` into
-`session_ends` (steps, N). Options already pass through as `key=value`.
+`memory_env.mjs`
+- Sizes from the environment: the observation is `renv.obsSize + 130`, so 482
+  with a human lap as reference and 464 with `reference: 'route'`
+  (`MEMORY_OBS_SIZE`, `MEMORY_OBS_SIZE_ROUTE`). Nothing assumes 352.
+- Route mode: the bins are on the route (`progressLine` = `renv.route ??
+  renv.line`), progress, lateral offset and the lookahead stretches all come
+  from the route, and a `refLaps` change of the human lap (which in route
+  mode only places the car) does not end the session.
+- Defect 2 of `tests/TESTING.md` fixed: when a `refLaps` switch is due at the
+  next `reset()` (human reference), the attempt ends its session and is
+  flagged `sessionEnd`. All 115 checks of `tests/run_tests.mjs` pass.
 
-`rl/train_ppo.py`
-1. Arguments `--memory`, `--session-max`, passed to `PolytrackVecEnv`. `Agent`
-   already takes its input count from the environment, so the network needs
-   nothing.
-2. To start from the generalist: `python rl/extend_checkpoint_inputs.py
-   rl/checkpoints/ppo_blkgen.best2.pt rl/checkpoints/g2-5-mem.pt --obs-size
-   482`, then `--resume` (that script does what
-   `MemoryAgent.from_checkpoint` does).
-3. `--bc-data` examples are 352 wide: pad them with 130 zeros when the
-   environment reports 482 (a human lap is a first attempt).
-4. Optional `--carry`: call `session_advantages` in place of
-   `compute_advantages`.
-5. The progress line: finish rate by `info["attempt"]` (1, 2, 3, 4+) instead
-   of one number, or the effect of the memory cannot be seen during training.
+`rl/env_server.mjs`: accepts `memory`, `sessionMax`, `sessionSeed`; with
+`memory` given (1, or 0 for the zero baseline) it holds a `MemoryEnv`; the
+memory module is not even imported otherwise. `sessionSeed` defaults to the
+server's `seed`, so the 16 servers of a run draw different session lengths.
+The ready line gains `memory: {on, size, baseObsSize, sessionMax}`; a rollout
+reply gains `sessionEnds`, taken from the NEXT reset's `info.attempt === 1`
+(exact whatever cleared the memory); each episode's info has `attempt`.
 
-`rl/evaluate.py`, `scripts/eval_generalist.sh`: evaluate in sessions (what
-`attempts.mjs` does), not single attempts.
+`rl/polytrack_env.py`: `rollout()` returns `session_ends` (steps, N) for a
+memory server.
 
-`rl/rollout_child.mjs`, `scripts/search_rollout.mjs`: read the input count
-from the weights file or an option instead of `OBS_SIZE`, if a memory policy
-is to be used in the search. `ideas/shared/policy.mjs` already takes
-`obsSize`. `rl/export_actor.py` works as it is.
+`rl/train_ppo.py`: `--memory 0|1`, `--session-max` (6), `--carry` (0; needs
+`--memory`). `session_advantages` now lives there (one copy;
+`memory_agent.py` re-exports it) and is used only when `--carry` > 0. The
+progress line gains `finished by attempt 1:a/b 2:.. 3:.. 4+:..` over the
+last 100 attempts of each number (part-way starts included). `--bc-data`
+examples of the plain width are padded with 130 zeros. Resuming a plain
+checkpoint into a memory run stops with the `extend_checkpoint_inputs.py`
+command to run. Checkpoints record `memory`, `session_max`, `carry`.
 
-`rl/racing_env.mjs`: nothing. If the wrapper is folded in later, the memory
-belongs beside `failures` (same lifetime: cleared in `setReference`).
+`rl/extend_checkpoint_inputs.py`: unchanged code (it reads the old size from
+the checkpoint); docstring gives both widenings. Measured: 352 -> 482 from
+`ppo_blkgen.best2.pt`, largest output difference actor 5.7e-06, critic
+1.7e-05 on 4096 random inputs; 334 -> 464 (a fresh route network), 2.4e-07
+and 8.3e-07. The reference is kept in the widened file.
+
+`rl/evaluate.py`: drives a memory checkpoint (recorded `memory`, or 130 more
+inputs than the plain size) in a memory environment; one run is attempt 1.
+
+`attempts.mjs`: takes 482, 352, 464 or 334-input policies and builds the
+matching environment (`reference=` overrides the guess from the size).
+
+`rl/export_actor.py`: works as it is (482 and 464 checked).
+
+## What was checked
+
+- Default mode unchanged: `ideas/g2-1-reference-free-inputs/g2-1-default_mode_check.mjs`
+  recorded on the files before these changes and compared after: SAME on all
+  parts (1521 block decisions with every start kind, 803 old-scheme steps,
+  435 demo decisions, mark/rewind, the server's start-up line). Also the
+  server's full ready line and two 400-decision `rollout` replies in default
+  mode with `ppo_blkgen.best2`, hashed before and after: identical.
+  `npm test` passes.
+- Server with memory, 2 x 1500 decisions on desert3, `failureStart` 0.5,
+  `kick` 0.3, `ownStart` 0.5, `refLaps` 10 with `refEvery` 3 (to force
+  switches): human reference, 482 inputs, attempt numbers `1 2 3| 1 2| 1 2|
+  ... 1 2 3 4| ...` (sessions cut short by the switches, as they should be);
+  route reference, 464 inputs, `1 2 3 4| 1 2| 1 2 3| 1 2| 1 2 3 4 5| ...`
+  (not cut by `refLaps`). In both, `sessionEnds` agreed with `MemoryEnv`'s own
+  flag on every attempt (0 disagreements), and session ends fell only on
+  attempt ends.
+- Smoke training, 3 simulators, CPU, 5 updates of 768 decisions: human
+  reference from the widened `ppo_blkgen.best2` with `--carry 0.5` and
+  padded `--bc-data`: ran, 481 decisions/s, last line `finished by attempt
+  1:6/7 2:3/3 3:2/3 4+:1/3`. Route reference from a fresh 464-input network:
+  ran, 419 decisions/s, `1:0/16 2:0/11 3:0/6 4+:0/8` (an untrained network
+  stalls). `train_memory.sh` with `ENVS=3` and a few thousand steps into a
+  scratch folder: widened, trained a stretch, and a second call started
+  stretch 2 from the save. `export_actor.py`, `evaluate.py` (desert3, attempt
+  1) and `eval_memory.sh` (desert3, 2 sessions of 3) ran on the result.
 
 ## What a full run would cost
 

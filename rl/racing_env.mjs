@@ -258,9 +258,110 @@
 //                   while over a stretch where the human was on the ground:
 //                   over an open edge, or outside the barriers
 //     'time limit'  `maxTicks` reached (default: twice the human's lap time)
+//
+// ---------------------------------------------------------------------------
+// ROUTE MODE (option reference: 'route'; the default is 'human', everything above)
+//
+// Everything above measures the car against a HUMAN lap: the observation
+// shows the human's line, speeds, orientation and keys, progress is counted
+// along that line, and the episode ends when the car strays from it. So no
+// model trained here can drive a track that has no human lap. Route mode
+// swaps all of that for the ROUTE of ideas/g2-1-reference-free-inputs/: a
+// path from the start through every gate to the finish, found from the
+// track's geometry alone (route.mjs), with progress measured along it
+// (progress.mjs) and a 334-number observation built on it (observation.mjs,
+// whose header has the layout). Entries 0..16, 101..103, 144, 145 and the 17
+// rays mean what they mean above; OBS_INDEX is the same.
+//
+// What changes, and why (the reasons are in that folder's README):
+//   observation   observation.mjs, OBS_SIZE_ROUTE = 334 numbers
+//   progress      along the route, fenced by the game's own gate counter
+//   reward        paceReward is 0: the pace term divides by the human's
+//                 speed, and there is none. The blocked-lane cost is OFF
+//                 (lanePenalty 0): it predicts the road ahead by shifting
+//                 the room beside the line by how far the car is off it,
+//                 which only holds within a few units of the line; the
+//                 route cuts every corner tight and a fast car is 15 to 35
+//                 units off it on an open floor, where that shift said "15
+//                 units beyond the edge" for a car in the middle of the
+//                 floor. The steering costs use the route's straightness.
+//   'off line'    more than maxOffRoute (110) units from the route, on the
+//                 ground or in the air. 20 or 40 would end correct driving.
+//                 The g2-1 README suggested about 80; measured on the first
+//                 three human laps of every track in this environment
+//                 (ideas/g2-1-reference-free-inputs/g2-1-human_laps_in_route_env.mjs)
+//                 the humans are up to 56 units from the route on 13 tracks,
+//                 79 on summer5, 86 on summer7 and 104 on desert2, so 80 would
+//                 cut off every human lap of summer7 and desert2. With 110,
+//                 46 of the 51 laps pass every rule here; the other five are
+//                 on the two tracks whose routes go another way than the
+//                 humans: summer4 (530 units off, cut at 8.4 s) and two of
+//                 desert5's three (stalled at 26.2 s; 156 units off).
+//   'off track'   ALL FOUR wheels down, the route on the road at the nearest
+//                 point, and no surface within 2 units under the car
+//                 (progress.mjs at.overRoad), for more than offTrackTicks ms
+//                 (default 0: at once). This also ends a car driving on the
+//                 world's ground beneath a raised road, where progress along
+//                 the route would otherwise keep counting
+//                 (ideas/g2-1-reference-free-inputs/tests, defect 1).
+//                 Why all four: with ONE wheel down the human laps show "no
+//                 road under the car" for up to 190 ms (a wheel on a kerb or
+//                 an edge, the centre of the car over the side); with all
+//                 four, 0 ms on all 51 human laps measured. In the air the
+//                 rule says nothing: a car that hops a bump has no road within
+//                 2 units under it for a moment.
+//   'time limit'  route length / routeSpeed (30 units per second) unless
+//                 maxTicks is given. That is 2 to 3.5 times a human lap.
+//   the finish    progress stops finishHold (20) units short of the route's
+//                 end until the game counts the finish, and a car more than
+//                 missedFinish (10) units beyond the route's last point with
+//                 no finish is cut off as 'off line'. Why: every route ends
+//                 within 2.2 units of the finish box (all 17 tracks), but
+//                 progress is "nearest route point", so a car that passed
+//                 the finish line BESIDE the box was credited the whole
+//                 route. The off-policy learner (g1-6, paid progress only)
+//                 found this on desert4 in route mode: for at least 1.2 s
+//                 before the end it drove straight on 17 to 46 units left of
+//                 the route, off the road's edge, and flew past the line 38
+//                 units from the box's centre (the box is 38 wide), at
+//                 progress 1984 of 1984; then off-route grew until the
+//                 110-unit cut-off, 0.8 s later. Over 12M decisions 80 to 97
+//                 of every 100 episodes ended so ('off line' at 100%).
+//                 Finishing paid nothing more than that. Human laps cross
+//                 the finish 0 to 2.3 units short of the route's end and at
+//                 most 2.1 past it (winter2, whose route stops 2.2 units
+//                 before the box), so 10 cuts off no human lap; 20 is held
+//                 back over the last 0.15 s of a human lap, and paid at the
+//                 finish by the usual top-up.
+//   starts        on an official track the human lap is still loaded, ONLY
+//                 to place the car: part-way starts (randomStart,
+//                 failureStart, kick), the ladder of save states, demo() and
+//                 its labels. The agent never sees it and is not scored
+//                 against it. On a track with no human lap, every episode
+//                 starts on the start line (ownStart still works).
+//
+// GENERATED TRACKS (ideas/g2-2-track-generator). `track` may be the path of
+// a generated .track.json file (from the project root, or absolute) instead
+// of an official name; sim/env.mjs loadTrack reads it. What that changes:
+//   route mode    no human lap exists, so every episode starts on the start
+//                 line (part-way starts, the ladder, kicks and failure
+//                 starts need a lap to place the car) and refLaps is set to
+//                 0. ownStart still works. With refFile, that lap places the
+//                 car as a human lap would.
+//   human mode    the reference is the scripted follower's lap beside the
+//                 track (<name>.lap.json, written by drive_folder.mjs), or
+//                 refFile. refLaps is set to 0: there is only one lap. The
+//                 follower drives at about 110 km/h down the middle of the
+//                 road, so its line and speeds are a poor reference for
+//                 pace (g2-2 README); route mode is the intended use.
+//   save()        names the run file after the track's base name.
+// An official name never ends in ".track.json", so nothing here can change
+// what an official track does.
+// The route modules are loaded only in route mode (a dynamic import in
+// create()), so the default mode does not even load them.
 import { writeFileSync, mkdirSync } from 'node:fs';
-import { Env, loadTrack } from '../sim/env.mjs';
-import { decodeState } from '../sim/state.mjs';
+import { Env, loadTrack, isTrackFile, trackLabel, trackFilePath } from '../sim/env.mjs';
+import { decodeState, stateImpulseCount } from '../sim/state.mjs';
 import { readFileSync } from 'node:fs';
 import { loadHumanLap } from '../sim/drive.mjs';
 import { buildLine, nearestIndex, lineStraightness, SPACING } from '../sim/line.mjs';
@@ -316,6 +417,13 @@ const RAY_DIRECTIONS = (() => {
   return out;
 })();
 export const OBS_SIZE = OBS_RAYS + RAY_DIRECTIONS.length + 1;
+/** Length of the observation in route mode (OBS_SIZE in
+ *  ideas/g2-1-reference-free-inputs/observation.mjs). Written out here so that
+ *  code which only needs the number does not load the route modules;
+ *  create() checks it against that file. */
+export const OBS_SIZE_ROUTE = 334;
+/** Where the route modules are, from this file. */
+const ROUTE_DIR = '../ideas/g2-1-reference-free-inputs/';
 /** S held, and "W and S are read now" (the two entries before that block). */
 export const OBS_S_HELD = OBS_REF - 2, OBS_PEDAL_OPEN = OBS_REF - 1;
 /** The entries the Python side reads directly (see _observe): W minus S and
@@ -349,6 +457,13 @@ const LADDER_STEP = 250;
  *  when the ladder is rebuilt, and with it the training runs. An episode
  *  here is at most twice a lap, far less than the 999,999 ticks of margin. */
 const CAR_TICK_BUDGET = 5_000_000;
+/** The game's own limit is 6,000,000 (it refuses past 5,999,999). The budget
+ *  above is checked against the ticks the episodes USED; this one against
+ *  the game's counter, which also holds the ticks a one-message block
+ *  simulated after its episode had ended (see _stepBlockOneMessage). Only a
+ *  run whose episodes nearly all end within a block or two could reach it
+ *  before the budget above. */
+const CAR_HARD_LIMIT = 5_900_000;
 
 /** Defaults for everything that can be set per environment. */
 export const DEFAULTS = {
@@ -423,6 +538,42 @@ export const DEFAULTS = {
   kick: 0,
   finishBonus: 5,          // for finishing at all
   timeBonusPerSecond: 2,   // per second left before maxTicks at the finish
+  // 0: do not work out the reward at all; every step reports reward 0.
+  // For a learner that makes its own (ideas/g1-6-offpolicy-rl/iqn_server.mjs
+  // pays progress along the line, read from renv.progress, and used to throw
+  // this reward away). Skips the pace, contact, key-press, lane and finish
+  // terms, and the full decode of every tick that only the contact penalty's
+  // impulse sum needed: whether the body touched anything (an input of the
+  // observation) is read from each state's impulse count instead. Episode
+  // ends, observations and lap times are unchanged; checked against a trace.
+  // Measured saving: see that file's header. 1 (default) = as before.
+  shapedReward: 1,
+  // CRASH END (off by default). With crashEnd 1 an episode also ends, as
+  // 'crashed', at the end of the 10 ms step in which the car either
+  //   - lost more than half its speed within 250 ms (speed below
+  //     crashSpeedRatio x the most it had in the last crashWindowTicks ticks,
+  //     when that most was at least crashMinKmh), or
+  //   - took a body impulse of crashImpulse or more on one tick.
+  // Why: an attempt that hits a wall stops dead, and was only ended by the
+  // stall clock 2 s later ('stalled'), or later still if it crept on. For a
+  // search those 2 s are pure cost: on winter4, 11 of 12 failed attempts of
+  // the generalist were wall hits that drove 2.0 to 6.4 s more before ending.
+  // Thresholds from measurements (scratch scripts, 17 October 2026):
+  //   human laps 0..2 of all 17 tracks (51 laps): speed never fell below
+  //     0.708 of its 250 ms peak (summer7; 0.815 within 100 ms), and the
+  //     largest one-tick body impulse was 3,074 (summer1, a deliberate wall
+  //     touch; most tracks 0). None of the 51 laps is cut by the rule
+  //     (checked through demo(), which drives the human's keys tick by tick).
+  //   the generalist on winter4, desert3, summer3 (36 sampled attempts, 30
+  //     failed): in 27 of the 30 failures speed fell to 0.08 to 0.48 of its
+  //     250 ms peak, with impulses of 5,800 to 38,000 on the same tick.
+  // Off (0) leaves everything exactly as before; the per-tick watch is not
+  // even run.
+  crashEnd: 0,
+  crashSpeedRatio: 0.5,
+  crashWindowTicks: 250,
+  crashMinKmh: 60,
+  crashImpulse: 10000,
   // Decisions per block for stepBlock() (see BLOCK DECISIONS at the top).
   // 0 = the agent drives with step(), one action per decision, as before.
   // With a block, W and S are free on every decision inside it (pedalEvery
@@ -460,6 +611,30 @@ export const DEFAULTS = {
   // never seen, that is exactly the wrong habit, so multi-track training
   // switches it off and the agent has to go by the line ahead of it.
   lapFraction: 1,
+  // What the agent is shown and measured against (see ROUTE MODE at the top):
+  // 'human' (a human lap, everything above) or 'route' (the track's own route,
+  // no human lap in the observation or the reward).
+  reference: 'human',
+  // Route mode only. Distance from the route, in units, at which an attempt
+  // is cut off ('off line'); see ROUTE MODE for why it is 110 and not 20.
+  maxOffRoute: 110,
+  // Route mode only. The time limit, when maxTicks is not given, is the
+  // route's length divided by this many units per second.
+  routeSpeed: 30,
+  // Route mode only. 'off track' ends the episode once the car has had all
+  // four wheels down with no road under it for MORE than this many ticks (ms)
+  // in a row. 0 = at the first step that shows it.
+  offTrackTicks: 0,
+  // Route mode only (see "the finish" under ROUTE MODE). Progress along the
+  // route stops this many units short of its end until the finish is
+  // counted, so crossing the line pays them (0 = the behaviour before
+  // 18 October 2026, when passing beside the finish paid the same as
+  // finishing).
+  finishHold: 20,
+  // Route mode only. A car this many units beyond the route's last point
+  // with no finish counted has missed the finish and is cut off ('off
+  // line'). Infinity = never (the behaviour before 18 October 2026).
+  missedFinish: 10,
 };
 
 // ---- small maths helpers ---------------------------------------------------
@@ -486,6 +661,15 @@ function quatMultiply(a, b) {
 /** One string per key combination, to compare two ticks' keys cheaply. */
 const controlsKey = (c) => `${+!!c.up}${+!!c.right}${+!!c.down}${+!!c.left}${+!!c.reset}`;
 
+/**
+ * Route mode's test for 'off track' at one moment (see ROUTE MODE at the top):
+ * all four wheels down, the route on the road at the nearest point, and no
+ * surface within 2 units under the car. `at` is progress.mjs's answer for
+ * `state`. step() ends the episode once this has held for more than
+ * cfg.offTrackTicks.
+ */
+export const routeOffRoad = (at, state) => at.grounded && state.wheelContact.every(Boolean) && !at.overRoad;
+
 // ---- the environment -------------------------------------------------------
 
 export class RacingEnv {
@@ -497,19 +681,112 @@ export class RacingEnv {
     const renv = new RacingEnv();
     const cfg = renv.cfg = { ...DEFAULTS, ...options };
     renv.env = await Env.create();
-    renv.track = loadTrack(cfg.track);
+    // createCar (route mode only, from JavaScript): a track given as
+    // { trackData, mountainVertices, mountainOffset } instead of by name, e.g. a
+    // community or generated track; cfg.track is then only its label.
+    if (options.createCar && cfg.reference !== 'route') throw new Error('createCar needs reference: "route" (there is no human lap for such a track)');
+    renv.track = options.createCar ?? loadTrack(cfg.track);
+    // Short name for file names (GENERATED TRACKS at the top): the name
+    // itself for an official track.
+    renv.trackName = trackLabel(cfg.track);
+    const generated = !options.createCar && isTrackFile(cfg.track);
+    if (generated) cfg.refLaps = 0; // one lap at most; data/laps has none for it
 
     if (cfg.block > 0) cfg.pedalEvery = 1;
-    renv.mesh = buildTrackMesh(renv.track.trackData);
+    if (cfg.reference !== 'human' && cfg.reference !== 'route') throw new Error(`reference must be 'human' or 'route', not '${cfg.reference}'`);
+    renv.route = null;                    // set in route mode only; every route branch below tests it
+    renv.obsSize = OBS_SIZE;
+    if (cfg.reference === 'route') await renv._setUpRoute();
+    else renv.mesh = buildTrackMesh(renv.track.trackData);
     renv.maxTicksOption = cfg.maxTicks;   // null unless the caller fixed it
     renv.references = new Map();          // lap number -> everything built from that lap
     renv.rng = createRng(cfg.seed);
-    await renv.setReference(cfg.refFile
+    const lap = cfg.refFile
       ? JSON.parse(readFileSync(new URL(`../${cfg.refFile}`, import.meta.url), 'utf8'))
-      : cfg.refLaps > 0 ? Math.floor(renv.rng() * cfg.refLaps) : cfg.refLap);
+      : generated && !renv.route ? renv._followerLap()
+        : cfg.refLaps > 0 ? Math.floor(renv.rng() * cfg.refLaps) : cfg.refLap;
+    if (!renv.route) await renv.setReference(lap);
+    else if (generated && !cfg.refFile) renv._noReference(); // no lap to place the car with
+    else {
+      // Route mode: the human lap only places the car (see ROUTE MODE at the
+      // top). A track with no lap at all still runs, from the start line.
+      try { await renv.setReference(lap); } catch (err) {
+        if (!/no (human )?lap|ENOENT/.test(err.message)) throw err;
+        renv._noReference();
+      }
+    }
     renv.done = true; // step() is refused until reset() has been called
     return renv;
   }
+
+  /**
+   * Route mode (see ROUTE MODE at the top): load the track's route (built once
+   * and cached by ideas/g2-1-reference-free-inputs/route_store.mjs; 2 to 15 s
+   * the first time, 15 ms after) and the observer that turns a car state into
+   * the 334-number observation. Also fixes the settings that have no meaning
+   * without a human lap: paceReward and lanePenalty are 0.
+   */
+  async _setUpRoute() {
+    const { cfg } = this;
+    const [{ loadTrackInfo }, { routeFor }, observation] = await Promise.all([
+      import('../ideas/shared/track_info.mjs'),
+      import(`${ROUTE_DIR}route_store.mjs`),
+      import(`${ROUTE_DIR}observation.mjs`),
+    ]);
+    // The layout must be what OBS_SIZE_ROUTE and OBS_INDEX promise: the
+    // Python side reads entries 15, 16, 103, 144 and 145 directly.
+    const o = observation;
+    if (o.OBS_SIZE !== OBS_SIZE_ROUTE || o.OBS_CONTACT !== OBS_INDEX.contact || o.OBS_S_HELD !== OBS_INDEX.sHeld || o.OBS_PEDAL_OPEN !== OBS_INDEX.pedalOpen) {
+      throw new Error('ideas/g2-1-reference-free-inputs/observation.mjs no longer matches OBS_SIZE_ROUTE / OBS_INDEX in rl/racing_env.mjs');
+    }
+    // By name for an official track, so the route is read from the cache
+    // file named after it; a track given as createCar is cached under its hash.
+    const info = loadTrackInfo(cfg.createCar ?? cfg.track);
+    this.route = routeFor(info);
+    if (!this.route.ok) throw new Error(`the route for ${cfg.track} does not reach every gate`);
+    // The same collision mesh RacingEnv builds in the default mode (loadTrackInfo
+    // builds it from the same track data); one copy serves the rays, the
+    // route's room measurements and the clearance table of the human line.
+    this.mesh = info.mesh;
+    this.observer = observation.createObserver(info, this.route, { lapFraction: cfg.lapFraction, minGap: cfg.minGap, gapSeconds: cfg.gapSeconds });
+    this.obsSize = OBS_SIZE_ROUTE;
+    // How straight the road is at each route point, for the steering costs,
+    // computed as for the human line; zero where the route flies.
+    this.routeStraight = lineStraightness(this.route, this.route.up);
+    for (let k = 0; k < this.route.points.length; k++) if (!this.route.grounded[k]) this.routeStraight[k] = 0;
+    cfg.paceReward = 0;
+    cfg.lanePenalty = 0;
+    this.offRoadSince = null;
+  }
+
+  /** Human mode on a generated track (GENERATED TRACKS at the top): the
+   *  scripted follower's lap written beside the track file. */
+  _followerLap() {
+    const file = trackFilePath(this.cfg.track).replace(/\.track\.json$/, '.lap.json');
+    try { return JSON.parse(readFileSync(file, 'utf8')); } catch (err) {
+      throw new Error(`${this.cfg.track}: the human reference needs the follower's lap ${file} (ideas/g2-2-track-generator/drive_folder.mjs), or use reference route (${err.code ?? err.message})`);
+    }
+  }
+
+  /** Route mode on a track with no human lap: nothing to place the car with,
+   *  so every episode starts on the start line (reset() checks this.human). */
+  _noReference() {
+    // No lap to switch to either: reset() would otherwise try to load lap n
+    // of data/laps/<track>.json every refEvery episodes.
+    this.cfg.refLaps = 0;
+    this.human = null;
+    this.humanControls = [];
+    this.routeIndexAtTick = new Int32Array(0);
+    this.cfg.maxTicks = this.maxTicksOption ?? this._routeTicks();
+    this.ladder = null;
+    this.ownStates = [];
+    this.failures = [];
+    this.lastCrashTick = null;
+    this.episodesOnReference = 0;
+  }
+
+  /** Route mode: the time limit when maxTicks is not given, in ticks (ms). */
+  _routeTicks() { return Math.round((1000 * this.route.length) / this.cfg.routeSpeed); }
 
   /**
    * Choose which human lap is the reference: -1 for the track's standard lap,
@@ -584,11 +861,27 @@ export class RacingEnv {
       // For the blocked-lane cost: 1 on straight or gently curving road,
       // falling to 0 only in a tight corner (radius 20 units or less).
       ref.openRoad = lineStraightness(line, ref.lineUp, { full: 0.05 });
+      if (this.route) {
+        // Route mode: for every tick of the human's lap, the ROUTE point the
+        // human had reached, so that a car placed part-way round (reset) has
+        // its route progress, and a crash site (a route point) can be turned
+        // back into a tick of the lap (failureStart). Followed with the
+        // route's own tracker, every 20th tick as above; it only moves
+        // forward, so the table only increases.
+        const tracker = this.observer.tracker;
+        const routeIndexAtTick = new Int32Array(run.states.length);
+        tracker.reset(0);
+        for (let t = 0, index = 0; t < run.states.length; t++) {
+          if (t % 20 === 0) index = tracker.update(decodeState(run.states[t])).index;
+          routeIndexAtTick[t] = index;
+        }
+        ref.routeIndexAtTick = routeIndexAtTick;
+      }
       this.references.set(lapNumber, ref);
     }
     Object.assign(this, ref);
     this.refLap = lapNumber;
-    this.cfg.maxTicks = this.maxTicksOption ?? 2 * ref.human.frames;
+    this.cfg.maxTicks = this.maxTicksOption ?? (this.route ? this._routeTicks() : 2 * ref.human.frames);
     // Things tied to the previous reference: its save states (the replay
     // above may also have replaced the car they belonged to), the agent's own
     // states, and the crash sites, which are line positions of the old line.
@@ -606,15 +899,27 @@ export class RacingEnv {
    * have to be worked out from how position and orientation changed.
    */
   async _advance(controls, n) {
-    const states = await this.env.step(controls, n);
+    this._absorb(controls, await this.env.step(controls, n));
+  }
+
+  /** The bookkeeping half of _advance: take in the `n` states produced
+   *  while `controls` were held (stepBlock's one-message path calls this per
+   *  slice, on its share of the block's states). */
+  _absorb(controls, states) {
+    const n = states.length;
     for (let k = 0; k < n; k++) this.controlsPerTick.push(controls);
+    if (this.cfg.crashEnd) this._watchCrash(states);
     const newest = decodeState(states[n - 1]);
     // Body contact during these ticks: on how many of them, and how hard in
     // total. A sliding scrape often reports contacts with zero impulse, which
     // is why the tick count is kept as well as the impulse sum.
     this.contactTicks = 0;
     this.contactImpulse = 0;
-    for (let k = 0; k < n; k++) {
+    if (!this.cfg.shapedReward) {
+      // Only the tick count is needed (the observation's contact input);
+      // the impulse sum feeds nothing but the reward. contactImpulse stays 0.
+      for (let k = 0; k < n; k++) if (stateImpulseCount(states[k]) > 0) this.contactTicks++;
+    } else for (let k = 0; k < n; k++) {
       const impulses = k === n - 1 ? newest.collisionImpulses : decodeState(states[k]).collisionImpulses;
       if (!impulses.length) continue;
       this.contactTicks++;
@@ -625,6 +930,34 @@ export class RacingEnv {
     // otherwise with the newest state of the previous call.
     this.older = n >= 2 ? decodeState(states[Math.max(0, n - 5)]) : (this.state ?? newest);
     this.state = newest;
+  }
+
+  /**
+   * CRASH END (see crashEnd in DEFAULTS): look at every tick for a collapse
+   * in speed or a hard hit, and remember the tick of the first one in
+   * this.crashTick. The peak speed over the last crashWindowTicks ticks is
+   * kept with a monotonic queue (ticks whose speed can no longer be the peak
+   * are dropped), so the watch costs a decode and a few comparisons per tick.
+   * _beginEpisode clears it, so a new start never inherits an old crash.
+   */
+  _watchCrash(states) {
+    const { cfg } = this;
+    const w = (this.crashWatch ??= { ticks: [], speeds: [] });
+    for (const u8 of states) {
+      const st = decodeState(u8);
+      const speed = Math.abs(st.speedKmh);
+      // Drop ticks that have left the window, then those slower than now.
+      while (w.ticks.length && w.ticks[0] <= st.frames - cfg.crashWindowTicks) { w.ticks.shift(); w.speeds.shift(); }
+      const peak = w.speeds.length ? w.speeds[0] : 0;
+      let impulse = 0;
+      for (const x of st.collisionImpulses) impulse += Math.abs(x);
+      if (this.crashTick == null && ((peak >= cfg.crashMinKmh && speed < cfg.crashSpeedRatio * peak) || impulse >= cfg.crashImpulse)) {
+        this.crashTick = st.frames;
+      }
+      while (w.speeds.length && w.speeds[w.speeds.length - 1] <= speed) { w.ticks.pop(); w.speeds.pop(); }
+      w.ticks.push(st.frames);
+      w.speeds.push(speed);
+    }
   }
 
   /**
@@ -687,7 +1020,11 @@ export class RacingEnv {
     for (const old of this.ownStates.splice(0)) this.env.dropState(old.handle);
     this.ownRestarts = 0;
     let startTick;
-    if (startFraction != null) {
+    // Line indices (route indices in route mode) reached by the human lap, per tick.
+    const indexAtTick = this.route ? this.routeIndexAtTick : this.humanIndexAtTick;
+    if (this.human == null) {
+      startTick = 0; // route mode on a track with no human lap: nothing to place the car with
+    } else if (startFraction != null) {
       startTick = Math.floor(Math.max(0, Math.min(0.95, startFraction)) * this.human.frames);
     } else if (this.rng() >= this.cfg.randomStart) {
       startTick = 0; // the start line
@@ -696,8 +1033,8 @@ export class RacingEnv {
       // a line index; find the first tick at which the human had reached it
       // (humanIndexAtTick only ever increases, so a binary search works) ...
       const failIndex = this.failures[Math.floor(this.rng() * this.failures.length)];
-      let lo = 0, hi = this.humanIndexAtTick.length - 1;
-      while (lo < hi) { const mid = (lo + hi) >> 1; if (this.humanIndexAtTick[mid] < failIndex) lo = mid + 1; else hi = mid; }
+      let lo = 0, hi = indexAtTick.length - 1;
+      while (lo < hi) { const mid = (lo + hi) >> 1; if (indexAtTick[mid] < failIndex) lo = mid + 1; else hi = mid; }
       // ... then back off by 1.5 to 4 seconds of the human's driving.
       startTick = Math.max(0, lo - Math.floor(1500 + 2500 * this.rng()));
     } else {
@@ -708,7 +1045,7 @@ export class RacingEnv {
     // _buildLadder). The game stops stepping a car after about 6 million
     // ticks of its own counter, which save states do not rewind, so well
     // before that we make a fresh car and rebuild the ladder for it.
-    if (!this.ladder || this.env.frames > CAR_TICK_BUDGET) await this._buildLadder();
+    if (!this.ladder || this._carUsedUp()) await this._buildLadder();
     // Keys held before the first decision: none on the start line; part-way
     // round, whatever the human was holding on the tick before the hand-over
     // (so that simply keeping W down is not charged as a key press).
@@ -726,7 +1063,7 @@ export class RacingEnv {
       await this._replayHuman(rung.tick, startTick);
       // We know which line point the human had reached by this tick. Start
       // the search a little before it; nearestIndex only looks forward.
-      this.progressIndex = Math.max(0, this.humanIndexAtTick[Math.max(0, startTick - 1)] - 5);
+      this.progressIndex = Math.max(0, indexAtTick[Math.max(0, startTick - 1)] - 5);
       if (startFraction == null && this.rng() < this.cfg.kick) await this._kick();
     }
 
@@ -744,6 +1081,8 @@ export class RacingEnv {
     this.stallProgress = this.progress;   // progress when the stall clock last restarted
     this.stallTick = this.state.frames;   // tick when it restarted
     this.episodeReward = 0;
+    this.offRoadSince = null;             // route mode: tick the car was first seen off the road (see step)
+    if (this.cfg.crashEnd) { this.crashWatch = null; this.crashTick = null; }   // see _watchCrash
     this.done = false;
     return { obs: this._observe(), info: this._info(null) };
   }
@@ -905,10 +1244,14 @@ export class RacingEnv {
   async demo(lap) {
     const { cfg } = this;
     const keys = toDense(decodeRecording(lap.recording), lap.frames);
-    if (!this.ladder || this.env.frames > CAR_TICK_BUDGET) await this._buildLadder();
+    if (!this.ladder || this._carUsedUp()) await this._buildLadder();
     for (const old of (this.ownStates ?? []).splice(0)) this.env.dropState(old.handle);
     // The untouched car, then the lap's first tick, so there is a state to observe.
     await this._restore(this.ladder.rungs[0]);
+    // With crashEnd on, demo() also leaves in this.crashTick the first tick of
+    // the lap at which the rule would have ended an attempt (null: none), so
+    // the rule can be checked against human laps.
+    if (this.cfg.crashEnd) { this.crashWatch = null; this.crashTick = null; }
     await this._advance(keys[0] ?? {}, 1);
     this.progressIndex = 0;
     this.contactTicks = 0;
@@ -931,7 +1274,11 @@ export class RacingEnv {
       // what those keys did (_blockLabel).
       const span = cfg.ticks * cfg.block;
       let before = [0, 0, 0];
-      for (let t = 1; t + span <= keys.length && this.state.finishFrames == null && this.offLine <= cfg.maxOffLineAir; t += span) {
+      // In route mode the lap stops being recorded where it is more than
+      // maxOffRoute from the route (summer4 and desert5, whose routes go
+      // another way than the humans; see the g2-1 README).
+      const maxOff = this.route ? cfg.maxOffRoute : cfg.maxOffLineAir;
+      for (let t = 1; t + span <= keys.length && this.state.finishFrames == null && this.offLine <= maxOff; t += span) {
         const label = this._blockLabel(keys, t, before);
         obs.push(...this._observe());
         actions.push(...label);
@@ -945,7 +1292,8 @@ export class RacingEnv {
       this.lastCrashTick = null;
       return { obs: Float32Array.from(obs), actions: Uint8Array.from(actions), count: actions.length / 6 };
     }
-    for (let t = 1; t + cfg.ticks <= keys.length && this.state.finishFrames == null && this.offLine <= cfg.maxOffLineAir; t += cfg.ticks) {
+    const maxOff = this.route ? cfg.maxOffRoute : cfg.maxOffLineAir;
+    for (let t = 1; t + cfg.ticks <= keys.length && this.state.finishFrames == null && this.offLine <= maxOff; t += cfg.ticks) {
       const left = mostly('left', t, t + cfg.ticks), right = mostly('right', t, t + cfg.ticks);
       let action = left ? 1 : right ? 2 : 0;
       if (this.decisions % cfg.pedalEvery === 0) {
@@ -1001,6 +1349,7 @@ export class RacingEnv {
     // ladder is rebuilt often.
     this.env.dropAllStates();
     this.env.reset(this.track); // a new car; snapshots of the previous car are now useless
+    this.overshootTicks = 0;    // see _carUsedUp
     this.ownStates = [];        // including the agent's own (their memory goes with the old car's base)
     this.controlsPerTick = [];
     this.state = this.older = null;
@@ -1021,7 +1370,8 @@ export class RacingEnv {
     // Back to the untouched car, then the human's lap with a rung every
     // LADDER_STEP ticks. Starts are never placed in the last 5% of the lap.
     await this._restore(rungs[0]);
-    const lastTick = Math.floor(0.95 * this.human.frames);
+    // (Route mode on a track with no human lap: no rungs; every start is the start line.)
+    const lastTick = this.human ? Math.floor(0.95 * this.human.frames) : 0;
     for (let tick = LADDER_STEP; tick <= lastTick; tick += LADDER_STEP) {
       await this._replayHuman(tick - LADDER_STEP, tick);
       rungs.push(await remember(tick));
@@ -1044,6 +1394,7 @@ export class RacingEnv {
    * and progress (distance along the line in units, with a fractional part).
    */
   _locate() {
+    if (this.route) return this._locateOnRoute();
     const { line, state } = this;
     const near = nearestIndex(line, state.position, this.progressIndex);
     this.progressIndex = near.index;
@@ -1069,8 +1420,51 @@ export class RacingEnv {
     this.lateral = lateral; // how far left of the line the car is (negative = right)
   }
 
+  /**
+   * Route mode's _locate (see ROUTE MODE at the top): the same quantities,
+   * measured along the route by progress.mjs. progressIndex stays the one
+   * place the position along the route is kept: the tracker is put back to
+   * it before every update, so every path that sets it (reset, ownStart,
+   * rewind, demo) works as it does for the human line. The tracker searches
+   * forward from there, over 60 points, and never past a gate the game has
+   * not counted. this.at keeps everything progress.mjs says (overRoad,
+   * height, ...) for the observation and the 'off track' test.
+   */
+  _locateOnRoute() {
+    const tracker = this.observer.tracker;
+    tracker.reset(this.progressIndex);
+    const at = this.at = tracker.update(this.state);
+    this.progressIndex = at.index;
+    this.offLine = at.offRoute;          // units from the route
+    this.progress = at.progress;         // units along the route; the route's length once finished
+    this.edgeLeft = at.edgeLeft;         // room to the road's edge, measured at the car by rays
+    this.edgeRight = at.edgeRight;
+    this.lateral = at.lateral;
+    // THE FINISH (see "the finish" under ROUTE MODE at the top). Until the
+    // game counts the finish, progress stops finishHold units short of the
+    // route's end, so crossing the line is what pays the last stretch; and
+    // pastEnd is how far beyond the route's last point the car is (along the
+    // route's direction there), for the missed-finish cut-off in step().
+    // The observation still reads the tracker's own numbers (this.at), so
+    // the network's inputs are unchanged.
+    const last = this.route.points.length - 1;
+    this.pastEnd = -Infinity;
+    if (this.state.finishFrames == null) {
+      this.progress = Math.min(this.progress, this.route.length - this.cfg.finishHold);
+      if (at.index === last) this.pastEnd = dot(sub(this.state.position, this.route.points[last]), this.route.forward[last]);
+    }
+  }
+
   /** Build the observation vector described at the top of this file. */
   _observe() {
+    // Route mode: the 334 numbers of observation.mjs, from the same car state,
+    // held keys, contact and pedal flags as below.
+    if (this.route) {
+      return this.observer.observe({
+        state: this.state, older: this.older, held: actionToControls(this.previousAction),
+        contact: this.contactTicks > 0, pedalOpen: this.decisions % this.cfg.pedalEvery === 0, at: this.at,
+      }).obs;
+    }
     const { line, state, older, cfg } = this;
     const q = state.quaternion;
     const obs = new Array(OBS_SIZE);
@@ -1169,7 +1563,7 @@ export class RacingEnv {
     return {
       frames: s.frames,                         // ticks since the start line (ms)
       progress: +this.progress.toFixed(2),      // units along the line
-      fraction: +(this.progress / this.line.length).toFixed(4),
+      fraction: +(this.progress / (this.route ?? this.line).length).toFixed(4),
       offLine: +this.offLine.toFixed(2),        // units from the line
       speedKmh: +s.speedKmh.toFixed(1),
       checkpoint: s.nextCheckpointIndex,
@@ -1186,20 +1580,36 @@ export class RacingEnv {
    */
   async step(action, { observe = true } = {}) {
     if (this.done) throw new Error('step() called on a finished episode; call reset() first');
-    if (!Number.isInteger(action) || action < 0 || action >= NUM_ACTIONS) throw new Error(`bad action ${action}`);
-    const { cfg } = this;
+    const plan = this._planStep(action, this.previousAction, this.decisions);
+    const before = this.progress;
+    await this._advance(plan.now, this.cfg.ticks);
+    return this._settleStep(plan, before, observe);
+  }
 
+  /**
+   * What a step with `action` will hold, given the action held before it and
+   * the number of decisions so far. Touches nothing, so stepBlock can plan a
+   * whole block before simulating any of it.
+   */
+  _planStep(action, previous, decisions) {
+    if (!Number.isInteger(action) || action < 0 || action >= NUM_ACTIONS) throw new Error(`bad action ${action}`);
     // Between pedal decisions, W and S stay as they were whatever was asked
     // for (see HOLDING KEYS at the top); only the steering part is taken.
-    const previous = this.previousAction;
-    if (this.decisions % cfg.pedalEvery !== 0) action = (action % 3) + 3 * Math.floor(previous / 3);
+    if (decisions % this.cfg.pedalEvery !== 0) action = (action % 3) + 3 * Math.floor(previous / 3);
     // Key changes against the previous decision, for the toggle cost below.
     const was = actionToControls(previous), now = actionToControls(action);
     const pedalChanges = (was.up !== now.up ? 1 : 0) + (was.down !== now.down ? 1 : 0);
     const steerChanged = action % 3 !== previous % 3;
+    return { action, previous, now, pedalChanges, steerChanged };
+  }
 
-    const before = this.progress;
-    await this._advance(now, cfg.ticks);
+  /**
+   * The rest of a step, once its ticks have been simulated and absorbed:
+   * where the car is, the reward, whether the episode ends. `before` is the
+   * progress before the step.
+   */
+  async _settleStep({ action, previous, pedalChanges, steerChanged }, before, observe) {
+    const { cfg } = this;
     this.previousAction = action;
     this._locate();
     const s = this.state;
@@ -1208,37 +1618,65 @@ export class RacingEnv {
     // scaled by pace: our speed against the human's at this point of the line.
     // The human's speed is floored at 30 km/h so the first metres off the
     // start line, where the human was nearly stationary, do not blow up.
-    const pace = cfg.paceReward ? Math.max(0, Math.min(cfg.paceCap, s.speedKmh / Math.max(30, this.line.speedKmh[this.progressIndex]))) : 1;
-    let reward = cfg.progressReward * (this.progress - before) * pace;
-    // Penalty for touching anything with the body during this step.
-    if (this.contactTicks > 0) {
-      reward -= cfg.contactPenalty * (this.contactTicks / cfg.ticks) + cfg.impulsePenalty * Math.log10(1 + this.contactImpulse);
+    // (shapedReward 0: none of this is worked out; the reward is 0.)
+    let reward = 0;
+    if (cfg.shapedReward) {
+      const pace = cfg.paceReward ? Math.max(0, Math.min(cfg.paceCap, s.speedKmh / Math.max(30, this.line.speedKmh[this.progressIndex]))) : 1;
+      reward = cfg.progressReward * (this.progress - before) * pace;
+      // Penalty for touching anything with the body during this step.
+      if (this.contactTicks > 0) {
+        reward -= cfg.contactPenalty * (this.contactTicks / cfg.ticks) + cfg.impulsePenalty * Math.log10(1 + this.contactImpulse);
+      }
+
+      // The cost of pressing and releasing keys.
+      const straight = (this.route ? this.routeStraight : this.straight)[this.progressIndex];
+      reward -= cfg.pedalTogglePenalty * pedalChanges;
+      if (steerChanged) reward -= cfg.steerTogglePenalty + cfg.steerStraightTogglePenalty * straight;
+      if (action % 3 !== 0) reward -= cfg.steerHoldPenalty * straight;
+      if (steerChanged && action % 3 !== 0 && previous % 3 !== 0) reward -= cfg.steerReversalPenalty;
+
+      // The cost of being in a lane that is blocked ahead.
+      if (cfg.lanePenalty > 0) reward -= cfg.lanePenalty * this._laneCost();
     }
-
-    // The cost of pressing and releasing keys.
-    const straight = this.straight[this.progressIndex];
-    reward -= cfg.pedalTogglePenalty * pedalChanges;
-    if (steerChanged) reward -= cfg.steerTogglePenalty + cfg.steerStraightTogglePenalty * straight;
-    if (action % 3 !== 0) reward -= cfg.steerHoldPenalty * straight;
-    if (steerChanged && action % 3 !== 0 && previous % 3 !== 0) reward -= cfg.steerReversalPenalty;
-
-    // The cost of being in a lane that is blocked ahead.
-    if (cfg.lanePenalty > 0) reward -= cfg.lanePenalty * this._laneCost();
 
     // Stall clock: restart it whenever the car has gained a full unit.
     if (this.progress >= this.stallProgress + 1) { this.stallProgress = this.progress; this.stallTick = s.frames; }
+
+    // Route mode's 'off track' (see ROUTE MODE at the top): all four wheels
+    // down, the route on the road here, and no road under the car, for more
+    // than offTrackTicks ticks in a row. offRoadSince is the tick of the
+    // first step of the current run that showed it.
+    let offRoad = false;
+    if (this.route) {
+      const bare = routeOffRoad(this.at, s);
+      if (!bare) this.offRoadSince = null;
+      else this.offRoadSince ??= s.frames - cfg.ticks;
+      offRoad = bare && s.frames - this.offRoadSince > cfg.offTrackTicks;
+    }
 
     let reason = null;
     if (s.finishFrames != null) {
       reason = 'finished';
       // Top the progress reward up to the full line so it is the same for
       // every finished lap, then add the bonus that depends only on the time.
-      reward += cfg.progressReward * (this.line.length - this.progress);
-      reward += cfg.finishBonus + cfg.timeBonusPerSecond * Math.max(0, cfg.maxTicks - s.finishFrames) / 1000;
+      if (cfg.shapedReward) {
+        reward += cfg.progressReward * ((this.route ?? this.line).length - this.progress);
+        reward += cfg.finishBonus + cfg.timeBonusPerSecond * Math.max(0, cfg.maxTicks - s.finishFrames) / 1000;
+      }
+    } else if (this.route) {
+      // A car more than missedFinish units beyond the route's end without
+      // the finish counted went past the line beside (or over) its box:
+      // ended as 'off line', since it has left the route for good.
+      if (this.offLine > cfg.maxOffRoute || this.pastEnd > cfg.missedFinish) reason = 'off line';
+      else if (offRoad) reason = 'off track';
+      else if (cfg.crashEnd && this.crashTick != null) reason = 'crashed';
+      else if (s.frames - this.stallTick > cfg.stallTicks) reason = 'stalled';
+      else if (s.frames >= cfg.maxTicks) reason = 'time limit';
     } else if (this.offLine > (this.line.grounded[this.progressIndex] ? cfg.maxOffLine : cfg.maxOffLineAir)) reason = 'off line';
     // Beyond the road's edge. Only judged where the human was on the ground:
     // in the air there is no road to be beside.
     else if (this.line.grounded[this.progressIndex] && Math.min(this.edgeLeft, this.edgeRight) < -cfg.edgeMargin) reason = 'off track';
+    else if (cfg.crashEnd && this.crashTick != null) reason = 'crashed';
     else if (s.frames - this.stallTick > cfg.stallTicks) reason = 'stalled';
     else if (s.frames >= cfg.maxTicks) reason = 'time limit';
 
@@ -1247,7 +1685,7 @@ export class RacingEnv {
     // Remember where the car came to grief, for failureStart (see reset()).
     // Running out of time is not a crash, so it is not recorded. Keep the
     // last 40, so the list follows the agent as it gets past old trouble spots.
-    const crashed = reason === 'off line' || reason === 'stalled' || reason === 'off track';
+    const crashed = reason === 'off line' || reason === 'stalled' || reason === 'off track' || reason === 'crashed';
     if (crashed) {
       this.failures ??= [];
       this.failures.push(this.progressIndex);
@@ -1285,16 +1723,108 @@ export class RacingEnv {
     // What each control is doing as the block begins.
     const before = this.previousAction;
     const steerBefore = before % 3, wBefore = Math.floor(before / 3) % 2, sBefore = before >= 6 ? 1 : 0;
-    let reward = 0, r;
+    const actions = [];
     for (let slice = 0; slice < this.cfg.block; slice++) {
-      const action = (slice >= steerAt ? steer : steerBefore)
+      actions.push((slice >= steerAt ? steer : steerBefore)
         + 3 * (slice >= wAt ? w : wBefore)
-        + 6 * (slice >= sAt ? s : sBefore);
+        + 6 * (slice >= sAt ? s : sBefore));
+    }
+    return this._oneMessageOk() ? this._stepBlockOneMessage(actions) : this._stepBlockBySlice(actions);
+  }
+
+  /**
+   * ONE MESSAGE PER BLOCK. The block's slices are planned first (the keys a
+   * slice holds depend only on the decision and the slice before it, never on
+   * the car), sent to the simulator as one key schedule (Env.stepSchedule),
+   * and the 50 resulting states are then taken slice by slice through exactly
+   * the bookkeeping step() does. Results are identical to _stepBlockBySlice,
+   * number for number: checked on 9,000+ block decisions in default and route
+   * mode, every kind of start, and 12 policy laps that finish inside a block
+   * (ideas/g2-1-reference-free-inputs/g2-1-default_mode_check.mjs and a
+   * trace of states, observations, rewards, finish ticks and stored keys).
+   *
+   * Measured on desert4, random block decisions, while an 8-process search
+   * was running (about 88% CPU on 16 logical processors):
+   *   one process     1.81 ms per decision by slice, 1.40 ms in one message
+   *   eight processes 2,456 decisions per second by slice, 2,946 in one message
+   * (Earlier, on a busier machine, two agents measured 11.4 ms per decision
+   * by slice against 2.5 ms for one 50 ms step.)
+   *
+   * The one difference: when the episode ends in an early slice (a finish,
+   * a crash), the simulator has already run the rest of the block. Nothing
+   * reads that car's physics again before a reset() or rewind(), and both
+   * put it back from a save state (or build a new car). But the game's tick
+   * counter, Env.frames, is up to 40 ticks further on per episode end; see
+   * _carUsedUp for how that is kept from changing when a car is replaced,
+   * and for the one place it shows (g2-4's count of simulated ticks).
+   */
+  async _stepBlockOneMessage(actions) {
+    if (this.done) throw new Error('step() called on a finished episode; call reset() first');
+    const { cfg } = this;
+    const plans = [];
+    let previous = this.previousAction;
+    for (let k = 0; k < actions.length; k++) {
+      plans.push(this._planStep(actions[k], previous, this.decisions + k));
+      previous = plans[k].action;
+    }
+    const states = await this.env.stepSchedule(plans.map((p) => p.now), cfg.ticks);
+    let reward = 0, r;
+    for (let k = 0; k < plans.length; k++) {
+      const before = this.progress;
+      this._absorb(plans[k].now, states.slice(k * cfg.ticks, (k + 1) * cfg.ticks));
+      r = await this._settleStep(plans[k], before, false);
+      reward += r.reward;
+      if (r.terminated || r.truncated) {
+        // The simulator ran the rest of the block anyway; count those ticks
+        // apart, for _carUsedUp.
+        this.overshootTicks = (this.overshootTicks ?? 0) + (plans.length - k - 1) * cfg.ticks;
+        break;
+      }
+    }
+    return { ...r, obs: this._observe(), reward };
+  }
+
+  /**
+   * Time for a fresh car? When the ticks used by episodes pass
+   * CAR_TICK_BUDGET, exactly as before the one-message blocks: the ticks a
+   * block ran past the end of its episode (overshootTicks, at most 40 per
+   * episode) are left out, so a car is replaced after the same episode as
+   * it used to be (replacing it drops the agent's own save states, which
+   * changes later starts with ownStart). Env.frames itself does include
+   * them, since it is the game's counter: a caller that measures simulator
+   * work from it (ideas/g2-4-lookahead-driving's simTicks) sees up to 40
+   * more ticks per episode end than before. As a safeguard, the game's own
+   * limit is checked too (CAR_HARD_LIMIT).
+   */
+  _carUsedUp() {
+    return this.env.frames - (this.overshootTicks ?? 0) > CAR_TICK_BUDGET || this.env.frames > CAR_HARD_LIMIT;
+  }
+
+  /** The original way, one step() per 10 ms slice: five messages and five
+   *  waits per decision. Still used when ownStart would take a save state
+   *  inside the block (see _oneMessageOk). */
+  async _stepBlockBySlice(actions) {
+    let reward = 0, r;
+    for (const action of actions) {
       r = await this.step(action, { observe: false });
       reward += r.reward;
       if (r.terminated || r.truncated) break;
     }
     return { ...r, obs: this._observe(), reward };
+  }
+
+  /**
+   * Whether the block can go as one message. Not when ownStart would leave a
+   * save state behind after a slice other than the last: the simulator must
+   * be stopped at that tick to take it. Every OWN_SNAPSHOT_EVERY (100)
+   * decisions is a multiple of the 5 slices of a block counted from the
+   * episode's start, so in practice the save state falls after a block's
+   * last slice and this is always true; it is a guard, not a common case.
+   */
+  _oneMessageOk() {
+    if (!(this.cfg.ownStart > 0)) return true;
+    for (let k = 1; k < this.cfg.block; k++) if ((this.decisions + k) % OWN_SNAPSHOT_EVERY === 0) return false;
+    return true;
   }
 
   /**
@@ -1349,7 +1879,7 @@ export class RacingEnv {
     if (!/^[A-Za-z0-9_-]+$/.test(run)) throw new Error('run name may only contain letters, digits, "_" and "-"');
     const dir = new URL('../runs/', import.meta.url);
     mkdirSync(dir, { recursive: true });
-    const file = `${run}_${this.cfg.track}.json`;
+    const file = `${run}_${this.trackName ?? this.cfg.track}.json`;
     writeFileSync(new URL(file, dir), JSON.stringify({
       track: this.cfg.track,
       finishFrames,

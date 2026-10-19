@@ -8,6 +8,12 @@ after a shutdown. No round has been run with it: the practice step is an hour
 of GPU training, which was not allowed here. What was and was not exercised is
 listed below.
 
+**First real use, 16 to 17 October 2026:** one round on each of desert4,
+summer4, summer1 and winter2, launched by `scripts/queue_unfinished.sh`,
+about 40 minutes each with no "out of time" relaunch. Every step worked.
+Gains -10, -21, -13 and +11 ms (winter2 to 27.009 s); results in
+`results/<track>.txt`. Search-then-train has stalled on these tracks.
+
 ## Run it
 
 From the project root. One launch works on one track; run one launch per track
@@ -40,9 +46,11 @@ round picked and `lap=` all the laps searched so far; the driver verifies each
 and trains towards the fastest.
 
 Files: `rounds.mjs` (the driver), `lib.mjs` (every decision as a plain
-function), `laps_bc.py` (imitation examples from one or several laps),
-`ckpt_steps.py` (reads a checkpoint's step counter), `test_restart.mjs`,
-`smoke_real.mjs`.
+function), `laps_bc.py` (imitation examples from one or several laps, or
+from candidates files), `ckpt_steps.py` (reads a checkpoint's step
+counter), `test_restart.mjs`, `smoke_real.mjs`,
+`g1-3-train_on_candidates.sh` (search with near-best candidates kept,
+train towards them, test; see below).
 
 What a round writes:
 
@@ -146,6 +154,8 @@ elsewhere, and one is not:
   `rounds.mjs summer4 tag=x2 extraLaps=2 base=... lap=...`.
 - Not possible from outside: the thousands of finished candidates inside one
   search. They exist only in the memory of `search_rollout.mjs`; see below.
+  (Since 17 October 2026 `search_rollout.mjs keep=<ms>` writes them out; see
+  "Training towards near-best candidates". `rounds.mjs` does not use it.)
 
 ## What was tested
 
@@ -226,13 +236,90 @@ launch should print "N of 1220 updates done ... continuing".
    `demo()`, which is the right labelling (it marks "no change" slices), so
    the file should hold keys or go through `decisionsToKeys` in
    `ideas/shared/laps.mjs`.
+   **Done (17 October 2026)**, see "Training towards near-best candidates"
+   below: `search_rollout.mjs keep=<ms>`.
 4. **`rl/train_ppo.py --resume` continues the weights but not the run**:
    `--total-steps`, the learning-rate line, `--critic-warmup` and the
    `.u<update>.pt` names all count from the start of the process. A
    `--target-steps` (stop at this step count, schedule over the whole run)
    would replace `trainPlan` and the renaming here.
+   **Done (17 October 2026).** `--target-steps N` stops when the
+   checkpoint's step counter reaches N and lays the learning-rate line, the
+   imitation weight, `--critic-warmup` and the `.u<update>` names over the
+   whole run, which it records in the checkpoint (`target_run`: where it
+   began, its target, decisions per update). Relaunching with `--resume` and
+   the same options continues at the run's next update. Tested with a
+   12-update run (2 simulators x 16 decisions, target 384): one run straight
+   through, and one killed while saving at update 8 (its checkpoint still
+   held update 4) and relaunched. The relaunch printed "4 done, continuing at
+   update 5" and its learning rate, imitation weight and warm-up at updates
+   5 to 12 equalled the uninterrupted run's (3e-4 down to 2.5e-5; critic only
+   at 1 to 3 in both); both kept u4, u8, u12. Without the flag a 5-update
+   run gives the same log and bit-identical weights (final, u2, u4) as
+   before the change. `rounds.mjs` still uses `trainPlan`; switching it
+   over is not done.
 5. Minor: `rl/evaluate.py` always saves a 1.4 MB lap file; the driver deletes
    those of its own test attempts (`keepAttempts=1` keeps them).
+
+## Training towards near-best candidates (17 October 2026)
+
+Built, smoke-tested at toy size, **not run at full size**.
+
+- `scripts/search_rollout.mjs keep=30` also writes every different finished
+  lap within 30 ms of its final best to `runs/<out>_<track>.candidates.json`
+  (`{ track, best, keep, count, laps: [{ frames, decisions, recording }] }`,
+  fastest first; `recording` is the lap's keys in the game's string form,
+  through `decisionsToKeys`). Off by default. **Identity checked**: with the
+  clock replaced by one that advances 5 ms per reading (so the time per
+  section is a fixed number of rounds of candidates), the old script, the new
+  one without `keep` and the new one with `keep=30`, same seed (desert4,
+  `ppo_sr2_desert4.final`, 2 processes, 146 candidates), print the same
+  output line for line (plus the one "kept" line) and write the same lap,
+  21.986 s, key for key. That short search kept 15 laps between 21.986 and
+  22.015 s; 64 different decision lists were only 15 different key lists
+  (a switch slice means nothing when the control is already at its target),
+  so laps are told apart by keys. 6 of 6 laps checked pass Verify on their
+  stated tick.
+- `ideas/g2-4-lookahead-driving/drive.mjs keep=<ms> out=<name>` writes the
+  same kind of file from the finished attempts of all its seeds,
+  `runs/g2-4-<name>_<track>.candidates.json` (smoke: 3 laps of 4 seeds within
+  60 ms of 22.012 s). Without `keep` its output is unchanged (checked).
+- `laps_bc.py` takes such files next to lap files: each lap in one counts as
+  a lap, `--max-candidates N` takes the N fastest of each file, and a lap
+  whose keys equal one already taken is skipped (the search's best lap is in
+  its own file). With one lap file it still writes arrays identical to
+  `rl/checkpoints/bc_search_r1_desert4.npz` (checked); arguments are now
+  read with argparse, the same positional order as before.
+- `g1-3-train_on_candidates.sh <track>`: search with `keep`, examples from
+  the track's fastest verified lap plus the 50 fastest candidates, practice
+  on a copy of the latest picked checkpoint as `search_round.sh` does
+  (imitation 0.05, 2.5 M decisions, `--target-steps` so a relaunch continues
+  exactly), then ten sampled attempts (seeds 10 to 19) and one greedy for
+  `u800 u1000 u1200 final`. Every step is skipped when its result is there.
+  The header lists the settings.
+
+Smoke (`NAME=g1-3-candsmoke SEARCH_SECONDS=20 WORKERS=2 MAX_CANDIDATES=3
+STEPS=64 ENVS=2 ROLLOUT=16 DEVICE=cpu KEEP_EVERY=1 COPIES="u1 final" SEEDS="10
+11"`, base `ppo_sr2_desert4.final`, 94 s): search 21.972 s with 66 candidates
+kept, 2 628 examples from 4 laps, 2 updates of practice, 2 of 2 finishes for
+both copies (the policy is unchanged after 2 updates of critic warm-up).
+Relaunch: every step reported done, one deleted test attempt run again, the
+practice step said "nothing left to do" and left the checkpoint byte for
+byte. Interrupted practice (10 updates; the trainer killed after update 8):
+the relaunch continued at update 9 with learning rate 1e-05, the value the
+uninterrupted line gives there. Its kept copies and test files were removed
+afterwards.
+
+Full run, per track (the lead runs it; about 50 minutes):
+
+```
+cd C:\Users\Henry\Documents\GitHub\Polytrack-ML
+sh ideas/g1-3-search-train-rounds/g1-3-train_on_candidates.sh desert4
+```
+
+It starts from `base` in `work/<track>/state.json` (desert4:
+`g1-3-desert4-r1.c1220.pt`) and trains towards `best` there (desert4:
+21.880 s), unless `BASE=` / `BEST_LAP=` say otherwise.
 
 ## Cost of a full run
 

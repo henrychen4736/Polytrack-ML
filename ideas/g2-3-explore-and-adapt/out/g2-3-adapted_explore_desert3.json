@@ -1,0 +1,40 @@
+{
+ "track": "desert3",
+ "mode": "explore",
+ "actor": "rl/checkpoints/g2-3-adapt_desert3.actor.bin",
+ "seed": 1,
+ "humanFrames": 20302,
+ "lineLength": 1522,
+ "attempts": 1,
+ "lapsUsed": 1.029,
+ "wallSeconds": 1.2,
+ "cells": 71,
+ "frontier": 1,
+ "finished": true,
+ "finishFrames": 20878,
+ "verified": true,
+ "files": [
+  "runs/g2-3-adapted_desert3.json",
+  "runs/g2-3-adapted_desert3.recording.json"
+ ],
+ "log": [
+  {
+   "attempt": 1,
+   "laps": 1.029,
+   "kind": "greedy",
+   "level": 0,
+   "from": 0,
+   "fromLateral": 0,
+   "back": null,
+   "reached": 1522.5,
+   "reason": "finished",
+   "moved": true,
+   "endLateral": -3.11,
+   "endSpeed": 391.8,
+   "endTick": 20881,
+   "approachLateral": -2.5,
+   "approachSpeed": 387.9,
+   "frontier": 1
+  }
+ ]
+}

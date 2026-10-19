@@ -53,7 +53,7 @@ export function loadNet(file, outputs, obsSize = OBS_SIZE) {
   const b = obsSize + 2 + outputs;
   const hidden = Math.round((-b + Math.sqrt(b * b - 4 * (outputs - all.length))) / 2);
   if (hidden * hidden + b * hidden + outputs !== all.length) {
-    throw new Error(`${file}: ${all.length} values do not fit a network with ${obsSize} inputs and ${outputs} outputs (older checkpoint with fewer inputs? pass obsSize)`);
+    throw new Error(`${file}: ${all.length} values do not fit a network with ${obsSize} inputs and ${outputs} outputs (an older checkpoint with fewer inputs, or a route-reference one with 334 (OBS_SIZE_ROUTE)? pass obsSize)`);
   }
   let o = 0;
   const take = (n) => { const part = all.subarray(o, o + n); o += n; return part; };

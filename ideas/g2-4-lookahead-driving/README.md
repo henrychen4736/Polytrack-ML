@@ -45,7 +45,12 @@ node ideas/g2-4-lookahead-driving/drive.mjs winter4 actor=rl/checkpoints/ppo_blk
 node ideas/g2-4-lookahead-driving/drive.mjs winter4 actor=rl/checkpoints/ppo_blkgen.best2.actor.bin mode=plain sample=1 seeds=10..19
 ```
 
-All options are listed at the top of `drive.mjs`.
+All options are listed at the top of `drive.mjs`. `keep=<ms>` (with `out=`,
+added 17 October 2026, off by default) also writes every different finished
+lap of the attempts within that many ms of the fastest to
+`runs/g2-4-<out>_<track>.candidates.json`, which
+`ideas/g1-3-search-train-rounds/laps_bc.py` turns into imitation examples
+(only the fastest lap is verified; the others are not checked one by one).
 
 ## Test set
 

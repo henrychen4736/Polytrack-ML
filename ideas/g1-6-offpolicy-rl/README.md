@@ -8,9 +8,11 @@ costs. Every decision the simulators drive is reused about 32 times instead
 of PPO's 4, and the GPU learns while the simulators drive instead of waiting
 for them.
 
-**Status: the code runs end to end and its pieces are checked. No training
-run has been done, so there is no lap time and no evidence yet that it learns
-to drive.**
+**Status (17 October 2026): trained on desert4 for 39.2M decisions in six
+stretches (GPU, 6 simulators). Verified best lap 21.792 s against the human's
+21.750 s, reached at 21.2M; the last three stretches found nothing faster. `--resume` and
+`--save-laps` work at full size. Details: `docs/model-history.md` item 16.
+The sections below were written before any training run.**
 
 ## Files
 
@@ -173,8 +175,32 @@ None are required to run this. These would help:
    against 2.5 ms for one 50 ms step, on the busy machine. This would speed up
    `--slices 5` and, more to the point, every block-decision PPO run and
    search. Worth measuring on an idle machine first.
+   **Done (17 October 2026).** `stepBlock` now sends the block as one key
+   schedule (`Env.stepSchedule`, "key schedules" in `sim/worker_entry.mjs`)
+   and gets its 50 states back in one message; rewards and cut-offs are still
+   worked out per 10 ms slice, so results are identical number for number
+   (`g2-1-default_mode_check.mjs` and a trace of states, rewards, finish
+   ticks and stored keys over 9,000+ decisions, 12 finished laps included).
+   Measured on desert4 with an 8-process search running (about 90% CPU):
+   1.77 to 1.81 ms per decision before, 1.39 to 1.40 ms after with one
+   process (1.3 times faster); 2,404 to 2,456 decisions per second before,
+   2,905 to 2,946 after with eight (1.2 times). The 3 to 4 times expected
+   from the 11.4 ms measurement did not appear: here the five-message block
+   already cost 1.8 ms, and one 50 ms step 1.5 ms, so the simulator itself
+   is most of what is left.
 2. `rl/racing_env.mjs`: a reward switch that skips the shaped terms. The
    server discards them; the saving is small.
+   **Done (17 October 2026).** `shapedReward: 0` makes every step report
+   reward 0 and skips the pace, contact, key-press, lane and finish terms,
+   and the full decode of every tick the contact impulse sum needed (the
+   contact input is read from each state's impulse count instead).
+   `iqn_server.mjs` now sets it. With the same decisions, observations,
+   states, contact counts, episode ends and finish ticks are identical to
+   `shapedReward: 1` (3,000 decisions each on desert4 and winter2, slices 1
+   and 5, about 200 episode ends); the default leaves everything as before.
+   Saving, three alternating runs of 4,000 decisions each on desert4: 1.420
+   to 1.395 ms per decision with slices 1 (1.7%), 1.537 to 1.481 ms with
+   slices 5 (3.6%). The g1-6 tests pass (157 of 157).
 3. A reference-free ruler (g2-1's route) in place of the human's line, so the
    cut-off and `off track` rules stop depending on where the human drove.
 4. A ladder of save states from the agent's own best lap (`refFile` already

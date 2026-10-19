@@ -199,10 +199,11 @@ Each folder under `ideas/` has its own README with commands and numbers.
 1. Run the off-policy learner longer on desert4 and put its best lap through
    Verify. It is the first model here that looks able to beat the human by
    itself.
-2. Send one message per block decision instead of five in
-   `rl/racing_env.mjs`. Two measurements put a block decision at 11.4 ms
-   against 2.5 ms for a single 50 ms step on a busy machine; it needs
-   measuring on an idle one.
+2. ~~Send one message per block decision instead of five in
+   `rl/racing_env.mjs`.~~ Done 17 October 2026: identical results, 1.3
+   times faster with one process and 1.2 times with eight (1.8 ms to 1.4 ms
+   per decision, measured with a search running). The 11.4 ms measured
+   earlier was not reproduced; the simulator itself is most of the rest.
 3. Train a generalist on the inputs that need no human lap. Episodes must end
    when there is no road under the car, or the model will learn to drive on
    the ground beneath a raised road.

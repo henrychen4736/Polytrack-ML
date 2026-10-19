@@ -57,8 +57,17 @@ const onGridPlane = (v) => Math.abs(v / PART_SIZE - Math.round(v / PART_SIZE)) <
  *   width    distance from a to b
  *   pitch    rise of the surface per unit travelled outwards through the port
  *            (0 on a flat road, positive when leaving the part uphill)
+ *
+ * options.openCaps: a non-drivable triangle lying flat IN the port's own grid
+ * plane does not close the opening. Needed for the banked (tilted) road
+ * pieces 159 to 167: their raised edge lines end in small end caps standing
+ * in the end plane, and those caps were read as a kerb across the opening,
+ * so StraightTilted and the tilted turns lost one of their two ports. A wall
+ * across an opening stands in that plane too, so this is only used for the
+ * parts it was checked on (loadFeatureTable below), where the end found
+ * mirrors the other end of the same piece exactly.
  */
-export function derivePorts(vertices) {
+export function derivePorts(vertices, { openCaps = false } = {}) {
   const n = vertices.length / 9;
   const tri = (t) => [0, 3, 6].map((o) => [vertices[t * 9 + o], vertices[t * 9 + o + 1], vertices[t * 9 + o + 2]]);
 
@@ -81,7 +90,11 @@ export function derivePorts(vertices) {
       const k = edgeKey(p, q);
       if (isUp) edgeUse.set(k, (edgeUse.get(k) ?? 0) + 1);
       // A kerb side or wall standing on this edge: its third corner is above it.
-      else if (r[1] > Math.max(p[1], q[1]) + 0.3) risers.add(k);
+      // (openCaps: unless the triangle lies in a grid plane x or z = const.)
+      else if (r[1] > Math.max(p[1], q[1]) + 0.3) {
+        const inPlane = [0, 2].some((a) => Math.abs(p[a] - q[a]) < EPS && Math.abs(p[a] - r[a]) < EPS && onGridPlane(p[a]));
+        if (!(openCaps && inPlane)) risers.add(k);
+      }
     }
   }
 
@@ -165,6 +178,28 @@ export function loadPieceTable() {
     });
   }
   return tableCache;
+}
+
+/** The banked road pieces: StraightTilted, the four tilted turns, the long
+ *  S-bends' neighbours ToTiltedLeft / ToTiltedRight. */
+export const TILTED_IDS = [159, 160, 161, 162, 163, 166, 167];
+
+let featureCache = null;
+/**
+ * The piece table with the banked pieces' ports derived with openCaps (see
+ * derivePorts). Every other part type is the same object as in
+ * loadPieceTable(), so code that uses this table sees the same ports for
+ * them; loadPieceTable() itself is unchanged (check_pieces.mjs and the tests
+ * were measured with it).
+ */
+export function loadFeatureTable() {
+  if (featureCache) return featureCache;
+  featureCache = new Map(loadPieceTable());
+  for (const id of TILTED_IDS) {
+    const base = featureCache.get(id);
+    featureCache.set(id, { ...base, ports: derivePorts(base.vertices, { openCaps: true }) });
+  }
+  return featureCache;
 }
 
 /**

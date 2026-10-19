@@ -11,6 +11,12 @@ checkpoint tested best, which is often not the last one.
 Layout, the same as train_ppo.py writes and rl/env_server.mjs documents: the
 three actor layers in order, each as its weights (one row per unit) and then
 its biases, as float32.
+
+The line printed at the end also gives the observation size and the
+reference: a route-reference checkpoint (334 inputs, ROUTE MODE in
+rl/racing_env.mjs) must be run on an environment created with
+reference: 'route', and loadPolicy / loadNet (rl/policy.mjs) must be told
+obsSize 334 (OBS_SIZE_ROUTE in rl/racing_env.mjs).
 """
 import sys
 from pathlib import Path
@@ -34,4 +40,5 @@ np.concatenate(parts).astype(np.float32).tofile(out)
 # The Node side needs the hidden width to split the file into layers, and the
 # environment settings the policy was trained with.
 print(f"{out} hidden={saved['hidden']} ticks={saved['ticks']} block={saved['block']} "
-      f"pedalEvery={saved.get('pedal_every', 1)} lapFraction={saved.get('lap_fraction', 1)}")
+      f"pedalEvery={saved.get('pedal_every', 1)} lapFraction={saved.get('lap_fraction', 1)} "
+      f"obsSize={saved['obs_size']} reference={saved.get('reference', 'human')}")

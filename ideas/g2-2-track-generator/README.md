@@ -6,11 +6,27 @@ with its centre-line route (the generator knows where it put the road) and,
 once driven by the scripted follower here, a finishing lap. A generated track
 is a part list, so no geometry of Kodub's is stored in this folder.
 
-**Where it stands:** the generator, the encoder and the drivability test work.
-54 of 54 generated tracks driven were finished by the scripted follower.
-The tracks are narrow-road chains only (no wide roads, no jumps, no blocks),
-which is about a third of what the official tracks are built from; see
-"What is not done".
+**Where it stands (17 October):** the generator, the encoder and the
+drivability test work, and the training environment opens generated tracks.
+
+- Default tracks (narrow road, turns, ramps): 54 of 54 finished by the
+  scripted follower (section 3).
+- **Harder pieces, opt-in** (section 5): the whole track on the 31-unit wide
+  road, 51-unit wide sections, banked turns, and jumps (drop and kicker,
+  each with a measured speed window). 80 tracks, 16 per feature: 80 of 80
+  pass the structure checks, 80 of 80 are finished by the follower, and on
+  80 of 80 idea g2-1's route search reaches the finish (on all 26 tracks
+  with jumps it found exactly as many flights as there are jumps). Loops and
+  wall rides are not in.
+- **Training and testing on generated tracks** (section 6): a .track.json
+  path works wherever a track name does (RacingEnv in route mode,
+  env_server, train_ppo.py, evaluate.py), simulators can rotate through
+  more tracks than there are simulators, and a fixed set of 40 training + 10
+  test tracks is made by `g2-2-make_set.sh` (50 of 50 kept, 53 s). Smoke
+  runs only: no real training run yet.
+- Default behaviour is unchanged: the same seeds give the same 28 saved
+  tracks and routes, `g2-1-default_mode_check.mjs` gives the same trace,
+  `npm test` passes.
 
 ## Run it
 
@@ -28,11 +44,24 @@ node ideas/g2-2-track-generator/compare_g21.mjs                 # g2-1's route f
 # make a folder of tracks, then drive them to get a lap for each
 node ideas/g2-2-track-generator/generate.mjs --count 20 --seed 500 --length 600 --difficulty mixed --out ideas/g2-2-track-generator/tracks/sample
 node ideas/g2-2-track-generator/drive_folder.mjs --dir ideas/g2-2-track-generator/tracks/sample      # simulator
+
+# harder pieces (section 5)
+node ideas/g2-2-track-generator/generate.mjs --count 5 --seed 1 --length 800 --jumps 3 --banked 1 --wide-sections 2 --out <folder>
+node ideas/g2-2-track-generator/generate.mjs --count 5 --seed 1 --length 800 --wide --out <folder>
+node ideas/g2-2-track-generator/g2-2-feature_check.mjs --count 16 --shard 0/3   # simulator; with 1/3 and 2/3 alongside: 80 tracks in about 4 minutes
+node ideas/g2-2-track-generator/g2-2-jump_probe.mjs                             # simulator, 45 s: take-off speed against landing, gravity
+
+# the training set and the training (section 6)
+sh ideas/g2-2-track-generator/g2-2-make_set.sh                                  # 3 simulators, about 1 minute
+sh ideas/g2-2-track-generator/g2-2-train_route_on_generated.sh                  # 16 simulators, 4 stretches of about 2 h
+sh ideas/g2-2-track-generator/g2-2-eval_route_on_generated.sh rl/checkpoints/ppo_g2-2-route-gen.after_<steps>.pt
 ```
 
 `generate.mjs` options: `--count`, `--seed` (track k uses seed + k),
 `--length` (units of centre line, about metres), `--difficulty` (0 to 1, or
-`mixed` to spread the tracks from 0 to 1), `--flat` (no slopes), `--out`.
+`mixed` to spread the tracks from 0 to 1), `--flat` (no slopes), `--out`;
+and the features of section 5: `--wide`, `--wide-sections w`, `--banked w`,
+`--jumps w` (`features` in code).
 In code:
 
 ```js
@@ -53,6 +82,14 @@ const sim = await SimSession.create(track.createCar);     // or env.reset(track.
 | `smoke_test.mjs`, `control_test.mjs`, `bulk_check.mjs`, `compare_g21.mjs`, `drive_folder.mjs` | Tests and the batch driver |
 | `tracks/smoke/` | The 8 tracks of the last smoke test (rewritten on each run) |
 | `tracks/sample/` | 20 tracks, seeds 500 to 519, 600 units, difficulty 0 to 1, each with a lap |
+| `g2-2-features.mjs` | The harder pieces: wide-road composites, banked pieces, jump gaps and their speed windows (section 5) |
+| `g2-2-probe_pairs.mjs`, `g2-2-probe_triples.mjs` | The search for which placements of 2 or 3 parts make one piece of road |
+| `g2-2-jump_probe.mjs` | Flights measured on straight test tracks: take-off speed against landing, gravity |
+| `g2-2-feature_check.mjs` | Per feature: generate, structure checks, the follower, g2-1's route, and a control |
+| `g2-2-make_set.mjs`, `g2-2-make_set.sh` | The fixed training and test set (section 6) |
+| `g2-2-train_route_on_generated.sh` | Continues ppo_g2-1-route on the official tracks plus the generated set |
+| `g2-2-eval_route_on_generated.sh` | Ten attempts + greedy on the 10 generated test tracks and the 3 held-out official tracks |
+| `sets/` | Made by g2-2-make_set.sh; git-ignored (routes measured on Kodub's geometry, laps driven on it) |
 
 ## 1. The piece table
 
@@ -274,21 +311,178 @@ look like it. That teaches following a road; it does not teach speed.
 `buildRoute(loadTrackInfo(createCar))` already works on these tracks, and
 this folder's route is there as ground truth or as a cheaper substitute.
 
+## 5. Harder pieces (17 October)
+
+All opt-in through `features` (generate.mjs FEATURES; pieces and
+measurements in `g2-2-features.mjs`). With no features the generator is
+unchanged: the 28 saved tracks (`tracks/sample`, `tracks/smoke`) are
+regenerated from their options with the same track strings and the same
+routes.
+
+**How pieces of several parts were found.** A wide road is several parts
+side by side (a `StraightWide` is half a road, kerb on one side, open on the
+other). `g2-2-probe_pairs.mjs` and `g2-2-probe_triples.mjs` try every offset
+within 12 cells and every rotation of one part against another and keep
+placements whose ports mate and that leave exactly two openings. Their
+finds, written out as "composites" in `g2-2-features.mjs`:
+
+| Feature | Pieces | Width |
+| --- | --- | --- |
+| `wide` (whole track) | StraightWide pair, short and long wide turns (radius 40 and 60), five wide ramps; StartWide, CheckpointWide, FinishWide | 31.13 |
+| `wideSections` | ToWideMiddle with an OuterCornerWide each side (narrow to wide), Plane between two StraightWides | 51.13 |
+| `banked` | ToTiltedLeft / ToTiltedRight (lean in or out over 60 units, 24 degrees), StraightTilted, the four tilted turns (radius 30 to 90) | 11.13 along the lean |
+| `jumps` | a gap of 2 to 6 cells: off a flat edge onto road 1 or 2 levels lower, or off a SlopeUp/SlopeUpLong ("kicker") to its height or 1 lower; 3 straights to land on (6 after a kicker) | 11.13 |
+
+There is no piece between the standard road and the 31-unit road (the
+ToWideLeft + ToWideRight pair splits a 31 road into two narrow roads), so a
+`wide` track is wide from start to finish. No turn or checkpoint exists at
+51 units, so a section is a straight of 1 to 4 pieces. The chain matches
+widths and leans by requiring the entry's two corner points to land on the
+previous exit's (`place()`); pieces.mjs missed one end of StraightTilted and
+of the tilted turns (small end caps of the raised edge lines read as a kerb
+across the opening) and `loadFeatureTable()` re-derives those
+(`derivePorts(..., { openCaps: true })`; `loadPieceTable()` is unchanged).
+
+**Jumps need a speed window.** `g2-2-jump_probe.mjs` drives straight test
+tracks at fixed speeds (sim/controller.mjs, with and without S in the air):
+
+| Jump | Slowest that finished | Fastest tried that did not | Overshoot past the gap |
+| --- | --- | --- | --- |
+| drop 1 level, gap 4 cells | 90 km/h | 70 | 25 units at 228 km/h |
+| drop 2 levels, gap 6 | 110 | 90 | 34 units at 228 |
+| drop 2 levels, gap 8 | 130 | 110 | 24 units at 228 |
+| kicker, gap 4, to its height | 70 | 50 | 100 units at 190; over the 120-unit landing at 220 |
+| kicker, gap 8, to its height | 110 | 90 | 80 units at 190 |
+| kicker, gap 8, 1 level lower | 90 | 70 | 88 units at 190 |
+
+Gravity from 70 flights: 14.09 units/s^2 (median). S in the air made 1 to 3
+units of difference. From a standstill the car reaches 134 km/h in 40 units
+and 203 in 100 (W held). Each gap gets minKmh = 1.1 x the drag-free speed
+that carries it plus 2 units (99 km/h for drop 1 / gap 4, 104 for drop 2 /
+gap 6, 78 for the kicker over 4 cells: each between the measured pass and
+fail), maxKmh from 70% of the landing, and a target of about 1.25 x the
+minimum. Gaps whose minimum is over 140 km/h are left out (19 remain). A
+jump is only laid after 60 units of straight run-up.
+
+**The follower on jumps** (drive.mjs): over the 40 units before a take-off
+it holds the jump's target speed, whatever its speed scale; corner and crest
+limits are off over the gap and the 15 units before it; it holds S in the
+air; and the off-road rules wait while no wheel is down, then apply again,
+so a car that comes down on the ground below is caught. The route crosses a
+gap on the parabola at the target speed, and `route.air` / `route.jumps`
+mark it.
+
+**Results** (`g2-2-feature_check.mjs --count 16`, 3 shards, about 4 minutes;
+16 tracks per feature that contain it, 609 to 1249 units, difficulty 0 to 1):
+
+| Feature | Tracks | Structure ok | Follower finished | g2-1 route ok | Contains |
+| --- | --- | --- | --- | --- | --- |
+| wide | 16 | 16 | 16 | 16 | 333 wide pieces |
+| wideSections | 16 | 16 | 16 | 16 | 30 sections |
+| banked | 16 | 16 | 16 | 16 | 43 banked turns |
+| jumps | 16 | 16 | 16 | 16 | 25 jumps (11 kickers) |
+| mixed | 16 | 16 | 16 | 16 | 14 sections, 25 banked turns, 16 jumps (7 kickers) |
+
+All 80 finished at the first speed of the ladder. On all 26 tracks with
+jumps, g2-1's search (which knows nothing of this generator) found exactly
+as many flights as there are jumps. **Control:** the same 26 tracks driven
+with every jump's target at half its minimum: 24 were not finished (the car
+came down off the road). The two that still finished each have one 2-cell
+gap (minimum 54 and 43 km/h), where the follower did not get down to half
+of that in 40 units, or the margin on short gaps is wide; the check is
+therefore shown to fail on jumps of 3 cells and more, not on the shortest.
+
+How often: on 30 tracks of 800 units per setting, jumps 1 / 3 gave 9 / 25
+jumps; banked 1 / 2 gave 49 / 93 banked turns; wideSections 1 / 3 gave 22 /
+53 sections.
+
+**Loops and wall rides are not in.** Their parts (WallTrack*, parts stood on
+their side) have no ports pieces.mjs can find (it reads openings on vertical
+grid planes of an upright part), the follower steers in the horizontal plane
+only, and g2-1's route search prefers a flat turn-round to a banked wall (g2-1
+README). None of the three checks that make a generated track trustworthy
+would work on them, so they were not tried.
+
+## 6. Training and testing on generated tracks
+
+**Opening a generated track.** A path ending in `.track.json` (from the
+project root, or absolute) now works where a track name does:
+
+| Where | What changed |
+| --- | --- |
+| `sim/env.mjs` | `loadTrack(path)` reads the file; `isTrackFile`, `trackLabel` (base name), `trackFilePath` |
+| `ideas/shared/track_info.mjs` | `loadTrackInfo(path)`; `name` is the base name (a path longer than 40 characters used to be taken for a save string) |
+| `rl/racing_env.mjs` | route mode: no human lap, every episode starts on the start line (own-state restarts still work), `refLaps` set to 0; human mode: the follower's `.lap.json` beside the track is the reference; `save()` names the file after the base name (GENERATED TRACKS at the top of the file) |
+| `rl/env_server.mjs` | TRACK ROTATION (opt-in): `trackSet=a,b,c switchEvery=N`: one server drives several tracks in turn, switching every N episodes; each episode's info then has `track` |
+| `rl/polytrack_env.py` | `expand_tracks` (names, .track.json files, folders, .txt lists), `track_label`, `PolytrackVecEnv(track_sets=..., switch_every=...)` |
+| `rl/train_ppo.py` | `--track` items may be files, folders or a .txt list; `--rotate-every N`: with more tracks than `--envs`, environment k drives tracks k, k + envs, ... in turn; per-track counts by base name; a warning when tracks would go unused |
+| `rl/evaluate.py` | `--track <file>.track.json`; default checkpoint and run file by base name |
+
+Switching a server to another track costs 0.4 to 0.5 s onto a 600-unit
+generated track and 1.5 to 2.4 s onto desert4 (which also replays the human
+lap to build the ladder of part-way starts), measured with the route cached.
+Routes for generated tracks are built and cached by g2-1's route_store.mjs
+under the track's base name and hash, so `g2-2-make_set.sh` builds them once
+and training reads them in milliseconds (a RacingEnv on a set track was
+ready in 273 ms).
+
+**The set** (`g2-2-make_set.sh`, `sets/g2-2-set1/`): 40 training tracks
+(seeds 20000 + k: 10 plain, 5 wide, 5 wideSections, 5 banked, 5 jumps, 10
+mixed) and 10 test tracks (seeds 30000 + k: 2 plain and 2 of each feature
+but wide and wideSections, which have 1), difficulty 0 to 1, 600 to 1200
+units. Every kept track passed the structure checks, the follower and g2-1's
+route; a track of a feature kind must contain it. 50 of 50 kept in 53 s with
+3 simulators; the 9 replacements were all seeds whose track lacked its
+feature, none failed a check. The 40 training tracks hold 25 wide sections,
+32 banked turns and 21 jumps (11 kickers), plus the 5 wide tracks.
+
+**Training** (`g2-2-train_route_on_generated.sh`): continues
+`ppo_g2-1-route.pt` (copied to `ppo_g2-2-route-gen.pt` only if that is
+absent) with the settings of g2-1's training script, on 13 official tracks
+plus the 40 generated ones, 16 simulators rotating every 25 episodes, in
+stretches of 12M block decisions with the learning rate fading to 0 in each,
+restartable. The 13 are the 14 training tracks without summer4, whose route
+is wrong (g2-1 README); ppo_g2-1-route did not practise there either.
+`OFFICIAL=...` changes the list.
+
+**Testing** (`g2-2-eval_route_on_generated.sh <checkpoint>`): seeds 10 to 19
+and one greedy attempt on each of the 10 generated test tracks and desert3,
+summer3, winter4 (143 attempts). Run it on `ppo_g2-1-route.pt` too: that
+comparison says whether the generated tracks helped.
+
+**Smoke runs** (all with at most 3 simulators):
+- RacingEnv in route mode on a set track with 6 jumps: 334 inputs, time limit
+  37.5 s, every start on the start line or an own state; the same track in
+  human mode with the follower's lap as reference: 352 inputs.
+- `train_ppo.py --reference route` from a copy of `ppo_g2-1-route.pt`,
+  desert4 and 4 generated tracks (jumps, wide, banked, wide sections) on 3
+  simulators with `--rotate-every 2`: 4 updates with the imitation term,
+  then 50 updates (38 400 decisions, 86 s, 440 decisions/s). The per-track
+  line after update 50: desert4 13/19, the jump track 2/22, the wide track
+  0/30, the banked track 1/18, the wide-section track 4/22 (finished /
+  episodes, part-way and own-state starts included).
+- `evaluate.py` with `ppo_g2-1-route.pt` on two test tracks: both ran and
+  saved their attempts; neither finished (greedy on the plain one went over
+  a hill before the finish at 266 km/h and flew over the finish line, 7
+  units above it; sampled on the jump track ended 'off line' at 89%).
+
 ## What is not done or not tested
 
-- **Jumps, wide roads, blocks and planes, intersections, banked turns, wall
-  rides, loops.** The official tracks are mostly these (see section 1). A
-  generalist trained only on these chains will have seen narrow kerbed roads
-  and nothing else, so I would not expect this to close the gap to unseen
-  official tracks by itself. Wide roads are the obvious next family: their
-  ports are already in the table (two `StraightWide` side by side make a
-  31-unit road), but a wide road is two parts per step and needs its own
-  turns and narrowing pieces. Jumps need the minimum-speed question answered
-  first.
-- **No training run and no `RacingEnv` run on a generated track.** That needs
-  the change to `loadTrack` below, which I may not make. What was run:
-  `Env`, `loadTrackInfo`, the mesh and ray casts, the controller, record and
-  replay, and g2-1's route finder.
+- **No training run** beyond the smoke runs above, so whether generated
+  tracks help on the held-out official tracks is not known.
+- **Blocks and planes, intersections, wall rides, loops**: not generated
+  (section 5 for loops and wall rides). The official tracks are mostly blocks
+  and planes (section 1).
+- Jumps are on the standard road only; banked turns too; the wide track has
+  no jumps or banks. Kicker landings are flat road, not a down-ramp.
+- The jump windows are drag-free formulas checked at the six measured
+  points above, not measured per gap. The control does not fail on the
+  2-cell gaps.
+- Generated tracks have no lap that places the car part-way round in route
+  mode, so they are practised from the start line (and own-state restarts)
+  only. The follower's lap could be used for that (`refFile` works); it
+  was not, because it drives at about 110 km/h down the middle.
+- The export strings of feature tracks were not loaded in the real game.
 - **The export string has not been loaded in the real game.**
 - **Difficulty is not calibrated** against anything but the follower's pace.
 - **The follower is slow** and takes no racing line; its lap is a poor
@@ -303,17 +497,13 @@ this folder's route is there as ground truth or as a cheaper substitute.
 
 ## Changes needed elsewhere
 
-1. `sim/env.mjs` `loadTrack(name)`: accept a generated track, for example
-   when `name` ends in `.track.json`, read the file and return
-   `{ trackData, mountainVertices: new Float32Array(0), mountainOffset: { x: 0, y: 0, z: 0 } }`.
-   `RacingEnv.create` (`rl/racing_env.mjs` line 503) and the pool children
-   call `loadTrack(cfg.track)`, so this one change lets a path stand in for a
-   track name.
-2. `rl/racing_env.mjs` `save()` (line 1345) builds a file name from
-   `cfg.track`; with a path as the track it needs the base name.
-3. `rl/train_ppo.py` `--ref-file` is one file for every track. Training on a
-   folder needs one reference per track: for a `.track.json` track, default
-   `refFile` to the `.lap.json` beside it.
+Items 1 to 3 are done (17 October, section 6); for 3, in the human mode a
+generated track's reference is the `.lap.json` beside it, and route mode
+needs none.
+
+1. Done: `sim/env.mjs` `loadTrack` accepts a `.track.json` path.
+2. Done: `rl/racing_env.mjs` `save()` uses the base name.
+3. Done: one reference per track (above).
 4. Worth adding to `CONTRACT.md`: the simulator has drivable ground at
    height 0 (also reported by g1-7), so "fell off the road" is not "fell out
    of the world", and a progress measure that only looks at distance along a

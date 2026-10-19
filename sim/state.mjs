@@ -9,6 +9,15 @@ export const STATE_BYTES = 227;
 export const stateFrames = (u8) => u8[4] | (u8[5] << 8) | (u8[6] << 16);
 export const stateFinished = (u8) => (u8[11] & 2) !== 0;
 
+/** How many body-contact impulses this state holds (the count byte in front
+ *  of them), without decoding the rest. 0 = the body touched nothing on
+ *  this tick. The same number as decodeState(u8).collisionImpulses.length;
+ *  rl/racing_env.mjs uses it when it needs only whether there was contact
+ *  (shapedReward 0), which saves a full decode per tick. */
+export function stateImpulseCount(u8) {
+  return u8[12 + (u8[11] & 2 ? 3 : 0) + 2 + 12 + 16];
+}
+
 /** Bytes of the buffer that are actually written this frame. The struct is
  *  variable-length; anything past this is stale data from an earlier state. */
 export function stateLength(u8) {

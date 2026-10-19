@@ -1,0 +1,33 @@
+wasm streaming compile failed: TypeError: Cannot read properties of undefined (reading 'FinalizationRegistry')
+falling back to ArrayBuffer instantiation
+desert3: 10 human laps, 81 sections of about 250 ms of the fastest lap
+
+ms spent between boundaries ("-": the lap was on another line at one of the two)
+lap   time s       0-10   10-20   20-30   30-41   41-51   51-61   61-71   71-81   boundaries crossed
+  0   20.302       2500    2500    2500    2750    2500    2500    2500    2552   80/80
+  1   20.311       2502    2493    2498    2762    2521    2496    2476    2563   80/80
+  2   20.325       2499    2498    2530    2755    2491    2494    2493    2565   80/80
+  3   20.328       2500    2504    2495    2739    2489    2498    2511    2592   78/80
+  4   20.384       2505    2495    2525    2769    2499    2499    2529    2563   78/80
+  5   20.391          -       -       -       -       -       -       -       -   4/80
+  6   20.411          -       -       -       -       -       -       -       -   4/80
+  7   20.418          -       -       -       -       -       -       -       -   4/80
+  8   20.422       2502    2494    2488    2767    2569    2467    2491    2644   80/80
+  9   20.424       2504    2481    2546    2773    2565    2515    2492    2548   80/80
+
+best human lap                 20.302 s
+theoretical best of sections   20.127 s  (175 ms faster; assumes a switch is free wherever two laps cross the same boundary)
+planned route                  20.188 s  (114 ms faster if every switch were free): lap8@0 -> lap3@25 -> lap8@52 -> lap9@68
+
+stitching (a switch is kept only if the car that switched finishes the lap sooner than the car that did not):
+   16 s  boundary  25: lap8 -> lap3, to boundary 33: stay 1993 ms, switch 1996 ms (mismatch 12 ms); to the finish: stay 20.422 s, switch 20.365 s  KEPT
+   31 s  boundary  52: lap3 -> lap8, to boundary 60: stay 2003 ms, switch 2004 ms (mismatch 6 ms); to the finish: stay NO LAP, switch 20.399 s  KEPT
+   46 s  boundary  68: lap8 -> lap9, to boundary 76: stay 2031 ms, switch 4629 ms (mismatch 410 ms); to the finish: stay 20.379 s, switch NO LAP  refused
+   48 s  boundary  76: lap8 -> lap1, to the finish: stay 1334 ms, switch 1331 ms (mismatch 26 ms); to the finish: stay 20.379 s, switch 20.376 s  KEPT
+
+3 switches kept, 1 refused: lap8 -> lap3@25 -> lap8@52 -> lap1@76
+the fastest lap driven while judging switches, 20.365 s, is faster than the stitch (20.376 s) and is the result
+wasm streaming compile failed: TypeError: Cannot read properties of undefined (reading 'FinalizationRegistry')
+falling back to ArrayBuffer instantiation
+stitched lap 20.365 s; best human 20.302 s (63 ms slower)
+PASS Verify: the game finishes it on tick 20365; saved runs/g1-2-all_desert3.json, runs/g1-2-all_desert3.recording.json

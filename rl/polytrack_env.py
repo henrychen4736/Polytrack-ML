@@ -15,8 +15,16 @@ Three classes, from low level to high level:
                       process, with automatic reset when an episode ends
 
 Observation: 352 float32 numbers, roughly within -1..1 (layout in
-rl/racing_env.mjs). Action: an integer 0..11 = steer + 3 * W + 6 * S, or with
+rl/racing_env.mjs), or 334 with the option reference="route" (ROUTE MODE
+there). Every class here takes the size from the server's start-up message
+(spec "obsSize"), never from a constant, and the entries read directly
+(OBS_* below) sit at the same places in both. Action: an integer 0..11 = steer + 3 * W + 6 * S, or with
 block=5 a block decision of six numbers (see BLOCK DECISIONS there).
+
+Memory (opt-in, ideas/g2-5-memory-policy): pass memory=1 (and optionally
+sessionMax=..) like any other option and the server wraps its environment in
+a MemoryEnv: 130 more numbers per observation (482, or 464 in route mode),
+info["attempt"] on every episode, and rollout() also returns "session_ends".
 
 Only numpy is required. If the `gymnasium` package is installed, PolytrackEnv
 is a real `gymnasium.Env` with `observation_space` and `action_space`, so
@@ -59,6 +67,46 @@ SERVER_SCRIPT = "rl/env_server.mjs"
 # [144] S held, [145] whether W and S are read at this decision. EnvServer
 # checks these against the numbers the server reports at start-up.
 OBS_PEDAL, OBS_STEER, OBS_CONTACT, OBS_S, PEDAL_OPEN = 15, 16, 103, 144, 145
+
+
+TRACK_FILE_SUFFIX = ".track.json"
+
+
+def track_label(track: str) -> str:
+    """Short name of a track for checkpoints, logs and per-track counts: the
+    name itself for an official track, the base name without ".track.json"
+    for a generated track file (ideas/g2-2-track-generator), the same rule as
+    trackLabel in sim/env.mjs."""
+    return Path(track).name[: -len(TRACK_FILE_SUFFIX)] if track.endswith(TRACK_FILE_SUFFIX) else track
+
+
+def expand_tracks(spec: str) -> list[str]:
+    """The tracks named by a --track value: comma-separated items, each one
+      an official track name             desert4
+      a generated track file             ideas/g2-2-track-generator/sets/train/gen_s1_d0_l800.track.json
+      a folder                           every *.track.json in it, sorted by name
+      a list file ending in .txt         one item per line (blank lines and # comments skipped)
+    Paths are relative to the project root (the servers run there). A value
+    with none of the last three expands to itself, so an existing --track is
+    unchanged."""
+    out: list[str] = []
+    for item in (s.strip() for s in spec.split(",")):
+        if not item:
+            continue
+        path = Path(item) if Path(item).is_absolute() else PROJECT_ROOT / item
+        if path.is_dir():
+            found = sorted(path.glob("*" + TRACK_FILE_SUFFIX))
+            if not found:
+                raise SystemExit(f"--track {item}: no {TRACK_FILE_SUFFIX} files in that folder")
+            out += [p.relative_to(PROJECT_ROOT).as_posix() if not Path(item).is_absolute() else p.as_posix() for p in found]
+        elif item.endswith(".txt"):
+            lines = [ln.split("#")[0].strip() for ln in path.read_text().splitlines()]
+            out += expand_tracks(",".join(ln for ln in lines if ln))
+        else:
+            if item.endswith(TRACK_FILE_SUFFIX) and not path.is_file():
+                raise SystemExit(f"--track {item}: no such file")
+            out.append(item)
+    return out
 
 
 class EnvServer:
@@ -217,20 +265,35 @@ class PolytrackVecEnv:
     Stable-Baselines3 VecEnv subclass.
     """
 
-    def __init__(self, num_envs: int, track="summer1", ticks: int = 10, seed: int = 0, **options):
+    def __init__(self, num_envs: int, track="summer1", ticks: int = 10, seed: int = 0,
+                 track_sets: list[list[str]] | None = None, switch_every: int = 20, **options):
         """Each environment gets its own seed (seed, seed+1, ...) so they do
         not all pick the same random start positions.
 
         `track` is one name, or a list of names for multi-track training. With
         a list, environment k drives tracks[k % len(tracks)] for its whole
         life, so with as many environments as tracks every update contains
-        experience from every track. self.tracks[k] says which."""
-        tracks = [track] if isinstance(track, str) else list(track)
-        self.tracks = [tracks[k % len(tracks)] for k in range(num_envs)]
+        experience from every track. self.tracks[k] says which.
+
+        track_sets (opt-in; TRACK ROTATION in rl/env_server.mjs): one list of
+        tracks per environment, replacing `track`. An environment with
+        several drives them in turn, switching every switch_every episodes;
+        its episodes' infos then say which track ("track"). self.tracks[k]
+        is the first of its list."""
+        if track_sets is not None:
+            if len(track_sets) != num_envs or not all(track_sets):
+                raise ValueError("track_sets needs one non-empty list per environment")
+            self.tracks = [ts[0] for ts in track_sets]
+        else:
+            tracks = [track] if isinstance(track, str) else list(track)
+            self.tracks = [tracks[k % len(tracks)] for k in range(num_envs)]
         self.servers = []
         try:
             for k in range(num_envs):
-                self.servers.append(EnvServer(track=self.tracks[k], ticks=ticks, seed=seed + k, **options))
+                # A list of one is an ordinary server: nothing to rotate.
+                rotate = {"trackSet": ",".join(track_sets[k]), "switchEvery": switch_every} \
+                    if track_sets is not None and len(track_sets[k]) > 1 else {}
+                self.servers.append(EnvServer(track=self.tracks[k], ticks=ticks, seed=seed + k, **rotate, **options))
         except Exception:
             self.close()
             raise
@@ -324,6 +387,10 @@ class PolytrackVecEnv:
           episodes  list of (environment index, info dict) for episodes that ended
           time_limits  list of (step, environment index, final observation) for
                        episodes cut off by the time limit
+          session_ends float32 (steps, N)            memory servers only (memory=1/0):
+                       1 where that decision ended an attempt and the next
+                       attempt starts a new session with an empty memory
+                       (see "rollout" in rl/env_server.mjs). Absent otherwise
         """
         for server in self.servers:
             server.send(cmd="rollout", steps=steps, weights=weights_file, hidden=hidden)
@@ -339,7 +406,7 @@ class PolytrackVecEnv:
                 if episode["finalObs"] is not None:
                     time_limits.append((episode["t"], k, decode(episode["finalObs"], np.float32)))
         # Each server's arrays are [step, ...]; stacking on axis 1 gives [step, environment, ...].
-        return {
+        result = {
             "obs": np.stack([decode(r["obs"], np.float32).reshape(steps, self.obs_size) for r in replies], axis=1),
             # One number per decision, or six for block decisions: [step, environment(, 6)].
             "actions": np.stack([decode(r["actions"], np.uint8).reshape(steps, -1) for r in replies], axis=1)
@@ -351,6 +418,10 @@ class PolytrackVecEnv:
             "episodes": episodes,
             "time_limits": time_limits,
         }
+        # Memory servers only; without memory the dict is what it always was.
+        if "sessionEnds" in replies[0]:
+            result["session_ends"] = np.stack([decode(r["sessionEnds"], np.uint8) for r in replies], axis=1).astype(np.float32)
+        return result
 
     def close(self):
         for server in self.servers:

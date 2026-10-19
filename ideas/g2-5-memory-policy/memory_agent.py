@@ -13,7 +13,9 @@ What is in this file:
                                 driving, memory weights zero
     write_actor                 the raw weights file the Node side reads
     session_advantages          GAE that can pass value across the attempts of
-                                one session (the `carry` setting, below)
+                                one session (the `carry` setting, below).
+                                It lives in rl/train_ppo.py, which uses it for
+                                --carry, and is re-exported here
     ppo_loss                    the loss of train_ppo.py's inner loop, as a
                                 function (there it is written inline in main())
 
@@ -40,10 +42,14 @@ import torch.nn as nn
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "rl"))
-from train_ppo import Agent, BLOCK_ACTIONS  # noqa: E402  (the existing agent, unchanged)
+# session_advantages moved to rl/train_ppo.py when the trainer got --carry
+# (one copy, so the trainer and these tests cannot drift apart).
+from train_ppo import Agent, BLOCK_ACTIONS, session_advantages  # noqa: E402,F401
 
 # Must match rl/racing_env.mjs (OBS_SIZE) and track_memory.mjs (MEM_SIZE);
-# smoke_test.py checks both against what the Node side reports.
+# smoke_test.py checks both against what the Node side reports. In route mode
+# the plain observation is 334 (OBS_SIZE_ROUTE): pass base_obs=334, or use
+# from_checkpoint, which takes it from the checkpoint.
 BASE_OBS = 352
 MEM_SIZE = 21 * 6 + 4
 
@@ -88,32 +94,6 @@ def write_actor(agent: Agent, path: str | Path) -> None:
     for layer in (agent.actor[0], agent.actor[2], agent.actor[4]):
         parts += [layer.weight.detach().cpu().numpy().ravel(), layer.bias.detach().cpu().numpy().ravel()]
     np.concatenate(parts).astype(np.float32).tofile(path)
-
-
-def session_advantages(rewards, values, dones, session_ends, last_value, gamma, lam, carry=0.0):
-    """compute_advantages of rl/train_ppo.py, with one addition.
-
-    All of shape (T, N) except last_value (N,). dones[t] = 1: the attempt
-    ended with the action at t. session_ends[t] = 1: it was also the last
-    attempt of its session (the memory is cleared before the next one).
-
-    The environment starts the next attempt at once, so values[t + 1] after a
-    done is the critic's value of the NEXT attempt's first observation. Where
-    an attempt ended but its session goes on, carry x that value is added to
-    the reward of the ending step (see CARRY at the top). Nothing else crosses
-    an attempt's end, and nothing at all crosses a session's end. With
-    carry = 0 this is compute_advantages exactly (checked in smoke_test.py).
-    """
-    advantages = torch.zeros_like(rewards)
-    running = torch.zeros_like(last_value)
-    for t in reversed(range(rewards.shape[0])):
-        next_value = last_value if t == rewards.shape[0] - 1 else values[t + 1]
-        alive = 1.0 - dones[t]
-        goes_on = dones[t] * (1.0 - session_ends[t])
-        delta = rewards[t] + gamma * next_value * alive + carry * next_value * goes_on - values[t]
-        running = delta + gamma * lam * alive * running
-        advantages[t] = running
-    return advantages, advantages + values
 
 
 def ppo_loss(agent: Agent, obs, actions, old_logprob, advantages, returns,
