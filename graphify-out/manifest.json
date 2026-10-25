@@ -1,9 +1,9 @@
 {
   "package.json": {
-    "mtime": 1791105991.3519456,
-    "seen": 1791348608.66859,
-    "ast_hash": "764d8499ca5379965b43b0e66b75abbd",
-    "semantic_hash": "764d8499ca5379965b43b0e66b75abbd"
+    "mtime": 1792955497.5527346,
+    "seen": 1792955887.7292974,
+    "ast_hash": "d7beb3107aea80271f55e38aeb31806f",
+    "semantic_hash": ""
   },
   "rl/block_test.mjs": {
     "mtime": 1791340378.6228511,
@@ -78,10 +78,10 @@
     "semantic_hash": "72da04e237816bd43491feaa10f55a77"
   },
   "scripts/capture_init.mjs": {
-    "mtime": 1791105435.352733,
-    "seen": 1791348608.66859,
-    "ast_hash": "f46dae95a02d2c5dc4069e07f03210ed",
-    "semantic_hash": "f46dae95a02d2c5dc4069e07f03210ed"
+    "mtime": 1792955829.926429,
+    "seen": 1792955887.7292974,
+    "ast_hash": "421d22c0e88ace0351307a55c8ee3d66",
+    "semantic_hash": ""
   },
   "scripts/check_path.mjs": {
     "mtime": 1791107108.351585,
@@ -174,10 +174,10 @@
     "semantic_hash": "685a7ef75b4d27e9da1669c814f39701"
   },
   "scripts/watch_ghost.mjs": {
-    "mtime": 1791182091.2816765,
-    "seen": 1791348608.66859,
-    "ast_hash": "4f496320da692f04c80752d68e4f107f",
-    "semantic_hash": "4f496320da692f04c80752d68e4f107f"
+    "mtime": 1792955458.2267337,
+    "seen": 1792955887.7292974,
+    "ast_hash": "78a1f2d768f285f459a588570d9bd84f",
+    "semantic_hash": ""
   },
   "sim/controller.mjs": {
     "mtime": 1791111410.7721336,
@@ -264,9 +264,9 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1792383769.1724913,
-    "seen": 1792383781.3483577,
-    "ast_hash": "d6f60c12cd172d469318b9cbd47d5443",
+    "mtime": 1792955642.3792198,
+    "seen": 1792955887.7292974,
+    "ast_hash": "8878c1681ddec1f5e56645c0e514d6fd",
     "semantic_hash": ""
   },
   "rl/README.md": {
@@ -2640,9 +2640,9 @@
     "semantic_hash": ""
   },
   "CLAUDE.md": {
-    "mtime": 1792383809.1010468,
-    "seen": 1792386912.3377392,
-    "ast_hash": "5168f02ca1d6f6676c6915b776d31fca",
+    "mtime": 1792955872.856861,
+    "seen": 1792955887.7292974,
+    "ast_hash": "c3bb0acda0bc982264a369550c39489d",
     "semantic_hash": ""
   },
   "docs/model-history.md": {
@@ -2943,6 +2943,18 @@
     "mtime": 1792386889.5224526,
     "seen": 1792386912.3377392,
     "ast_hash": "5263bf0661b9c5bf7b30f3501e41e5e4",
+    "semantic_hash": ""
+  },
+  "scripts/game_client.mjs": {
+    "mtime": 1792955163.1198857,
+    "seen": 1792955887.7292974,
+    "ast_hash": "d6df5cad9e344000d8c16b746485c02d",
+    "semantic_hash": ""
+  },
+  "scripts/race.mjs": {
+    "mtime": 1792955407.284087,
+    "seen": 1792955887.7292974,
+    "ast_hash": "24d5181a2b21c9fa751833bf443824d5",
     "semantic_hash": ""
   }
 }

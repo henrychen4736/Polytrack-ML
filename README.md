@@ -57,6 +57,39 @@ The fuller write-up, with every idea's result and what is left, is
 [`ideas/README.md`](ideas/README.md); every model trained is in
 [`docs/model-history.md`](docs/model-history.md).
 
+## Race the best model
+
+Play a track in the real PolyTrack client against two ghosts: the project's
+best generalist (`models/ppo_blkgen.best2.actor.bin`, included, so nothing
+needs training) and the fastest human lap on the public leaderboard. Needs
+Node 20+ and Microsoft Edge; no Python, no GPU.
+
+```bash
+npm install
+npm run setup                        # the simulator files (see Setup below)
+npm run capture                      # what the client sends its physics worker, into data/
+node scripts/fetch_laps.mjs desert4  # the track's top public laps, into data/laps/ (read only)
+npm run race -- desert4              # any official track: desert1..5, summer1..7, winter1..5
+```
+
+The first race on a track lets the model drive it in this project's headless
+copy of the game's physics, checks the lap with the game's own Verify and
+keeps it in `runs/race-generalist_<track>.recording.json` (5 to 30 s; later
+races reuse it, `--redo` drives again). Then the client opens in a
+temporary Edge window. On the track's page, the leaderboard on the left
+holds "Best human" (blue) and "Best generalist (bot)" (orange): click them
+to pick them as opponents, then press Play. Watch replays a picked ghost.
+
+On desert4 the model's lap is 22.090 s against the human's 21.750 s. The
+generalist finishes 132 of 140 attempts on the 14 tracks it trained on but
+only 7 of 30 on desert3, summer3 and winter4; where none of its 11 tries
+finishes, only the human ghost is shown.
+
+Nothing reaches Kodub's server: the window's profile is thrown away on
+close, the leaderboard and ghosts are answered on your machine, and every
+other request, uploads included, is blocked (`scripts/game_client.mjs`).
+Don't copy a bot lap into the game in your normal browser; it would upload it.
+
 ## Setup
 
 ```bash
@@ -107,6 +140,8 @@ use `.venv/Scripts/python` and `--device cuda` to train on the GPU.
   Kodub's geometry and other players' laps, which are not ours to
   redistribute. See "Getting the data" below.
 - `runs/`, `rl/checkpoints/`: results and model files. Both are git-ignored.
+- `models/`: the one model published with the code, the best generalist's
+  actor (`ppo_blkgen.best2.actor.bin`, 647 KB), for `npm run race`.
 - `graphify-out/`: a knowledge graph of the code. Ask it with
   `graphify query "<question>"`; refresh it with `graphify update .`.
 
@@ -136,7 +171,7 @@ node ideas/run_all_tests.mjs    # every folder, one after another, about 25 minu
 ```bash
 node scripts/drive_baseline.mjs summer1     # pure-pursuit lap, saves runs/baseline_summer1.json
 node scripts/export_recording.mjs summer1   # encodes it as a recording and runs the game's Verify
-node scripts/watch_ghost.mjs summer1        # opens the real client with the lap loaded; click Watch
+node scripts/watch_ghost.mjs summer1        # opens the real client on the track page with the lap loaded; click Watch
 node scripts/search_timeline.mjs summer1 seconds=120   # mutate key timings, saves runs/search_summer1.recording.json
 node scripts/watch_ghost.mjs summer1 search # watch the searched lap
 node scripts/search_settings.mjs summer1 seconds=120   # tune the controller's settings, saves runs/tuned_summer1.json

@@ -2,12 +2,28 @@
 // (Init, CreateCar, ...) so the headless harness can replay them verbatim.
 // Runs headless Edge against the official client; all requests to Kodub's API
 // server are blocked, so nothing is read from or written to the leaderboards.
-// Usage: node scripts/capture_init.mjs [--track "Summer 1"]
+//
+// Writes capture/worker_messages.json (every message, for study) and the two
+// files the simulator reads (sim/host.mjs loadCaptured):
+//   data/init_0.6.3.json       the Init message (track parts, car shape)
+//   data/createcar_summer1.json  the first CreateCar: a new profile always
+//                              opens on Summer 1, the tutorial track
+// Until 25 October 2026 those two were copied out of worker_messages.json by
+// hand, so a fresh clone could not get past "npm run capture"; they are the
+// type-0 and type-3 messages verbatim. Checked on 25 October 2026 against
+// the files the project was built on: CreateCar identical; Init identical
+// except isRealtime (true here, false in the old file), which sim/host.mjs
+// sets to false when it sends Init anyway.
+//
+// Usage: node scripts/capture_init.mjs [--steps '<json>'] [--dump-dom]
 import { chromium } from 'playwright-core';
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, mkdirSync } from 'node:fs';
 
 const GAME_URL = 'https://app-polytrack.kodub.com/0.6.3/';
 const OUT = new URL('../capture/', import.meta.url);
+const DATA = new URL('../data/', import.meta.url);
+mkdirSync(OUT, { recursive: true });
+mkdirSync(DATA, { recursive: true });
 
 const browser = await chromium.launch({
   channel: 'msedge', headless: true,
@@ -65,4 +81,14 @@ if (process.argv.includes('--dump-dom')) {
 const cap = await page.evaluate(() => window.__cap);
 writeFileSync(new URL('worker_messages.json', OUT), JSON.stringify(cap));
 console.log(`wrote capture/worker_messages.json (${cap.length} messages)`);
+const init = cap.find((c) => c.msg.messageType === 0);
+writeFileSync(new URL('init_0.6.3.json', DATA), JSON.stringify(init.msg));
+console.log('wrote data/init_0.6.3.json');
+// With --steps the client may have left Summer 1 before its first car, so
+// only a plain run names the CreateCar after it.
+const createCar = cap.find((c) => c.msg.messageType === 3);
+if (createCar && !steps.length) {
+  writeFileSync(new URL('createcar_summer1.json', DATA), JSON.stringify(createCar.msg));
+  console.log('wrote data/createcar_summer1.json');
+}
 await browser.close();

@@ -18,8 +18,13 @@ the conventions, the state of every model, and how each one came to be.
 - **Local use only.** Bot laps are never submitted, uploaded, or placed where
   the game client could upload them (it uploads any stored lap that beats the
   server's copy, so a bot lap never goes into a normal browser's
-  localStorage). `scripts/watch_ghost.mjs` uses a temporary Edge profile with
-  `vps.kodub.com` blocked.
+  localStorage). `scripts/watch_ghost.mjs` and `scripts/race.mjs` open the
+  client through `scripts/game_client.mjs`: a temporary Edge profile in which
+  every request to `vps.kodub.com` is answered locally (GET only) or blocked.
+- **One model is published:** `models/ppo_blkgen.best2.actor.bin`, so that
+  `npm run race -- <track>` works from a fresh clone (Henry's decision, 25
+  October 2026). The race shows the best human and the generalist as
+  leaderboard ghosts; their recordings never leave the machine.
 - **No network.** The only script that contacts Kodub's server is
   `scripts/fetch_laps.mjs`, and it only reads.
 - **`data/` stays out of git.** It is Kodub's captured geometry and other
