@@ -1,7 +1,7 @@
 # Graph Report - Polytrack-ML  (2026-10-25)
 
 ## Corpus Check
-- 474 files · ~456,064 words
+- 474 files · ~456,240 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 66 file(s) not represented in the graph (top: .log 28, .result 17, .jsonl 15)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `c14a376b`
+- Built from commit: `b5d46a1f`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -842,7 +842,7 @@ Cohesion: 0.50
 Nodes (3): { check, eq }, info, state()
 
 ## Knowledge Gaps
-- **41 isolated node(s):** `./ideas/g2-2-track-generator/g2-2-features.mjs`, `g1-7 corridor (deferred)`, `Orchestrator duplication cleanup (rng, pool, policy)`, `Request: loadTrack cannot open generated tracks`, `A short look ahead does not predict lap time` (+36 more)
+- **41 isolated node(s):** `./ideas/g2-2-track-generator/g2-2-features.mjs`, `RacingEnv cannot run without a reference lap`, `g1-7 corridor (deferred)`, `Orchestrator duplication cleanup (rng, pool, policy)`, `Request: loadTrack cannot open generated tracks` (+36 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1342 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **27 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -850,15 +850,15 @@ Nodes (3): { check, eq }, info, state()
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `RacingEnv` connect `RacingEnv` to `Lookahead driver (driveLap)`, `main`, `test_policy_rollout.mjs`, `ref_node_fs`, `torch`, `g2-2: random track generator`, `explore.mjs`, `racing_env.mjs`, `g1-6-offpolicy-rl/README.md`, `recording.mjs`, `env_server.mjs`, `decodeState`, `rl/smoke_test.mjs`, `Polytrack-ML refactor plan`, `._locate`, `iqn_server.mjs`, `hook.mjs`, `Route built from track geometry alone`, `replica_check.mjs`, `._observe`, `progress`, `TrackMemory`, `g2-5-memory-policy/README.md`, `g2-1: inputs that need no human lap`, `g2-4: look ahead while driving`, `ladder_test.mjs`?**
-  _High betweenness centrality (0.134) - this node is a cross-community bridge._
+  _High betweenness centrality (0.144) - this node is a cross-community bridge._
 - **Are the 15 inferred relationships involving `RacingEnv` (e.g. with `Phase 3: Deduplication (medium; each step gated by a fixed-seed comparison)` and `Phase 4 (optional, only with Phase 5 of "What is next"): split `racing_env.mjs``) actually correct?**
   _`RacingEnv` has 15 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `./ideas/g2-2-track-generator/g2-2-features.mjs`, `g1-7 corridor (deferred)`, `Orchestrator duplication cleanup (rng, pool, policy)` to the rest of the system?**
+- **What connects `./ideas/g2-2-track-generator/g2-2-features.mjs`, `RacingEnv cannot run without a reference lap`, `g1-7 corridor (deferred)` to the rest of the system?**
   _41 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Lookahead driver (driveLap)` be split into smaller, more focused modules?**
   _Cohesion score 0.0965166908563135 - nodes in this community are weakly interconnected._
-- **Why does `Env` connect `Env` to `g1-2-stitch-human-laps/tests/test_script.mjs`, `test_1_route_vs_human_sim.mjs`, `laps.mjs`, `compare_sections.mjs`, `ref_node_fs`, `g2-2-feature_check.mjs`, `check_pieces.mjs`, `racing_env.mjs`, `shared/tests/harness.mjs`, `recording.mjs`, `test_sim_b.mjs`, `sim/drive.mjs`, `decodeState`, `test_worker.mjs`, `test_6_scripts_sim.mjs`, `search_settings.mjs`, `g2-3-explore-and-adapt/tests/test_logic.mjs`, `section_worker.mjs`, `track.mjs`, `test_5_corridor_sim.mjs`, `test_4_sim.mjs`, `key_usage.mjs`, `savestate_test.mjs`, `search_timeline.mjs`, `state.mjs`, `ladder_test.mjs`?**
-  _High betweenness centrality (0.062) - this node is a cross-community bridge._
+- **Why does `createRng()` connect `racing_env.mjs` to `laps.mjs`, `shared/policy.mjs`, `test_policy_rollout.mjs`, `ref_node_fs`, `g2-4-lookahead-driving/tests/test_logic.mjs`, `explore.mjs`, `stitch_laps.mjs`, `env_server.mjs`, `RacingEnv`, `beam.mjs`, `decodeState`, `search_rollout.mjs`, `search_sections.mjs`, `search_settings.mjs`, `Polytrack-ML refactor plan`, `iqn_server.mjs`, `generate.mjs`, `g1-4-beam-search/child.mjs`, `section_worker.mjs`, `test_sim_a.mjs`, `calibrate.mjs`, `g1-4: beam search over block decisions`, `search.mjs`, `search_timeline.mjs`?**
+  _High betweenness centrality (0.054) - this node is a cross-community bridge._
 - **Are the 4 inferred relationships involving `loadTrack()` (e.g. with `Phase 3: Deduplication (medium; each step gated by a fixed-seed comparison)` and `Progress (16 October 2026): phases 1 to 3 done, not committed`) actually correct?**
   _`loadTrack()` has 4 INFERRED edges - model-reasoned connections that need verification._
 - **Should `test_1_route_vs_human_sim.mjs` be split into smaller, more focused modules?**

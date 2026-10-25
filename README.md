@@ -4,6 +4,60 @@ Local ML and search for fast PolyTrack 0.6.3 laps, run against the game's own
 physics headlessly in Node. Nothing here talks to Kodub's leaderboard server:
 bot runs are for local ghosts only and must not be submitted.
 
+## Race the best model
+
+Play a track in the real PolyTrack client against two ghosts: the project's
+best generalist (`models/ppo_blkgen.best2.actor.bin`, included, so nothing
+needs training) and the fastest human lap on the public leaderboard.
+
+You need Node 20+, Microsoft Edge and an internet connection (the game itself
+loads from Kodub's site). No Python, no GPU. Without Edge, `capture` and
+`race` stop with "Microsoft Edge was not found"; install Edge and run again.
+
+**Once, after cloning:**
+
+```bash
+npm install
+npm run setup     # the game's simulator files, into vendor/
+npm run capture   # what the game sends its physics engine, into data/ (under a minute)
+```
+
+**Once for each track you want to race** (desert1..5, summer1..7, winter1..5):
+
+```bash
+node scripts/fetch_laps.mjs desert4   # that track's top public laps, into data/laps/ (only reads)
+```
+
+**Then race:**
+
+```bash
+npm run race -- desert4
+```
+
+What happens:
+
+1. The first race on a track lets the model drive it in this project's
+   copy of the game's physics, checks the lap with the game's own Verify and
+   keeps it in `runs/race-generalist_<track>.recording.json` (5 to 30 s;
+   later races reuse it, `--redo` drives again).
+2. The game opens in a temporary Edge window, on the track's page.
+3. In the leaderboard on the left, click **Best human** (blue car) and
+   **Best generalist (bot)** (orange car) to pick them as opponents.
+4. Press **Play** and drive with W A S D or the arrow keys. **Watch** replays
+   a picked ghost instead.
+5. Close the window when you are done.
+
+How good the ghosts are: on desert4 the model's lap is 22.090 s against the
+human's 21.750 s. The model finishes 132 of 140 attempts on the 14 tracks it
+trained on, but only 7 of 30 on desert3, summer3 and winter4, which it never
+saw. **On a track where none of its 11 tries finishes, only the human ghost
+is shown.**
+
+Nothing reaches Kodub's leaderboard server: the window's profile is thrown
+away on close, the leaderboard and ghosts are answered on your machine, and
+every other request, uploads included, is blocked (`scripts/game_client.mjs`).
+Don't copy a bot lap into the game in your normal browser; it would upload it.
+
 ## Where things stand (18 October 2026)
 
 Two goals: a lap faster than the best human lap on at least one track, and a
@@ -56,39 +110,6 @@ tried.
 The fuller write-up, with every idea's result and what is left, is
 [`ideas/README.md`](ideas/README.md); every model trained is in
 [`docs/model-history.md`](docs/model-history.md).
-
-## Race the best model
-
-Play a track in the real PolyTrack client against two ghosts: the project's
-best generalist (`models/ppo_blkgen.best2.actor.bin`, included, so nothing
-needs training) and the fastest human lap on the public leaderboard. Needs
-Node 20+ and Microsoft Edge; no Python, no GPU.
-
-```bash
-npm install
-npm run setup                        # the simulator files (see Setup below)
-npm run capture                      # what the client sends its physics worker, into data/
-node scripts/fetch_laps.mjs desert4  # the track's top public laps, into data/laps/ (read only)
-npm run race -- desert4              # any official track: desert1..5, summer1..7, winter1..5
-```
-
-The first race on a track lets the model drive it in this project's headless
-copy of the game's physics, checks the lap with the game's own Verify and
-keeps it in `runs/race-generalist_<track>.recording.json` (5 to 30 s; later
-races reuse it, `--redo` drives again). Then the client opens in a
-temporary Edge window. On the track's page, the leaderboard on the left
-holds "Best human" (blue) and "Best generalist (bot)" (orange): click them
-to pick them as opponents, then press Play. Watch replays a picked ghost.
-
-On desert4 the model's lap is 22.090 s against the human's 21.750 s. The
-generalist finishes 132 of 140 attempts on the 14 tracks it trained on but
-only 7 of 30 on desert3, summer3 and winter4; where none of its 11 tries
-finishes, only the human ghost is shown.
-
-Nothing reaches Kodub's server: the window's profile is thrown away on
-close, the leaderboard and ghosts are answered on your machine, and every
-other request, uploads included, is blocked (`scripts/game_client.mjs`).
-Don't copy a bot lap into the game in your normal browser; it would upload it.
 
 ## Setup
 

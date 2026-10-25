@@ -59,12 +59,23 @@ export const shownName = (name) => name.replace(/^([a-z])([a-z]*)(\d+)$/, (_, a,
  * Returns { browser, page, profile, blocked(), answered(), close() }.
  */
 export async function openClient({ headless = false, answer = null } = {}) {
-  const browser = await chromium.launch({
-    channel: 'msedge',
-    headless,
-    // Software rendering flags are only needed when there is no window/GPU.
-    args: headless ? ['--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] : ['--start-maximized'],
-  });
+  let browser;
+  try {
+    browser = await chromium.launch({
+      channel: 'msedge',
+      headless,
+      // Software rendering flags are only needed when there is no window/GPU.
+      args: headless ? ['--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] : ['--start-maximized'],
+    });
+  } catch (err) {
+    // Playwright's own message for a missing browser is a page of install
+    // advice for its bundled browsers, which this project does not use.
+    if (/msedge|distribution/i.test(err.message)) {
+      console.error('Microsoft Edge was not found. Install it (https://www.microsoft.com/edge) and run this again.');
+      process.exit(1);
+    }
+    throw err;
+  }
   // newContext() is an incognito-style profile: nothing is shared with your
   // real Edge profile and everything is discarded when the browser closes.
   const context = await browser.newContext({ viewport: headless ? { width: 1280, height: 800 } : null });

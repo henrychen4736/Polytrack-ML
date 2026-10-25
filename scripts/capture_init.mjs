@@ -28,6 +28,14 @@ mkdirSync(DATA, { recursive: true });
 const browser = await chromium.launch({
   channel: 'msedge', headless: true,
   args: ['--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--ignore-gpu-blocklist'],
+}).catch((err) => {
+  // Same message as scripts/game_client.mjs: Playwright's own is install
+  // advice for its bundled browsers, which this project does not use.
+  if (/msedge|distribution/i.test(err.message)) {
+    console.error('Microsoft Edge was not found. Install it (https://www.microsoft.com/edge) and run this again.');
+    process.exit(1);
+  }
+  throw err;
 });
 const page = await (await browser.newContext({ viewport: { width: 1280, height: 800 } })).newPage();
 await page.route(/vps\.kodub\.com/, (r) => r.abort());

@@ -78,9 +78,9 @@
     "semantic_hash": "72da04e237816bd43491feaa10f55a77"
   },
   "scripts/capture_init.mjs": {
-    "mtime": 1792955829.926429,
-    "seen": 1792955887.7292974,
-    "ast_hash": "421d22c0e88ace0351307a55c8ee3d66",
+    "mtime": 1792956341.9018593,
+    "seen": 1792956381.0832794,
+    "ast_hash": "0bede9ed2894897bed884ac5b5902467",
     "semantic_hash": ""
   },
   "scripts/check_path.mjs": {
@@ -264,9 +264,9 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1792955642.3792198,
-    "seen": 1792955887.7292974,
-    "ast_hash": "8878c1681ddec1f5e56645c0e514d6fd",
+    "mtime": 1792956332.3678174,
+    "seen": 1792956381.0832794,
+    "ast_hash": "ae418899b932c44691907ceb4a0d4170",
     "semantic_hash": ""
   },
   "rl/README.md": {
@@ -2946,9 +2946,9 @@
     "semantic_hash": ""
   },
   "scripts/game_client.mjs": {
-    "mtime": 1792955163.1198857,
-    "seen": 1792955887.7292974,
-    "ast_hash": "d6df5cad9e344000d8c16b746485c02d",
+    "mtime": 1792956332.36582,
+    "seen": 1792956381.0832794,
+    "ast_hash": "8a8d7ba31d6ccd824593c81776a323a1",
     "semantic_hash": ""
   },
   "scripts/race.mjs": {
