@@ -10,9 +10,17 @@ Play a track in the real PolyTrack client against two ghosts: the project's
 best generalist (`models/ppo_blkgen.best2.actor.bin`, included, so nothing
 needs training) and the fastest human lap on the public leaderboard.
 
-You need Node 20+, Microsoft Edge and an internet connection (the game itself
-loads from Kodub's site). No Python, no GPU. Without Edge, `capture` and
-`race` stop with "Microsoft Edge was not found"; install Edge and run again.
+You need Node 20+, an internet connection (the game itself loads from
+Kodub's site) and one browser: Microsoft Edge (the default), Google Chrome,
+or Firefox. No Python, no GPU.
+
+**Firefox:** the scripts cannot drive the Firefox you browse with, only
+Playwright's own build of it. Install that once (about 80 MB to download),
+then add `browser=firefox` to `capture` and `race`:
+
+```bash
+npx playwright-core install firefox
+```
 
 **Once, after cloning:**
 
@@ -20,6 +28,7 @@ loads from Kodub's site). No Python, no GPU. Without Edge, `capture` and
 npm install
 npm run setup     # the game's simulator files, into vendor/
 npm run capture   # what the game sends its physics engine, into data/ (under a minute)
+                  # with Firefox or Chrome: npm run capture -- browser=firefox
 ```
 
 **Once for each track you want to race** (desert1..5, summer1..7, winter1..5):
@@ -31,8 +40,11 @@ node scripts/fetch_laps.mjs desert4   # that track's top public laps, into data/
 **Then race:**
 
 ```bash
-npm run race -- desert4
+npm run race -- desert4                   # in Edge
+npm run race -- desert4 browser=firefox   # or browser=chrome
 ```
+
+A missing browser stops the script with what to install.
 
 What happens:
 
@@ -40,7 +52,7 @@ What happens:
    copy of the game's physics, checks the lap with the game's own Verify and
    keeps it in `runs/race-generalist_<track>.recording.json` (5 to 30 s;
    later races reuse it, `--redo` drives again).
-2. The game opens in a temporary Edge window, on the track's page.
+2. The game opens in a temporary browser window, on the track's page.
 3. In the leaderboard on the left, click **Best human** (blue car) and
    **Best generalist (bot)** (orange car) to pick them as opponents.
 4. Press **Play** and drive with W A S D or the arrow keys. **Watch** replays

@@ -1,6 +1,7 @@
 // Capture the messages the real 0.6.3 client posts to its simulation worker
 // (Init, CreateCar, ...) so the headless harness can replay them verbatim.
-// Runs headless Edge against the official client; all requests to Kodub's API
+// Runs a headless browser (Edge by default; browser=chrome or browser=firefox,
+// see scripts/game_client.mjs) against the official client; all requests to Kodub's API
 // server are blocked, so nothing is read from or written to the leaderboards.
 //
 // Writes capture/worker_messages.json (every message, for study) and the two
@@ -15,9 +16,9 @@
 // except isRealtime (true here, false in the old file), which sim/host.mjs
 // sets to false when it sends Init anyway.
 //
-// Usage: node scripts/capture_init.mjs [--steps '<json>'] [--dump-dom]
-import { chromium } from 'playwright-core';
+// Usage: node scripts/capture_init.mjs [browser=edge|chrome|firefox] [--steps '<json>'] [--dump-dom]
 import { writeFileSync, mkdirSync } from 'node:fs';
+import { launchBrowser, browserArg } from './game_client.mjs';
 
 const GAME_URL = 'https://app-polytrack.kodub.com/0.6.3/';
 const OUT = new URL('../capture/', import.meta.url);
@@ -25,18 +26,7 @@ const DATA = new URL('../data/', import.meta.url);
 mkdirSync(OUT, { recursive: true });
 mkdirSync(DATA, { recursive: true });
 
-const browser = await chromium.launch({
-  channel: 'msedge', headless: true,
-  args: ['--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--ignore-gpu-blocklist'],
-}).catch((err) => {
-  // Same message as scripts/game_client.mjs: Playwright's own is install
-  // advice for its bundled browsers, which this project does not use.
-  if (/msedge|distribution/i.test(err.message)) {
-    console.error('Microsoft Edge was not found. Install it (https://www.microsoft.com/edge) and run this again.');
-    process.exit(1);
-  }
-  throw err;
-});
+const browser = await launchBrowser(browserArg(process.argv.slice(2)), { headless: true });
 const page = await (await browser.newContext({ viewport: { width: 1280, height: 800 } })).newPage();
 await page.route(/vps\.kodub\.com/, (r) => r.abort());
 page.on('console', (m) => { if (m.type() === 'error') console.log('[page error]', m.text().slice(0, 200)); });

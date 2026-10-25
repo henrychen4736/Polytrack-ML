@@ -78,9 +78,9 @@
     "semantic_hash": "72da04e237816bd43491feaa10f55a77"
   },
   "scripts/capture_init.mjs": {
-    "mtime": 1792956341.9018593,
-    "seen": 1792956381.0832794,
-    "ast_hash": "0bede9ed2894897bed884ac5b5902467",
+    "mtime": 1792956962.5454206,
+    "seen": 1792957200.5191588,
+    "ast_hash": "c96a11dde6440167762996b1d40812e4",
     "semantic_hash": ""
   },
   "scripts/check_path.mjs": {
@@ -174,9 +174,9 @@
     "semantic_hash": "685a7ef75b4d27e9da1669c814f39701"
   },
   "scripts/watch_ghost.mjs": {
-    "mtime": 1792955458.2267337,
-    "seen": 1792955887.7292974,
-    "ast_hash": "78a1f2d768f285f459a588570d9bd84f",
+    "mtime": 1792956962.543897,
+    "seen": 1792957200.5196934,
+    "ast_hash": "3b4c6b4c2ab4c3a1825519494d330416",
     "semantic_hash": ""
   },
   "sim/controller.mjs": {
@@ -264,9 +264,9 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1792956332.3678174,
-    "seen": 1792956381.0832794,
-    "ast_hash": "ae418899b932c44691907ceb4a0d4170",
+    "mtime": 1792957156.9848506,
+    "seen": 1792957200.5196934,
+    "ast_hash": "6f4d10cdc7857b3595b93b2157de3f64",
     "semantic_hash": ""
   },
   "rl/README.md": {
@@ -2640,9 +2640,9 @@
     "semantic_hash": ""
   },
   "CLAUDE.md": {
-    "mtime": 1792955872.856861,
-    "seen": 1792955887.7292974,
-    "ast_hash": "c3bb0acda0bc982264a369550c39489d",
+    "mtime": 1792957157.802711,
+    "seen": 1792957200.5196934,
+    "ast_hash": "b8760fef39ea6a9fbf49888584be29c9",
     "semantic_hash": ""
   },
   "docs/model-history.md": {
@@ -2946,15 +2946,15 @@
     "semantic_hash": ""
   },
   "scripts/game_client.mjs": {
-    "mtime": 1792956332.36582,
-    "seen": 1792956381.0832794,
-    "ast_hash": "8a8d7ba31d6ccd824593c81776a323a1",
+    "mtime": 1792956973.5300105,
+    "seen": 1792957200.5191588,
+    "ast_hash": "14103375ac7b179dc405cdfb1a71a5ed",
     "semantic_hash": ""
   },
   "scripts/race.mjs": {
-    "mtime": 1792955407.284087,
-    "seen": 1792955887.7292974,
-    "ast_hash": "24d5181a2b21c9fa751833bf443824d5",
+    "mtime": 1792957140.499637,
+    "seen": 1792957200.5191588,
+    "ast_hash": "6b241f83e83edffb15faff800ce02d29",
     "semantic_hash": ""
   }
 }

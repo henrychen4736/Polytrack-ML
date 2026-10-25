@@ -11,18 +11,18 @@
 // changing anything. Never paste a bot recording into localStorage in your
 // normal browser: the game would submit it the next time it syncs.
 //
-// Usage: node scripts/watch_ghost.mjs [track] [run] [--check]
+// Usage: node scripts/watch_ghost.mjs [track] [run] [browser=edge|chrome|firefox] [--check]
 //   track     summer1 (default)
 //   run       which saved lap: baseline (default) or search; reads
 //             runs/<run>_<track>.recording.json
 //   --check   run without a visible window, save screenshots to capture/, exit
 import { readFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { openClient, plantRecord, openTrackPage, shownName } from './game_client.mjs';
+import { openClient, plantRecord, openTrackPage, shownName, browserArg } from './game_client.mjs';
 
 const args = process.argv.slice(2);
 const checkOnly = args.includes('--check');
-const [name = 'summer1', run = 'baseline'] = args.filter((a) => !a.startsWith('--'));
+const [name = 'summer1', run = 'baseline'] = args.filter((a) => !a.startsWith('--') && !a.includes('='));
 
 let lap;
 try {
@@ -33,7 +33,7 @@ try {
 }
 
 console.log('Opening the 0.6.3 client (API server blocked)...');
-const client = await openClient({ headless: checkOnly });
+const client = await openClient({ browser: browserArg(args), headless: checkOnly });
 const { page } = client;
 await plantRecord(client, name, lap);
 await page.reload({ waitUntil: 'load' });

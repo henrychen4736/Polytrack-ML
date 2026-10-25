@@ -19,8 +19,10 @@ the conventions, the state of every model, and how each one came to be.
   the game client could upload them (it uploads any stored lap that beats the
   server's copy, so a bot lap never goes into a normal browser's
   localStorage). `scripts/watch_ghost.mjs` and `scripts/race.mjs` open the
-  client through `scripts/game_client.mjs`: a temporary Edge profile in which
-  every request to `vps.kodub.com` is answered locally (GET only) or blocked.
+  client through `scripts/game_client.mjs`: a temporary browser profile (Edge
+  by default, `browser=chrome` or `browser=firefox`, the latter Playwright's
+  own build) in which every request to `vps.kodub.com` is answered locally
+  (GET only) or blocked.
 - **One model is published:** `models/ppo_blkgen.best2.actor.bin`, so that
   `npm run race -- <track>` works from a fresh clone (Henry's decision, 25
   October 2026). The race shows the best human and the generalist as

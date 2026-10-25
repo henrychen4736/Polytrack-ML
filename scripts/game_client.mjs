@@ -1,10 +1,11 @@
-// The real PolyTrack 0.6.3 client in a throwaway Edge window that cannot
+// The real PolyTrack 0.6.3 client in a throwaway browser window that cannot
 // reach Kodub's server. Shared by scripts/watch_ghost.mjs (watch one stored
 // lap) and scripts/race.mjs (race the best model and the best human).
 //
-// How it works, in plain terms: Playwright starts Edge with a fresh,
-// incognito-style profile, opens the game from Kodub's own site, and sits
-// between the game and Kodub's API server (vps.kodub.com). Every request to
+// How it works, in plain terms: Playwright starts Edge (or Chrome, or
+// Firefox) with a fresh, incognito-style profile, opens the game from
+// Kodub's own site, and sits between the game and Kodub's API server
+// (vps.kodub.com). Every request to
 // that server either gets an answer made up on this machine (`answer`, for
 // the few read-only requests a caller wants to serve, such as a leaderboard)
 // or is blocked. Nothing the game sends ever leaves the machine.
@@ -28,8 +29,18 @@
 //   client.blocked()               // requests aborted so far
 //   await client.close();
 //
-// Local use only. Needs Microsoft Edge and playwright-core (npm install).
-import { chromium } from 'playwright-core';
+// Browsers (`browser=` on the command line of every script that uses this):
+//   edge      Microsoft Edge as installed (the default)
+//   chrome    Google Chrome as installed
+//   firefox   Playwright's own build of Firefox, NOT the Firefox you use
+//             day to day: Playwright can only drive Firefox through its
+//             patched build. One download, about 80 MB (342 MB unpacked):
+//               npx playwright-core install firefox
+//             Checked on 25 October 2026 with Firefox 155: capture, the
+//             leaderboard ghosts and the race work as in Edge.
+//
+// Local use only. Needs playwright-core (npm install) and one of the above.
+import { chromium, firefox } from 'playwright-core';
 import { createHash } from 'node:crypto';
 import { loadTrack } from '../sim/env.mjs';
 import { decodeSaveString } from '../sim/track.mjs';
@@ -47,9 +58,49 @@ export const trackIdOf = (name) => sha256(decodeSaveString(loadTrack(name).track
 /** "winter1" -> "Winter 1", the name the game shows in its track list. */
 export const shownName = (name) => name.replace(/^([a-z])([a-z]*)(\d+)$/, (_, a, rest, n) => `${a.toUpperCase()}${rest} ${n}`);
 
+export const BROWSERS = ['edge', 'chrome', 'firefox'];
+
+/**
+ * Start one of BROWSERS, or stop the script with a message saying how to
+ * get it. Playwright's own message for a missing browser is a page of
+ * install advice for its bundled Chromium, which this project does not use.
+ */
+export async function launchBrowser(kind = 'edge', { headless = false } = {}) {
+  if (!BROWSERS.includes(kind)) {
+    console.error(`browser=${kind} is not supported; use one of ${BROWSERS.join(', ')}.`);
+    process.exit(1);
+  }
+  try {
+    if (kind === 'firefox') {
+      // WebGL is off in headless Firefox unless forced; the game needs it.
+      return await firefox.launch({ headless, firefoxUserPrefs: { 'webgl.force-enabled': true } });
+    }
+    return await chromium.launch({
+      channel: kind === 'edge' ? 'msedge' : 'chrome',
+      headless,
+      // Software rendering flags are only needed when there is no window/GPU.
+      args: headless ? ['--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] : ['--start-maximized'],
+    });
+  } catch (err) {
+    if (/distribution|executable doesn't exist|not found/i.test(err.message)) {
+      console.error({
+        edge: 'Microsoft Edge was not found. Install it (https://www.microsoft.com/edge), or use browser=chrome or browser=firefox.',
+        chrome: 'Google Chrome was not found. Install it (https://www.google.com/chrome), or use browser=edge or browser=firefox.',
+        firefox: "Playwright's Firefox is not installed. Run: npx playwright-core install firefox",
+      }[kind]);
+      process.exit(1);
+    }
+    throw err;
+  }
+}
+
+/** The browser=<name> option from a script's arguments; edge when absent. */
+export const browserArg = (args) => (args.find((a) => a.startsWith('browser=')) ?? 'browser=edge').slice(8);
+
 /**
  * Open the client and wait until it has made its local profile.
  *
+ *   browser   one of BROWSERS (default edge)
  *   headless  true for automated checks (software rendering, fixed size)
  *   answer    optional (url: URL) => any. Called for GET requests to
  *             vps.kodub.com; what it returns is sent back as the JSON reply
@@ -58,27 +109,13 @@ export const shownName = (name) => name.replace(/^([a-z])([a-z]*)(\d+)$/, (_, a,
  *
  * Returns { browser, page, profile, blocked(), answered(), close() }.
  */
-export async function openClient({ headless = false, answer = null } = {}) {
-  let browser;
-  try {
-    browser = await chromium.launch({
-      channel: 'msedge',
-      headless,
-      // Software rendering flags are only needed when there is no window/GPU.
-      args: headless ? ['--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] : ['--start-maximized'],
-    });
-  } catch (err) {
-    // Playwright's own message for a missing browser is a page of install
-    // advice for its bundled browsers, which this project does not use.
-    if (/msedge|distribution/i.test(err.message)) {
-      console.error('Microsoft Edge was not found. Install it (https://www.microsoft.com/edge) and run this again.');
-      process.exit(1);
-    }
-    throw err;
-  }
+export async function openClient({ browser: kind = 'edge', headless = false, answer = null } = {}) {
+  const browser = await launchBrowser(kind, { headless });
   // newContext() is an incognito-style profile: nothing is shared with your
-  // real Edge profile and everything is discarded when the browser closes.
-  const context = await browser.newContext({ viewport: headless ? { width: 1280, height: 800 } : null });
+  // real browser profile and everything is discarded when the browser closes.
+  // Firefox has no --start-maximized, so its window gets a fixed size.
+  const viewport = headless ? { width: 1280, height: 800 } : kind === 'firefox' ? { width: 1600, height: 900 } : null;
+  const context = await browser.newContext({ viewport });
   let blocked = 0, answered = 0;
   await context.route(/vps\.kodub\.com/, (route) => {
     const request = route.request();

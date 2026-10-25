@@ -12,7 +12,7 @@
 //      19), fastest finished lap kept. The lap is checked with the game's
 //      own Verify and kept in runs/race-generalist_<track>.recording.json,
 //      so the next race on that track starts at once. About 5 to 30 s.
-//   2. The real 0.6.3 client opens in a throwaway Edge window
+//   2. The real 0.6.3 client opens in a throwaway browser window
 //      (scripts/game_client.mjs). When it asks Kodub's server for the
 //      track's leaderboard, this script answers instead, with two entries:
 //      "Best human" (lap 0 of data/laps/<track>.json) and "Best generalist
@@ -21,22 +21,24 @@
 //      included, so neither ghost nor your own lap ever leaves this machine.
 //
 // Usage (from the project root, after the setup in README.md):
-//   node scripts/race.mjs [track] [--redo] [--check]
-//   npm run race -- desert4
+//   node scripts/race.mjs [track] [browser=edge|chrome|firefox] [--redo] [--check]
+//   npm run race -- desert4 browser=firefox
 //     track    an official track: desert1..5, summer1..7, winter1..5
 //              (default desert4)
+//     browser  edge (default), chrome, or firefox (Playwright's own build:
+//              npx playwright-core install firefox; see game_client.mjs)
 //     --redo   drive the model again instead of reusing the kept lap
 //     --check  no window: open the leaderboard, save screenshots to
 //              capture/race_*.png and exit (an automated test of this script)
 //
 // Needs: data/ (npm run capture; node scripts/fetch_laps.mjs <track>),
-// Microsoft Edge, Node 20+. No Python, no GPU.
+// Edge, Chrome or Playwright's Firefox, Node 20+. No Python, no GPU.
 //
 // Local use only. Bot laps must never be submitted to Kodub's leaderboards;
 // see the SAFETY note in scripts/game_client.mjs before changing anything.
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { openClient, openTrackPage, trackIdOf, shownName } from './game_client.mjs';
+import { openClient, openTrackPage, trackIdOf, shownName, browserArg, BROWSERS } from './game_client.mjs';
 
 const ROOT = new URL('../', import.meta.url);
 const MODEL = 'models/ppo_blkgen.best2.actor.bin';
@@ -48,7 +50,8 @@ const MAX_DECISIONS = 3600;
 const args = process.argv.slice(2);
 const checkOnly = args.includes('--check');
 const redo = args.includes('--redo');
-const track = args.find((a) => !a.startsWith('--')) ?? 'desert4';
+const track = args.find((a) => !a.startsWith('--') && !a.includes('=')) ?? 'desert4';
+const browser = browserArg(args);
 
 /** Stop with a message that says how to fix it. */
 function fail(message) {
@@ -58,6 +61,7 @@ function fail(message) {
 
 // ---- what is needed, checked up front -------------------------------------------
 
+if (!BROWSERS.includes(browser)) fail(`browser=${browser} is not supported; use one of ${BROWSERS.join(', ')}.`);
 if (!/^(desert[1-5]|summer[1-7]|winter[1-5])$/.test(track)) fail(`"${track}" is not an official track: desert1..5, summer1..7, winter1..5.`);
 if (!existsSync(new URL('data/init_0.6.3.json', ROOT))) fail('No data/init_0.6.3.json. Run `npm run setup` and then `npm run capture` first (README.md, Setup).');
 if (!existsSync(new URL(`data/laps/${track}.json`, ROOT))) fail(`No human laps for ${track}. Run \`node scripts/fetch_laps.mjs ${track}\` first (it only reads the public leaderboard).`);
@@ -161,7 +165,7 @@ function answer(url) {
 }
 
 console.log('Opening the 0.6.3 client (Kodub\'s server blocked; the leaderboard is answered here)...');
-const client = await openClient({ headless: checkOnly, answer });
+const client = await openClient({ browser, headless: checkOnly, answer });
 await openTrackPage(client.page, track);
 
 const summary = ghosts.map((g) => `  ${g.nickname.padEnd(22)} ${(g.lap.frames / 1000).toFixed(3)} s`).join('\n');
