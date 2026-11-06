@@ -2946,9 +2946,9 @@
     "semantic_hash": ""
   },
   "scripts/game_client.mjs": {
-    "mtime": 1792956973.5300105,
-    "seen": 1792957200.5191588,
-    "ast_hash": "14103375ac7b179dc405cdfb1a71a5ed",
+    "mtime": 1792957523.3906028,
+    "seen": 1792957664.5879648,
+    "ast_hash": "4a9268cd18b2a05df86b367487d2c166",
     "semantic_hash": ""
   },
   "scripts/race.mjs": {

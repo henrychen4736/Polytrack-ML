@@ -94,6 +94,36 @@ export async function launchBrowser(kind = 'edge', { headless = false } = {}) {
   }
 }
 
+/**
+ * Page size options for a new context.
+ *
+ * Headless: a fixed 1280 x 800, for repeatable screenshots.
+ * Edge and Chrome: none (viewport null); --start-maximized fills the screen
+ * and the page follows the window.
+ * Firefox: Playwright's Firefox cannot be started maximised, and left to
+ * itself it opens a window taller than a laptop screen (measured on 25
+ * October 2026 on a 1280 x 752 screen at 200% scaling: 813 tall; with the
+ * earlier fixed 1600 x 900 page, 997), so the bottom of the game, with its
+ * Play button, was off screen. So a throwaway page first measures the
+ * screen and the window's frame, and the page is sized so the whole window
+ * fits, with the screen's own pixel density so the game stays sharp.
+ */
+async function windowFor(browser, kind, headless) {
+  if (headless) return { viewport: { width: 1280, height: 800 } };
+  if (kind !== 'firefox') return { viewport: null };
+  const probe = await browser.newContext({ viewport: null });
+  const m = await (await probe.newPage()).evaluate(() => ({
+    width: screen.availWidth, height: screen.availHeight,
+    frameW: outerWidth - innerWidth, frameH: outerHeight - innerHeight, dpr: devicePixelRatio,
+  }));
+  await probe.close();
+  const MARGIN = 8; // the window lands a few pixels from the corner
+  return {
+    viewport: { width: m.width - m.frameW - MARGIN, height: m.height - m.frameH - MARGIN },
+    deviceScaleFactor: m.dpr,
+  };
+}
+
 /** The browser=<name> option from a script's arguments; edge when absent. */
 export const browserArg = (args) => (args.find((a) => a.startsWith('browser=')) ?? 'browser=edge').slice(8);
 
@@ -113,9 +143,7 @@ export async function openClient({ browser: kind = 'edge', headless = false, ans
   const browser = await launchBrowser(kind, { headless });
   // newContext() is an incognito-style profile: nothing is shared with your
   // real browser profile and everything is discarded when the browser closes.
-  // Firefox has no --start-maximized, so its window gets a fixed size.
-  const viewport = headless ? { width: 1280, height: 800 } : kind === 'firefox' ? { width: 1600, height: 900 } : null;
-  const context = await browser.newContext({ viewport });
+  const context = await browser.newContext(await windowFor(browser, kind, headless));
   let blocked = 0, answered = 0;
   await context.route(/vps\.kodub\.com/, (route) => {
     const request = route.request();
