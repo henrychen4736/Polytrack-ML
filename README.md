@@ -4,72 +4,6 @@ Local ML and search for fast PolyTrack 0.6.3 laps, run against the game's own
 physics headlessly in Node. Nothing here talks to Kodub's leaderboard server:
 bot runs are for local ghosts only and must not be submitted.
 
-## Race the best model
-
-Play a track in the real PolyTrack client against two ghosts: the project's
-best generalist (`models/ppo_blkgen.best2.actor.bin`, included, so nothing
-needs training) and the fastest human lap on the public leaderboard.
-
-You need Node 20+, an internet connection (the game itself loads from
-Kodub's site) and one browser: Microsoft Edge (the default), Google Chrome,
-or Firefox. No Python, no GPU.
-
-**Firefox:** the scripts cannot drive the Firefox you browse with, only
-Playwright's own build of it. Install that once (about 80 MB to download),
-then add `browser=firefox` to `capture` and `race`:
-
-```bash
-npx playwright-core install firefox
-```
-
-**Once, after cloning:**
-
-```bash
-npm install
-npm run setup     # the game's simulator files, into vendor/
-npm run capture   # what the game sends its physics engine, into data/ (under a minute)
-                  # with Firefox or Chrome: npm run capture -- browser=firefox
-```
-
-**Once for each track you want to race** (desert1..5, summer1..7, winter1..5):
-
-```bash
-node scripts/fetch_laps.mjs desert4   # that track's top public laps, into data/laps/ (only reads)
-```
-
-**Then race:**
-
-```bash
-npm run race -- desert4                   # in Edge
-npm run race -- desert4 browser=firefox   # or browser=chrome
-```
-
-A missing browser stops the script with what to install.
-
-What happens:
-
-1. The first race on a track lets the model drive it in this project's
-   copy of the game's physics, checks the lap with the game's own Verify and
-   keeps it in `runs/race-generalist_<track>.recording.json` (5 to 30 s;
-   later races reuse it, `--redo` drives again).
-2. The game opens in a temporary browser window, on the track's page.
-3. In the leaderboard on the left, click **Best human** (blue car) and
-   **Best generalist (bot)** (orange car) to pick them as opponents.
-4. Press **Play** and drive with W A S D or the arrow keys. **Watch** replays
-   a picked ghost instead.
-5. Close the window when you are done.
-
-How good the ghosts are: on desert4 the model's lap is 22.090 s against the
-human's 21.750 s. The model finishes 132 of 140 attempts on the 14 tracks it
-trained on, but only 7 of 30 on desert3, summer3 and winter4, which it never
-saw. **On a track where none of its 11 tries finishes, only the human ghost
-is shown.**
-
-Nothing reaches Kodub's leaderboard server: the window's profile is thrown
-away on close, the leaderboard and ghosts are answered on your machine, and
-every other request, uploads included, is blocked (`scripts/game_client.mjs`).
-Don't copy a bot lap into the game in your normal browser; it would upload it.
-
 ## Where things stand (18 October 2026)
 
 Two goals: a lap faster than the best human lap on at least one track, and a
@@ -173,8 +107,6 @@ use `.venv/Scripts/python` and `--device cuda` to train on the GPU.
   Kodub's geometry and other players' laps, which are not ours to
   redistribute. See "Getting the data" below.
 - `runs/`, `rl/checkpoints/`: results and model files. Both are git-ignored.
-- `models/`: the one model published with the code, the best generalist's
-  actor (`ppo_blkgen.best2.actor.bin`, 647 KB), for `npm run race`.
 - `graphify-out/`: a knowledge graph of the code. Ask it with
   `graphify query "<question>"`; refresh it with `graphify update .`.
 
@@ -204,7 +136,7 @@ node ideas/run_all_tests.mjs    # every folder, one after another, about 25 minu
 ```bash
 node scripts/drive_baseline.mjs summer1     # pure-pursuit lap, saves runs/baseline_summer1.json
 node scripts/export_recording.mjs summer1   # encodes it as a recording and runs the game's Verify
-node scripts/watch_ghost.mjs summer1        # opens the real client on the track page with the lap loaded; click Watch
+node scripts/watch_ghost.mjs summer1        # opens the real client with the lap loaded; click Watch
 node scripts/search_timeline.mjs summer1 seconds=120   # mutate key timings, saves runs/search_summer1.recording.json
 node scripts/watch_ghost.mjs summer1 search # watch the searched lap
 node scripts/search_settings.mjs summer1 seconds=120   # tune the controller's settings, saves runs/tuned_summer1.json
