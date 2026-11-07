@@ -1,9 +1,9 @@
 {
   "package.json": {
-    "mtime": 1791105991.3519456,
-    "seen": 1791348608.66859,
-    "ast_hash": "764d8499ca5379965b43b0e66b75abbd",
-    "semantic_hash": "764d8499ca5379965b43b0e66b75abbd"
+    "mtime": 1794000271.6153598,
+    "seen": 1794000343.041422,
+    "ast_hash": "c29769614e9518712ebe9f432d379573",
+    "semantic_hash": ""
   },
   "rl/block_test.mjs": {
     "mtime": 1791340378.6228511,
@@ -78,10 +78,10 @@
     "semantic_hash": "72da04e237816bd43491feaa10f55a77"
   },
   "scripts/capture_init.mjs": {
-    "mtime": 1791105435.352733,
-    "seen": 1791348608.66859,
-    "ast_hash": "f46dae95a02d2c5dc4069e07f03210ed",
-    "semantic_hash": "f46dae95a02d2c5dc4069e07f03210ed"
+    "mtime": 1794000271.6183875,
+    "seen": 1794000343.041422,
+    "ast_hash": "dab73495e6975fe79a82e756c1617f1f",
+    "semantic_hash": ""
   },
   "scripts/check_path.mjs": {
     "mtime": 1791107108.351585,
@@ -174,10 +174,10 @@
     "semantic_hash": "685a7ef75b4d27e9da1669c814f39701"
   },
   "scripts/watch_ghost.mjs": {
-    "mtime": 1791182091.2816765,
-    "seen": 1791348608.66859,
-    "ast_hash": "4f496320da692f04c80752d68e4f107f",
-    "semantic_hash": "4f496320da692f04c80752d68e4f107f"
+    "mtime": 1794000271.619681,
+    "seen": 1794000343.041422,
+    "ast_hash": "d5f40d22887782947d1768388d6781af",
+    "semantic_hash": ""
   },
   "sim/controller.mjs": {
     "mtime": 1791111410.7721336,
@@ -264,9 +264,9 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1792383769.1724913,
-    "seen": 1792383781.3483577,
-    "ast_hash": "d6f60c12cd172d469318b9cbd47d5443",
+    "mtime": 1794000271.5791552,
+    "seen": 1794000343.041422,
+    "ast_hash": "ff2c2603065d8f3ca0a35fac5e791b2a",
     "semantic_hash": ""
   },
   "rl/README.md": {
@@ -2640,9 +2640,9 @@
     "semantic_hash": ""
   },
   "CLAUDE.md": {
-    "mtime": 1792383809.1010468,
-    "seen": 1792386912.3377392,
-    "ast_hash": "5168f02ca1d6f6676c6915b776d31fca",
+    "mtime": 1794000271.5771458,
+    "seen": 1794000343.041422,
+    "ast_hash": "fa999d78e0276b243238acaf31dc180c",
     "semantic_hash": ""
   },
   "docs/model-history.md": {
