@@ -105,7 +105,14 @@ use `.venv/Scripts/python` and `--device cuda` to train on the GPU.
 - `data/`: messages the real client posted to its worker, and human laps
   (`data/laps/<track>.json`, ten per track). **Not in this repository**: it is
   Kodub's geometry and other players' laps, which are not ours to
-  redistribute. See "Getting the data" below.
+  redistribute. See "Getting the data" above.
+- `docs/`: [`model-history.md`](docs/model-history.md), the record of every
+  model trained, and `archive/`, finished plans kept for the record.
+- `vendor/`: polyrl, cloned at a pinned commit by `npm run setup`; it holds
+  the game's simulation worker and physics files. Git-ignored.
+- `capture/`: what `npm run capture` and `watch_ghost.mjs --check` save:
+  every message the client sent its worker (`worker_messages.json`) and
+  screenshots. Git-ignored.
 - `runs/`, `rl/checkpoints/`: results and model files. Both are git-ignored.
 - `graphify-out/`: a knowledge graph of the code. Ask it with
   `graphify query "<question>"`; refresh it with `graphify update .`.
