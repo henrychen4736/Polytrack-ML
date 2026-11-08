@@ -55,7 +55,8 @@ tried.
 
 The fuller write-up, with every idea's result and what is left, is
 [`ideas/README.md`](ideas/README.md); every model trained is in
-[`docs/model-history.md`](docs/model-history.md).
+[`docs/model-history.md`](docs/model-history.md). A diagram of every
+approach and what it was built on is [`docs/idea-tree.md`](docs/idea-tree.md).
 
 ## Setup
 
@@ -107,7 +108,9 @@ use `.venv/Scripts/python` and `--device cuda` to train on the GPU.
   Kodub's geometry and other players' laps, which are not ours to
   redistribute. See "Getting the data" above.
 - `docs/`: [`model-history.md`](docs/model-history.md), the record of every
-  model trained, and `archive/`, finished plans kept for the record.
+  model trained, [`idea-tree.md`](docs/idea-tree.md), a diagram of every
+  approach and what it was built on, and `archive/`, finished plans kept for
+  the record.
 - `vendor/`: polyrl, cloned at a pinned commit by `npm run setup`; it holds
   the game's simulation worker and physics files. Git-ignored.
 - `capture/`: what `npm run capture` and `watch_ghost.mjs --check` save:

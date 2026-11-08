@@ -264,9 +264,9 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1794000271.5791552,
-    "seen": 1794000343.041422,
-    "ast_hash": "ff2c2603065d8f3ca0a35fac5e791b2a",
+    "mtime": 1794098165.8595905,
+    "seen": 1794098201.7964075,
+    "ast_hash": "05cdb43af7c6c15d64fced581977ac5f",
     "semantic_hash": ""
   },
   "rl/README.md": {
@@ -2943,6 +2943,12 @@
     "mtime": 1792386889.5224526,
     "seen": 1792386912.3377392,
     "ast_hash": "5263bf0661b9c5bf7b30f3501e41e5e4",
+    "semantic_hash": ""
+  },
+  "docs/idea-tree.md": {
+    "mtime": 1794098164.7712023,
+    "seen": 1794098201.7964075,
+    "ast_hash": "5ca83622505e60b02d0065fd6fb2be44",
     "semantic_hash": ""
   }
 }
