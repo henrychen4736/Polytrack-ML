@@ -260,21 +260,17 @@ Each folder under `ideas/` has its own README with commands and numbers.
 
 ## What is next
 
-1. Combine the two things that work: IQN on the route inputs over generated
-   tracks plus official ones (a generalist that learns per decision far
-   faster than PPO), then g2-3-style explore and adapt on unseen tracks.
-2. A community track: Henry to add one to the repository by hand (the
-   no-network rule forbids fetching one).
-3. desert4 by a model alone: IQN is 42 ms short. The search gains 70 to 72 ms
-   from human-reference IQN laps, so a model whose own lap is about 20 ms better would do it.
-4. The route generalist: fix the summer4 and desert5 routes and teach the
-   route to take banked walls (desert2, summer5).
+Every idea proposed and not yet started is in
+[`docs/ideas-to-try.md`](docs/ideas-to-try.md), next steps first.
 
 Done since the 10 October list: the off-policy learner was run to 39.2M
 decisions on desert4 and its laps verified (21.792 s); one message per block
 decision in `rl/racing_env.mjs` (17 October: identical results, 1.2 to 1.3
 times faster); a generalist on the inputs with no human lap
-(`ppo_g2-1-route`, `ppo_g2-2-route-gen`).
+(`ppo_g2-1-route`, `ppo_g2-2-route-gen`); IQN as a route generalist on
+official plus generated tracks (8 November, `g1-6-iqn-routegen`: worse than
+the PPO route generalists, 0 of 90 on the held-out tracks; see
+`docs/model-history.md` item 27).
 
 ## Things that were not obvious
 

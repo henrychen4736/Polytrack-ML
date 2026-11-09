@@ -565,3 +565,13 @@ All lap times pass the game's Verify and fail one tick sooner.
 | g2-2 generated tracks with jumps, banks, wide roads; route generalist trained on them | 71 of 100 on unseen generated tracks (15 before) |
 | engine: one-message `stepBlock`, `crashEnd`, `--target-steps`, `shapedReward: 0` | 1.2 to 1.3x; median 5.5 to 3.9 laps; exact resume; 2 to 4% |
 | community track | not possible: none in the repository, no network |
+
+## IQN route generalist, 8 November 2026 (added by the main session)
+
+`g1-6-iqn-routegen`: IQN on route inputs (no human lap) over 13 official and
+40 generated tracks, one night from nothing (53.8M decisions,
+`ideas/g1-6-offpolicy-rl/g1-6-train_routegen.sh`). 30 laps per track from
+the start line, not Verified: at best 122 of 420 on official training
+tracks, 147 of 300 on unseen generated tracks, 0 of 90 on desert3, summer3,
+winter4. Worse than the PPO route generalists; details in
+`docs/model-history.md` item 27.

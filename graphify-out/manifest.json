@@ -264,9 +264,9 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1794098165.8595905,
-    "seen": 1794098201.7964075,
-    "ast_hash": "05cdb43af7c6c15d64fced581977ac5f",
+    "mtime": 1794183075.934034,
+    "seen": 1794183288.5490437,
+    "ast_hash": "a3c81f1423578bebaef5dc993334d22b",
     "semantic_hash": ""
   },
   "rl/README.md": {
@@ -510,9 +510,9 @@
     "semantic_hash": "53c3586b3958103303a88d59b9c3dfb6"
   },
   "ideas/g1-6-offpolicy-rl/iqn_server.mjs": {
-    "mtime": 1792296881.7209854,
-    "seen": 1792320070.8882203,
-    "ast_hash": "fc7bdeb48ddc84362b23632a408e2969",
+    "mtime": 1794128928.0538373,
+    "seen": 1794155504.6996098,
+    "ast_hash": "7f6b2e91e6993d8d41533a1d2206f65d",
     "semantic_hash": ""
   },
   "ideas/g1-6-offpolicy-rl/replay.py": {
@@ -522,10 +522,10 @@
     "semantic_hash": "1e23ca86df8e31e16320cfe9602083ff"
   },
   "ideas/g1-6-offpolicy-rl/servers.py": {
-    "mtime": 1791619435.302271,
-    "seen": 1791790269.3075793,
-    "ast_hash": "2027b4caec0b94f28b6f84f563e96fb0",
-    "semantic_hash": "2027b4caec0b94f28b6f84f563e96fb0"
+    "mtime": 1794128941.2424788,
+    "seen": 1794155504.6996098,
+    "ast_hash": "28a3c7f0eb09351df803664e645f913f",
+    "semantic_hash": ""
   },
   "ideas/g1-6-offpolicy-rl/smoke_test.py": {
     "mtime": 1791619659.22516,
@@ -540,9 +540,9 @@
     "semantic_hash": "b01dc59091e3ca2c804de3399673bb96"
   },
   "ideas/g1-6-offpolicy-rl/train_iqn.py": {
-    "mtime": 1792296881.7219844,
-    "seen": 1792320070.8882203,
-    "ast_hash": "f93b3bbaa2e79916c1877ab2d4c42e45",
+    "mtime": 1794128992.886745,
+    "seen": 1794155504.7006183,
+    "ast_hash": "033e2625953ea329c70225d9564cea0e",
     "semantic_hash": ""
   },
   "ideas/g1-7-computed-racing-line/car_model.json": {
@@ -1788,9 +1788,9 @@
     "semantic_hash": ""
   },
   "ideas/g1-6-offpolicy-rl/README.md": {
-    "mtime": 1792383809.162466,
-    "seen": 1792386912.33874,
-    "ast_hash": "80106a1e38f17b6511180164486c166b",
+    "mtime": 1794183117.8106177,
+    "seen": 1794183288.5490437,
+    "ast_hash": "be4d04d5e26a5c6aa470667337ab46b7",
     "semantic_hash": ""
   },
   "ideas/g1-7-computed-racing-line/README.md": {
@@ -2538,9 +2538,9 @@
     "semantic_hash": "29a25a953d77f3abb10ab206d5bd75f4"
   },
   "ideas/README.md": {
-    "mtime": 1792352502.0900433,
-    "seen": 1792352512.8525,
-    "ast_hash": "d5ba7c83e3f6858d5d4a7e4a580dc62c",
+    "mtime": 1794183106.519547,
+    "seen": 1794183288.5490437,
+    "ast_hash": "3580aa8950110b04710e5043ad9b1230",
     "semantic_hash": ""
   },
   "ideas/g1-1-human-seed-search/tests/TESTING.md": {
@@ -2640,15 +2640,15 @@
     "semantic_hash": ""
   },
   "CLAUDE.md": {
-    "mtime": 1794000271.5771458,
-    "seen": 1794000343.041422,
-    "ast_hash": "fa999d78e0276b243238acaf31dc180c",
+    "mtime": 1794183075.345118,
+    "seen": 1794183288.5490437,
+    "ast_hash": "8b2995b606e58510d50ccc504e2c7934",
     "semantic_hash": ""
   },
   "docs/model-history.md": {
-    "mtime": 1792383466.4457283,
-    "seen": 1792383759.0017798,
-    "ast_hash": "93af90f8880fda89138196f30494a581",
+    "mtime": 1794183039.2810757,
+    "seen": 1794183288.5490437,
+    "ast_hash": "996715468139d33ad5eeef159d00991d",
     "semantic_hash": ""
   },
   "rl/policy.mjs": {
@@ -2946,9 +2946,39 @@
     "semantic_hash": ""
   },
   "docs/idea-tree.md": {
-    "mtime": 1794098164.7712023,
-    "seen": 1794098201.7964075,
-    "ast_hash": "5ca83622505e60b02d0065fd6fb2be44",
+    "mtime": 1794183258.0121915,
+    "seen": 1794183288.5490437,
+    "ast_hash": "ba46b2e496163690045975499f37bdd9",
+    "semantic_hash": ""
+  },
+  "docs/ideas-to-try.md": {
+    "mtime": 1794183104.8201241,
+    "seen": 1794183288.5490437,
+    "ast_hash": "60a09cf4524047bb98c2b3197e08de41",
+    "semantic_hash": ""
+  },
+  "ideas/g1-6-offpolicy-rl/g1-6-eval_routegen.py": {
+    "mtime": 1794129131.1809297,
+    "seen": 1794155504.6996098,
+    "ast_hash": "dde04f866c4632e55ca94076db3dff23",
+    "semantic_hash": ""
+  },
+  "ideas/g1-6-offpolicy-rl/g1-6-train_routegen.sh": {
+    "mtime": 1794129198.7522943,
+    "seen": 1794155504.6996098,
+    "ast_hash": "565362b7d61611583ead9f986a6a1e1d",
+    "semantic_hash": ""
+  },
+  "ideas/g1-6-offpolicy-rl/results/g1-6-routegen-eval10.txt": {
+    "mtime": 1794183016.1764686,
+    "seen": 1794183288.5490437,
+    "ast_hash": "36a8a92597e8b332fbc024fb18a45406",
+    "semantic_hash": ""
+  },
+  "ideas/g1-6-offpolicy-rl/results/g1-6-routegen-eval30.txt": {
+    "mtime": 1794183016.2393034,
+    "seen": 1794183288.5490437,
+    "ast_hash": "def9d70f99b9cf1fab4dd4c8c467a959",
     "semantic_hash": ""
   }
 }

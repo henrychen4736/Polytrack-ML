@@ -7,7 +7,7 @@ for its status. Full details of each model are in
 [`model-history.md`](model-history.md); the side ideas are in
 [`../ideas/README.md`](../ideas/README.md).
 
-Last updated 7 November 2026. Lap times are against the best human lap;
+Last updated 8 November 2026. Lap times are against the best human lap;
 generalist scores are finishes out of 170 test attempts (10 per track, 17
 tracks).
 
@@ -63,6 +63,7 @@ flowchart LR
   iqnw2["IQN on winter2<br/>26.997 s, best model there"]
   iqnr["IQN on route inputs<br/>desert4 21.846 s, no human lap"]
   iqns["g1-1 search on IQN's lap<br/>desert4 21.720 s, human 21.750 s"]
+  iqngen["IQN route generalist, 8 Nov<br/>29% official, 0 of 90 held out"]
 
   root --> pursuit --> sect
   sect --> g11
@@ -91,6 +92,8 @@ flowchart LR
   iqn --> iqnr
   iqn --> iqns
   g11 -.-> iqns
+  iqnr --> iqngen
+  rgen2 -.-> iqngen
 
   classDef use fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#111
   classDef fed fill:#eeeeee,stroke:#888,color:#111
@@ -99,12 +102,13 @@ flowchart LR
 
   class blkgen,set2,g23,rgen2,iqn,iqnw2,iqnr use
   class root,pursuit,sect,g15,gen3,block,cand,g24,route,rgen fed
-  class g14,g17,ppo1,gen,follow,rays,spec,blk1,srt,set3,race,mem,iqnvar drop
+  class g14,g17,ppo1,gen,follow,rays,spec,blk1,srt,set3,race,mem,iqnvar,iqngen drop
   class g11,g12,iqns beat
 ```
 
-The dotted line marks that the better-than-human lap from IQN used the g1-1
-search on IQN's own lap.
+The dotted lines mark a second source: the better-than-human lap from IQN
+used the g1-1 search on IQN's own lap, and the IQN route generalist trained
+on g2-2's generated tracks.
 
 ## How to update it
 

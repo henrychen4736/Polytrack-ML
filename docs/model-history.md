@@ -477,6 +477,46 @@ g1-6-iqn-route(2)_desert4        fresh, route inputs
 - **Outcome:** the first driving of unseen tracks with no human lap at all.
   The generated tracks are easier than official ones.
 
+### 27. `g1-6-iqn-routegen`: IQN route generalist, official plus generated tracks (8 Nov)
+
+- **Built from:** nothing. A warm start from `g1-6-iqn-route2_desert4.pt`
+  was tried first in a smoke test: with the lap fraction hidden
+  (`--no-lap-fraction`, a generalist cannot know it) and a full learning
+  rate it stalled on every track, desert4 included.
+- **What changed:** `train_iqn.py` drives many tracks (`--track` takes a
+  list, each simulator rotates through its share, `--rotate-every 20`),
+  `--eval-tracks`, `--no-lap-fraction`, `--stop-hours` (the learning rate
+  fades by wall time). Route inputs (334, no human lap); 13 official tracks
+  (not summer4) plus the 40 generated tracks of g2-2-set1.
+- **Training:** overnight, 01:15 to 08:16, four stretches (2.1, 2.1, 2.1,
+  0.7 h), learning rate 2.5e-4, 1.5e-4, 1e-4, 1e-4, each fading to 0. 12
+  simulators, `--reuse 16`, 3M buffer. 53.8M decisions in all, about 2,100
+  to 2,500 a second (GPU learning 64 to 85% of the time).
+  `ideas/g1-6-offpolicy-rl/g1-6-train_routegen.sh`.
+- **Results** (`g1-6-eval_routegen.py`, from the start line, 30 laps per
+  track with a random action 1% of the time, plus one greedy lap; not
+  Verified; full tables in `ideas/g1-6-offpolicy-rl/results/`):
+
+  | Copy | Decisions | 14 official training | 3 held out | 10 unseen generated |
+  | --- | --- | --- | --- | --- |
+  | s2 | 32.5M | 122 of 420 (29%) | 0 of 90 | 135 of 300 (45%) |
+  | s3 | 48.4M | 99 of 420 (24%) | 0 of 90 | 113 of 300 (38%) |
+  | s4 | 53.8M | 65 of 420 (15%) | 0 of 90 | 147 of 300 (49%) |
+
+  Greedy: at most 3 of 14 official and 4 of 10 generated. s1 (16.4M, 10-lap
+  test): 32 of 140, 0 of 30, 23 of 100. No copy ever finished desert2,
+  desert5, summer4, summer5, winter3 or a held-out track. The single-track
+  `route2_desert4` it started beside: 11 of 11 on desert4, nothing elsewhere.
+- **Outcome:** worse than the PPO route generalists on both counts
+  (`ppo_g2-1-route` 90 of 170 official; `ppo_g2-2-route-gen` 71 of 100
+  unseen generated, against about 49% here), and no better on the held-out
+  three (0 of 90). Official-track finishes fell from s2 to s4 while
+  generated ones held, so the 40 easy generated tracks crowd out the 13
+  official ones. Laps are far off human pace (winter1 21.748 s, winter5
+  21.225 s). Not tried: weighting official tracks more, or more than one
+  night. The randomness differs from PPO's sampled seeds, so the comparison
+  is approximate.
+
 ## Where the evidence is
 
 All under `runs/` (git-ignored).
@@ -492,6 +532,7 @@ All under `runs/` (git-ignored).
 | Off-policy run | `g1-6-iqn_desert4.log` (stretch 1), `.s<k>.log` (later), `g1-6-iqn-latest_desert4.recording.json`, `g1-6-iqn-s<k>best_` / `-s<k>final_desert4.recording.json` |
 | 16 to 17 Oct queue | `queue/queue.log` and one log per step (`scripts/queue_unfinished.sh`) |
 | Route generalist test | `big_g2-1-<checkpoint>/`, `queue/g2-1-eval-<copy>.log` |
+| IQN route generalist (8 Nov) | `g1-6-routegen/`: `driver.log`, `train_s<k>.log`, `eval.txt` (10 laps), `eval30.txt` (30 laps); copies of both tests in `ideas/g1-6-offpolicy-rl/results/` |
 
 Traps in the names:
 

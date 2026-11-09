@@ -41,14 +41,33 @@ start-line evaluation only.
 Checkpoint: rl/checkpoints/g1-6-iqn_<track>.pt (network, target network,
 optimizer, counters). The replay buffer is not saved (over a gigabyte); a
 resumed run refills it before learning again.
+
+MANY TRACKS (added 8 November 2026, for an IQN generalist): --track takes
+what rl/train_ppo.py takes (comma list, generated .track.json files, folders,
+.txt lists). With more than one track, simulator k drives tracks[k::envs] in
+turn, switching every --rotate-every episodes (TRACK ROTATION in
+iqn_server.mjs); use --no-lap-fraction so the inputs do not say how far
+round the lap the car is. Every --eval-every rounds one start-line lap is
+driven on the next track of --eval-tracks (default: the official ones among
+the training tracks); the log prints it and the checkpoint keeps the fastest
+per track. No .best.pt is kept in this mode: copies are chosen by test.
+--stop-hours ends a run after that much wall time, with the learning rate
+faded by whichever of time and decisions is further along, so a run can be
+fitted to a deadline.
+
+Example (the 8 November generalist):
+    .venv/Scripts/python ideas/g1-6-offpolicy-rl/train_iqn.py --reference route --no-lap-fraction \\
+        --track desert1,desert2,...,ideas/g2-2-track-generator/sets/g2-2-set1/train.txt \\
+        --rotate-every 20 --checkpoint rl/checkpoints/g1-6-iqn-routegen.pt --stop-hours 2
 """
 from __future__ import annotations
 
 import argparse
 import copy
 import shutil
+import sys
 import time
-from collections import deque
+from collections import Counter, deque
 from pathlib import Path
 
 import numpy as np
@@ -58,6 +77,9 @@ import torch.nn as nn
 from iqn import IQN, export_actor, quantile_huber_loss
 from replay import ReplayBuffer
 from servers import IqnServers, PROJECT_ROOT
+
+sys.path.insert(0, str(PROJECT_ROOT / "rl"))
+from polytrack_env import expand_tracks, track_label  # noqa: E402
 
 
 class Learner:
@@ -124,7 +146,17 @@ def epsilons(base: float, count: int, spread: float = 2.0) -> list[float]:
 def parse_args(argv=None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     # --- environment ---
-    p.add_argument("--track", default="desert4")
+    p.add_argument("--track", default="desert4",
+                   help="one track, or several (comma list, .track.json files, folders, .txt lists; MANY TRACKS above)")
+    p.add_argument("--rotate-every", type=int, default=20,
+                   help="with several tracks: episodes a simulator drives on one track before moving to its next")
+    p.add_argument("--eval-tracks", default="",
+                   help="with several tracks: tracks the start-line evaluation cycles through (default: the "
+                        "official ones among --track)")
+    p.add_argument("--no-lap-fraction", action="store_true",
+                   help="hide how far round the lap the car is (a generalist must not learn tracks by position)")
+    p.add_argument("--stop-hours", type=float, default=0.0,
+                   help="end the run after this many hours of wall time; 0 = only --total-decisions")
     p.add_argument("--envs", type=int, default=8, help="simulator processes")
     p.add_argument("--slices", type=int, default=1, choices=(1, 5),
                    help="1: 12 actions (a key combination per 50 ms). 5: 60 actions (the combination and "
@@ -187,12 +219,19 @@ def main(argv=None) -> None:
     torch.manual_seed(args.seed)
     rng = np.random.default_rng(args.seed)
     device = torch.device(args.device)
-    checkpoint_path = Path(args.checkpoint) if args.checkpoint else PROJECT_ROOT / "rl" / "checkpoints" / f"g1-6-iqn_{args.track}.pt"
+    tracks = expand_tracks(args.track)
+    multi = len(tracks) > 1
+    default_name = "g1-6-iqn-gen.pt" if multi else f"g1-6-iqn_{args.track}.pt"
+    checkpoint_path = Path(args.checkpoint) if args.checkpoint else PROJECT_ROOT / "rl" / "checkpoints" / default_name
     weights_file = checkpoint_path.with_suffix(".actor.bin")
+    eval_tracks = (expand_tracks(args.eval_tracks) if args.eval_tracks
+                   else [t for t in tracks if not t.endswith(".track.json")] or tracks)
 
     options = dict(slices=args.slices, humanInputs=args.human_inputs, rewardScale=args.reward_scale,
                    randomStart=args.random_start, failureStart=args.failure_start, ownStart=args.own_start,
                    kick=args.kick, maxOffLine=args.max_off_line)
+    if args.no_lap_fraction:
+        options["lapFraction"] = 0
     if args.ref_file:
         options["refFile"] = args.ref_file
     if args.reference == "route":
@@ -200,23 +239,39 @@ def main(argv=None) -> None:
         # (maxOffRoute, 110 units by default in racing_env.mjs)
         options["reference"] = "route"
         del options["maxOffLine"]
-    servers = IqnServers(args.envs, args.track, seed=args.seed, **options)
+    if multi:
+        if len(tracks) < args.envs:
+            raise SystemExit(f"{len(tracks)} tracks for {args.envs} simulators: use at most as many simulators as tracks")
+        track_sets = [tracks[k::args.envs] for k in range(args.envs)]
+        servers = IqnServers(args.envs, tracks[0], seed=args.seed, track_sets=track_sets,
+                             switch_every=args.rotate_every, **options)
+        label = f"{len(tracks)} tracks ({len(eval_tracks)} for evaluation)"
+    else:
+        servers = IqnServers(args.envs, args.track, seed=args.seed, **options)
+        label = args.track
     N, T = args.envs, args.rollout
     learner = Learner(servers.obs_size, servers.num_actions, args, device)
     buffer = ReplayBuffer(max(2 * T, args.buffer // N), N, servers.obs_size)
-    print(f"{args.track}: {N} simulators x {T} decisions per round, {servers.num_actions} actions, "
-          f"human lap {servers.spec['humanFrames']} ticks, device {device}", flush=True)
+    print(f"{label}: {N} simulators x {T} decisions per round, {servers.num_actions} actions, "
+          f"{servers.obs_size} inputs, device {device}", flush=True)
 
     decisions = 0       # driven so far, including earlier runs when resuming
-    best_finish = None  # fastest start-line evaluation lap, ticks
+    best_finish = None  # fastest start-line evaluation lap, ticks (one track)
+    track_best = {}     # many tracks: fastest evaluation lap per track, ticks
     if args.resume:
         saved = torch.load(checkpoint_path, map_location=device, weights_only=True)
         learner.net.load_state_dict(saved["model"])
         learner.target.load_state_dict(saved["target"])
         learner.optimizer.load_state_dict(saved["optimizer"])
         decisions, best_finish = saved["decisions"], saved["best_finish"]
+        # A one-track checkpoint resumed on many tracks starts its table afresh.
+        track_best = dict(saved.get("track_best") or {}) if multi else {}
+        if multi:
+            best_finish = None
         print(f"resumed {checkpoint_path} at {decisions} decisions (the replay buffer starts empty)", flush=True)
     first_decision = decisions
+    eval_index = 0                       # many tracks: next track to evaluate on
+    by_track = deque(maxlen=2000)        # many tracks: (track, finished?) of recent episodes
 
     def save_checkpoint() -> None:
         checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
@@ -227,7 +282,7 @@ def main(argv=None) -> None:
             # What is needed to rebuild the network and the environment.
             "obs_size": servers.obs_size, "num_actions": servers.num_actions, "hidden": args.hidden,
             "head": args.head, "track": args.track, "slices": args.slices, "human_inputs": args.human_inputs,
-            "reference": args.reference,
+            "reference": args.reference, "track_best": track_best, "lap_fraction": 0 if args.no_lap_fraction else 1,
         }, temporary)
         temporary.replace(checkpoint_path)
 
@@ -238,11 +293,20 @@ def main(argv=None) -> None:
     started = time.perf_counter()
     learn_seconds = wait_seconds = 0.0
     round_number = 0
+    stop_seconds = args.stop_hours * 3600
+
+    def done_share() -> float:
+        """How far through this run: decisions, or wall time with --stop-hours."""
+        share = (decisions - first_decision) / args.total_decisions
+        if stop_seconds > 0:
+            share = max(share, (time.perf_counter() - started) / stop_seconds)
+        return share
+
     try:
-        while decisions - first_decision < args.total_decisions:
+        while done_share() < 1:
             round_number += 1
-            done_share = (decisions - first_decision) / args.total_decisions
-            learner.optimizer.param_groups[0]["lr"] = args.lr + (args.lr_end - args.lr) * done_share
+            done_share_now = min(1.0, done_share())
+            learner.optimizer.param_groups[0]["lr"] = args.lr + (args.lr_end - args.lr) * done_share_now
             eps = args.eps_start + (args.eps_end - args.eps_start) * min(1.0, decisions / max(1, args.eps_decisions))
 
             # 1. The simulators drive with the current network ...
@@ -267,10 +331,25 @@ def main(argv=None) -> None:
             decisions += N * T
             for _, episode in data["episodes"]:
                 recent.append((episode["ret"], episode["info"]["fraction"], episode["info"]["reason"]))
+                if multi:
+                    by_track.append((episode["info"].get("track", "?"), episode["info"]["reason"] == "finished"))
 
             # A lap from the start line with no exploring: the only lap time that counts.
             evaluation = ""
-            if args.eval_every and round_number % args.eval_every == 0:
+            if multi and args.eval_every and round_number % args.eval_every == 0:
+                # Many tracks: one lap on the next evaluation track, in turn.
+                where = eval_tracks[eval_index % len(eval_tracks)]
+                eval_index += 1
+                lap = servers.evaluate(weights_file, track=where)
+                buffer.cut(0)
+                info, name = lap["info"], track_label(where)
+                if info["reason"] == "finished":
+                    evaluation = f"  eval {name} {info['finishFrames'] / 1000:.3f} s"
+                    if name not in track_best or info["finishFrames"] < track_best[name]:
+                        track_best[name] = info["finishFrames"]
+                else:
+                    evaluation = f"  eval {name} {info['reason']} at {100 * info['fraction']:.0f}%"
+            elif args.eval_every and round_number % args.eval_every == 0:
                 lap = servers.evaluate(weights_file)
                 # The evaluation used simulator 0, which starts a NEW episode in
                 # the next round: its last stored row must not be read as
@@ -314,6 +393,15 @@ def main(argv=None) -> None:
             print(line, flush=True)
             if round_number % args.save_every == 0:
                 save_checkpoint()
+                if multi and by_track:
+                    # Finishes per track over the recent episodes (part-way
+                    # starts included, so this overstates start-line finishes).
+                    total, done = Counter(t for t, _ in by_track), Counter(t for t, f in by_track if f)
+                    print("  finishes by track (recent episodes, part-way starts included): "
+                          + ", ".join(f"{t} {done[t]}/{total[t]}" for t in sorted(total)), flush=True)
+                    print(f"  evaluated: {len(track_best)} of {len(eval_tracks)} tracks finished from the start "
+                          "line at least once; best " + ", ".join(f"{t} {v / 1000:.3f}" for t, v in sorted(track_best.items())),
+                          flush=True)
     except KeyboardInterrupt:
         print("interrupted; saving the checkpoint", flush=True)
     finally:

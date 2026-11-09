@@ -167,11 +167,14 @@ desert3 and summer3. The first generalist with no human lap in its inputs
 saw (15 of 100 before), still 0 of 30 on the held-out official three. That is
 the first evidence of driving unseen tracks with no human lap; the generated
 tracks are easier than official ones. No community track is in the
-repository, so none has been tried.
+repository, so none has been tried. IQN as a route generalist on the same
+tracks (`g1-6-iqn-routegen`, one night, 53.8M decisions, 8 November) did
+worse: at best 122 of 420 on official training tracks, 147 of 300 on unseen
+generated ones, 0 of 90 held out.
 
 ## Model history
 
-`docs/model-history.md` is the full record of every model trained: 26
+`docs/model-history.md` is the full record of every model trained: 27
 entries, each with what it was built from, what changed, the training, the
 test results, and why it was kept or dropped. Read it when you need to know
 why a model exists or was abandoned, which checkpoint a model was copied
@@ -206,6 +209,16 @@ may already have been tried. The table below is the index.
 | 24 | `g1-6-iqn-route2_desert4` | IQN on route inputs (no human lap) | 21.846 s, 100 of 100 finish |
 | 25 | `g1-3-cand_desert4` | PPO trained on 51 near-best searched laps | own best 21.961 s (was 21.987 s) |
 | 26 | `ppo_g2-2-route-gen` | Route generalist + 40 generated tracks | 71 of 100 on unseen generated tracks |
+| 27 | `g1-6-iqn-routegen` | IQN route generalist, official + generated tracks | 29% official, 49% unseen generated, 0 of 90 held out; worse than PPO |
+
+**`g1-6-iqn-routegen` (8 November, overnight).** IQN on route inputs over
+13 official plus 40 generated tracks, from nothing, four stretches
+(`ideas/g1-6-offpolicy-rl/g1-6-train_routegen.sh`, test
+`g1-6-eval_routegen.py`, results in `ideas/g1-6-offpolicy-rl/results/`).
+Official finishes fell from copy s2 to s4 while generated ones held: the
+generated tracks crowd out the official ones. New trainer flags: a track
+list with `--rotate-every`, `--eval-tracks`, `--no-lap-fraction`,
+`--stop-hours`.
 
 ## The models last trained, and what they are for
 
@@ -283,14 +296,13 @@ Details in `docs/model-history.md` items 21 to 26 and `ideas/README.md`.
 
 ## What is next
 
-1. Combine the two things that work: IQN on the route inputs over generated
-   tracks plus official ones (a generalist that learns per decision far
-   faster than PPO), then g2-3-style explore and adapt on unseen tracks.
-2. A community track: Henry to add one to the repository by hand.
-3. desert4 by a model alone: 42 ms short; the search gains 46 to 72 ms from
-   IQN laps, so a model whose own lap is about 20 ms better would do it.
-4. The route generalist: fix the summer4 and desert5 routes and teach the
-   route to take banked walls (desert2, summer5).
+`docs/ideas-to-try.md` is the one list of proposed, unstarted ideas: the
+next steps from the 18 October results (first: IQN on the route inputs as a
+generalist), Henry's of 8 November (a learned world model, a JEPA decision
+maker, tuning the whole pipeline, a study log and more metrics), and the
+smaller untried items from the idea folders. Add new proposals there, not
+here; move an idea out when it is started. `docs/idea-tree.md` is the diagram of
+what has been tried; update it when an idea gets a result.
 
 ## Lessons that cost something to learn
 

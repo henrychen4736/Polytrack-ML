@@ -38,6 +38,9 @@ training run; statements in them that the results overturn are marked.
 | `train_iqn.py` | The training loop and `Learner` (double Q, target network) |
 | `test_units.py` | Checks without a simulator |
 | `smoke_test.py` | The whole loop on the real simulator, small |
+| `g1-6-train_routegen.sh` | Overnight route generalist: stretches until `STOP_AT`, then the test |
+| `g1-6-eval_routegen.py` | Start-line test of generalist copies on official, held-out and unseen generated tracks |
+| `results/` | That test's output for `g1-6-iqn-routegen` (8 November) |
 
 ## How to run
 
@@ -330,3 +333,16 @@ seconds=1200 workers=8`, two runs): desert4 21.792 to 21.733 to **21.720 s**
 desert4). Not tried: its own best lap as the ruler (`--ref-file`),
 `search_rollout.mjs` from its lap (needs an adapter), IQN on several tracks
 at once, or on route inputs over generated tracks.
+
+**Route generalist on official plus generated tracks** (8 November,
+`g1-6-iqn-routegen`): the "IQN on several tracks at once, on route inputs
+over generated tracks" left above. New in `train_iqn.py`: `--track` takes a
+list (each simulator rotates through its share, `--rotate-every`, as in
+`rl/env_server.mjs`), `--eval-tracks`, `--no-lap-fraction`, `--stop-hours`.
+`g1-6-train_routegen.sh` trains in stretches until a set time, then
+`g1-6-eval_routegen.py` tests every kept copy. One night from nothing, 53.8M
+decisions. At best 122 of 420 on the official training tracks (copy s2),
+147 of 300 on 10 unseen generated tracks (s4), 0 of 90 held out: worse than
+the PPO route generalists. Full tables: `results/g1-6-routegen-eval10.txt`
+and `results/g1-6-routegen-eval30.txt`; details in `docs/model-history.md`
+item 27.

@@ -45,6 +45,17 @@
 //      one (see randomAction). The weights file is written by iqn.py
 //      export_actor and describes its own sizes.
 //
+//   4. TRACK ROTATION (opt-in, added 8 November 2026 for a generalist): with
+//      trackSet=<a,b,c,...> the server drives several tracks in turn, the
+//      same scheme as rl/env_server.mjs: it starts on the first and, every
+//      switchEvery episodes (default 20), closes its RacingEnv and opens one
+//      on the next track of the list. Tracks may be official names or
+//      generated .track.json paths. The reward's ruler (the line or route
+//      length) is the current track's. Episode info then carries "track".
+//      An eval request may name a track: the server moves to it for that
+//      lap and goes back to its own list on the next episode. Without
+//      trackSet nothing here changes.
+//
 // Usage (from the project root; normally started by servers.py):
 //   node ideas/g1-6-offpolicy-rl/iqn_server.mjs track=desert4 seed=3 randomStart=0.8
 //   any key from DEFAULTS in rl/racing_env.mjs, plus slices, rewardScale and
@@ -123,11 +134,23 @@ for (const arg of process.argv.slice(2)) {
   // (as in rl/env_server.mjs: Number("abc") is NaN, Number("") is 0).
   const at = arg.indexOf('=');
   const key = arg.slice(0, at), value = arg.slice(at + 1);
-  if (at < 0 || !(key in DEFAULTS || key in OWN)) { send({ error: `unknown argument "${arg}"` }); process.exit(2); }
-  const text = !(key in OWN) && (key === 'track' || key === 'refFile' || key === 'reference');
+  const rotationKey = key === 'trackSet' || key === 'switchEvery';
+  if (at < 0 || !(key in DEFAULTS || key in OWN || rotationKey)) { send({ error: `unknown argument "${arg}"` }); process.exit(2); }
+  const text = !(key in OWN) && (key === 'track' || key === 'refFile' || key === 'reference' || key === 'trackSet');
   if (!text && (value.trim() === '' || Number.isNaN(Number(value)))) { send({ error: `argument "${arg}": not a number` }); process.exit(2); }
   if (key in OWN) own[key] = Number(value);
   else options[key] = text ? value : Number(value);
+}
+// TRACK ROTATION (4. at the top): the list, where we are, episodes on this track.
+let rotation = null;
+if ('trackSet' in options || 'switchEvery' in options) {
+  const list = (options.trackSet ?? '').split(',').map((t) => t.trim()).filter(Boolean);
+  const every = options.switchEvery ?? 20;
+  delete options.trackSet; delete options.switchEvery;
+  if (!list.length) { send({ error: 'switchEvery needs trackSet=<track,track,...>' }); process.exit(2); }
+  if (!(every >= 1)) { send({ error: 'switchEvery must be at least 1' }); process.exit(2); }
+  rotation = { list, every, index: 0, episodes: 0, switches: 0 };
+  options.track = list[0];
 }
 if ('block' in options || 'ticks' in options || 'pedalEvery' in options) { send({ error: 'ticks, block and pedalEvery are set by `slices` (a decision is always 50 ms)' }); process.exit(2); }
 if (own.slices !== 1 && own.slices !== 5) { send({ error: 'slices must be 1 or 5' }); process.exit(2); }
@@ -149,11 +172,23 @@ try {
 // only places part-way starts there.
 const ROUTE = !!renv.route;
 const SIZE = renv.obsSize ?? OBS_SIZE;
-const RULER = ROUTE ? renv.route.length : renv.line.length;
+// The reward's ruler: the current track's route or line length (changes
+// with the track under rotation).
+const ruler = () => (ROUTE ? renv.route.length : renv.line.length);
 send({
   ready: true, obsSize: SIZE, numActions: NUM_ACTIONS, slices: own.slices,
-  track: renv.cfg.track, maxTicks: renv.cfg.maxTicks, lineLength: RULER, humanFrames: renv.human?.frames ?? null, reference: ROUTE ? 'route' : 'human',
+  track: renv.cfg.track, maxTicks: renv.cfg.maxTicks, lineLength: ruler(), humanFrames: renv.human?.frames ?? null, reference: ROUTE ? 'route' : 'human',
+  ...(rotation ? { trackSet: rotation.list, switchEvery: rotation.every } : {}),
 });
+
+/** Close the simulator and open one on `track` (rotation and named evals). */
+async function moveTo(track) {
+  await renv.close();
+  rotation.switches++;
+  // A seed per visit, so a track met again does not replay the same starts.
+  renv = await RacingEnv.create({ ...options, track, seed: (options.seed ?? 0) + 7777 * rotation.switches });
+  if ((renv.obsSize ?? OBS_SIZE) !== SIZE) throw new Error(`${track}: ${renv.obsSize} inputs, the server started with ${SIZE}`);
+}
 
 // ---- observation -----------------------------------------------------------
 
@@ -282,7 +317,8 @@ async function drive(action) {
   let reward = own.rewardScale * (renv.progress - before);
   // The finish line is rarely exactly at the line's last point; top up so
   // that every finished lap has earned rewardScale x the line's length.
-  if (r.info.reason === 'finished') reward += own.rewardScale * (RULER - renv.progress);
+  if (r.info.reason === 'finished') reward += own.rewardScale * (ruler() - renv.progress);
+  if (rotation) r.info = { ...r.info, track: renv.trackName };
   return { r, reward };
 }
 
@@ -292,6 +328,13 @@ let currentObs = null;
 let episode = null; // { ret, decisions, startProgress } of the episode being driven
 
 async function begin(resetOptions = {}) {
+  // Rotation: after switchEvery episodes on a track, move to the next one.
+  // An explicit start fraction (evaluation) never switches.
+  if (rotation && resetOptions.startFraction == null && ++rotation.episodes > rotation.every && rotation.list.length > 1) {
+    rotation.index = (rotation.index + 1) % rotation.list.length;
+    rotation.episodes = 1;
+    await moveTo(rotation.list[rotation.index]);
+  }
   currentObs = view((await renv.reset(resetOptions)).obs);
   episode = { ret: 0, decisions: 0, startProgress: renv.progress };
 }
@@ -328,15 +371,26 @@ async function rollout({ steps, weights, epsilon = 0 }) {
 }
 
 /** One lap from the start line with the best-valued action throughout. */
-async function evaluate({ weights, save = null }) {
+async function evaluate({ weights, save = null, track = null, epsilon = 0 }) {
   // ideas/shared/CONTRACT.md: files under runs/ carry the idea's id.
   if (save != null && !/^g1-6-[A-Za-z0-9_-]+$/.test(save)) throw new Error('run names must start with "g1-6-"');
   const net = loadNet(weights);
+  // A named track (rotation only): move there for this lap. The next
+  // training episode moves back to the server's own list.
+  if (track != null) {
+    if (!rotation) throw new Error('eval on a named track needs trackSet');
+    if (track !== renv.cfg.track) {
+      await moveTo(track);
+      rotation.episodes = rotation.every; // the next episode switches back
+    }
+  }
   await begin({ startFraction: 0 });
   const taken = [];
   let last;
   for (;;) {
-    const action = greedy(net, currentObs);
+    // epsilon > 0: a test attempt with a little randomness (the ten-attempt
+    // test), drawn from this server's own seeded stream.
+    const action = epsilon > 0 && rng() < epsilon ? randomAction() : greedy(net, currentObs);
     taken.push(action);
     const { r, reward } = await drive(action);
     episode.ret += reward;
@@ -345,7 +399,7 @@ async function evaluate({ weights, save = null }) {
     currentObs = view(r.obs);
   }
   const saved = save != null && last.info.reason === 'finished' ? renv.save(save) : null;
-  const result = { info: last.info, ret: episode.ret, decisions: taken.length, saved, actions: b64(Uint8Array.from(taken)) };
+  const result = { info: { ...last.info, track: renv.trackName }, ret: episode.ret, decisions: taken.length, saved, actions: b64(Uint8Array.from(taken)) };
   currentObs = null; // the next rollout starts a fresh episode
   return result;
 }

@@ -1,0 +1,162 @@
+IQN generalist test, 2026-11-08 08:16: per track 1 greedy lap + 10 laps with epsilon 0.01, all from the start line. Lap times are environment finish ticks, not yet Verified.
+
+## rl/checkpoints/g1-6-iqn-route2_desert4.pt (12000000 training decisions, tested in 80 s)
+training: 10 of 140 with randomness, greedy 1 of 14
+  desert1: 0 of 11 finished; greedy stalled
+  desert2: 0 of 11 finished; greedy stalled
+  desert4: 11 of 11 finished, best 21.957 s; greedy 21.986 s
+  desert5: 0 of 11 finished; greedy stalled
+  summer1: 0 of 11 finished; greedy stalled
+  summer2: 0 of 11 finished; greedy stalled
+  summer4: 0 of 11 finished; greedy stalled
+  summer5: 0 of 11 finished; greedy stalled
+  summer6: 0 of 11 finished; greedy stalled
+  summer7: 0 of 11 finished; greedy stalled
+  winter1: 0 of 11 finished; greedy stalled
+  winter2: 0 of 11 finished; greedy stalled
+  winter3: 0 of 11 finished; greedy stalled
+  winter5: 0 of 11 finished; greedy stalled
+held out: 0 of 30 with randomness, greedy 0 of 3
+  desert3: 0 of 11 finished; greedy stalled
+  summer3: 0 of 11 finished; greedy stalled
+  winter4: 0 of 11 finished; greedy stalled
+generated unseen: 0 of 100 with randomness, greedy 0 of 10
+  gen_s30000_d0_l600: 0 of 11 finished; greedy stalled
+  gen_s30001_d11_l700_w: 0 of 11 finished; greedy stalled
+  gen_s30002_d22_l800_ws3: 0 of 11 finished; greedy off track
+  gen_s30003_d33_l900_bk2: 0 of 11 finished; greedy stalled
+  gen_s30004_d44_l1000_j3: 0 of 11 finished; greedy stalled
+  gen_s30005_d56_l1100_ws2_bk1_j2: 0 of 11 finished; greedy stalled
+  gen_s30006_d67_l1200: 0 of 11 finished; greedy stalled
+  gen_s32007_d78_l600_bk2: 0 of 11 finished; greedy stalled
+  gen_s30008_d89_l700_j3: 0 of 11 finished; greedy stalled
+  gen_s30009_d100_l800_ws2_bk1_j2: 0 of 11 finished; greedy stalled
+
+## rl/checkpoints\g1-6-iqn-routegen.s1.pt (16381440 training decisions, tested in 87 s)
+training: 32 of 140 with randomness, greedy 5 of 14
+  desert1: 11 of 11 finished, best 29.094 s; greedy 29.761 s
+  desert2: 0 of 11 finished; greedy off track
+  desert4: 0 of 11 finished; greedy stalled
+  desert5: 0 of 11 finished; greedy stalled
+  summer1: 8 of 11 finished, best 24.930 s; greedy 28.491 s
+  summer2: 6 of 11 finished, best 19.186 s; greedy 22.540 s
+  summer4: 0 of 11 finished; greedy stalled
+  summer5: 0 of 11 finished; greedy stalled
+  summer6: 0 of 11 finished; greedy stalled
+  summer7: 0 of 11 finished; greedy stalled
+  winter1: 4 of 11 finished, best 22.854 s; greedy 23.787 s
+  winter2: 7 of 11 finished, best 33.544 s; greedy 34.645 s
+  winter3: 0 of 11 finished; greedy off track
+  winter5: 1 of 11 finished, best 24.061 s; greedy stalled
+held out: 0 of 30 with randomness, greedy 0 of 3
+  desert3: 0 of 11 finished; greedy off track
+  summer3: 0 of 11 finished; greedy stalled
+  winter4: 0 of 11 finished; greedy stalled
+generated unseen: 23 of 100 with randomness, greedy 2 of 10
+  gen_s30000_d0_l600: 3 of 11 finished, best 14.044 s; greedy off line
+  gen_s30001_d11_l700_w: 5 of 11 finished, best 15.401 s; greedy off track
+  gen_s30002_d22_l800_ws3: 9 of 11 finished, best 19.906 s; greedy 20.120 s
+  gen_s30003_d33_l900_bk2: 1 of 11 finished, best 22.482 s; greedy stalled
+  gen_s30004_d44_l1000_j3: 0 of 11 finished; greedy off line
+  gen_s30005_d56_l1100_ws2_bk1_j2: 0 of 11 finished; greedy stalled
+  gen_s30006_d67_l1200: 6 of 11 finished, best 24.057 s; greedy 27.050 s
+  gen_s32007_d78_l600_bk2: 0 of 11 finished; greedy off line
+  gen_s30008_d89_l700_j3: 1 of 11 finished, best 18.418 s; greedy off line
+  gen_s30009_d100_l800_ws2_bk1_j2: 0 of 11 finished; greedy off track
+
+## rl/checkpoints\g1-6-iqn-routegen.s2.pt (32471040 training decisions, tested in 89 s)
+training: 42 of 140 with randomness, greedy 2 of 14
+  desert1: 6 of 11 finished, best 29.059 s; greedy 29.059 s
+  desert2: 0 of 11 finished; greedy stalled
+  desert4: 2 of 11 finished, best 38.548 s; greedy stalled
+  desert5: 0 of 11 finished; greedy stalled
+  summer1: 7 of 11 finished, best 25.633 s; greedy stalled
+  summer2: 3 of 11 finished, best 18.636 s; greedy stalled
+  summer4: 0 of 11 finished; greedy stalled
+  summer5: 0 of 11 finished; greedy stalled
+  summer6: 7 of 11 finished, best 42.250 s; greedy stalled
+  summer7: 6 of 11 finished, best 40.489 s; greedy stalled
+  winter1: 9 of 11 finished, best 22.135 s; greedy 22.135 s
+  winter2: 4 of 11 finished, best 32.380 s; greedy off line
+  winter3: 0 of 11 finished; greedy stalled
+  winter5: 0 of 11 finished; greedy stalled
+held out: 0 of 30 with randomness, greedy 0 of 3
+  desert3: 0 of 11 finished; greedy stalled
+  summer3: 0 of 11 finished; greedy stalled
+  winter4: 0 of 11 finished; greedy off track
+generated unseen: 43 of 100 with randomness, greedy 4 of 10
+  gen_s30000_d0_l600: 9 of 11 finished, best 13.039 s; greedy 13.735 s
+  gen_s30001_d11_l700_w: 8 of 11 finished, best 14.066 s; greedy stalled
+  gen_s30002_d22_l800_ws3: 6 of 11 finished, best 18.146 s; greedy stalled
+  gen_s30003_d33_l900_bk2: 4 of 11 finished, best 21.926 s; greedy 21.926 s
+  gen_s30004_d44_l1000_j3: 2 of 11 finished, best 21.805 s; greedy stalled
+  gen_s30005_d56_l1100_ws2_bk1_j2: 2 of 11 finished, best 24.267 s; greedy off line
+  gen_s30006_d67_l1200: 8 of 11 finished, best 23.721 s; greedy 24.440 s
+  gen_s32007_d78_l600_bk2: 6 of 11 finished, best 17.322 s; greedy 19.666 s
+  gen_s30008_d89_l700_j3: 0 of 11 finished; greedy off line
+  gen_s30009_d100_l800_ws2_bk1_j2: 2 of 11 finished, best 28.977 s; greedy stalled
+
+## rl/checkpoints\g1-6-iqn-routegen.s3.pt (48411648 training decisions, tested in 89 s)
+training: 32 of 140 with randomness, greedy 3 of 14
+  desert1: 4 of 11 finished, best 32.548 s; greedy stalled
+  desert2: 0 of 11 finished; greedy stalled
+  desert4: 3 of 11 finished, best 26.823 s; greedy stalled
+  desert5: 0 of 11 finished; greedy stalled
+  summer1: 10 of 11 finished, best 24.269 s; greedy 25.536 s
+  summer2: 3 of 11 finished, best 18.319 s; greedy off track
+  summer4: 0 of 11 finished; greedy stalled
+  summer5: 0 of 11 finished; greedy stalled
+  summer6: 1 of 11 finished, best 45.893 s; greedy off line
+  summer7: 0 of 11 finished; greedy stalled
+  winter1: 7 of 11 finished, best 25.071 s; greedy 31.615 s
+  winter2: 1 of 11 finished, best 32.047 s; greedy off line
+  winter3: 0 of 11 finished; greedy stalled
+  winter5: 6 of 11 finished, best 21.550 s; greedy 21.780 s
+held out: 0 of 30 with randomness, greedy 0 of 3
+  desert3: 0 of 11 finished; greedy stalled
+  summer3: 0 of 11 finished; greedy stalled
+  winter4: 0 of 11 finished; greedy stalled
+generated unseen: 41 of 100 with randomness, greedy 4 of 10
+  gen_s30000_d0_l600: 6 of 11 finished, best 13.303 s; greedy time limit
+  gen_s30001_d11_l700_w: 4 of 11 finished, best 14.782 s; greedy off track
+  gen_s30002_d22_l800_ws3: 4 of 11 finished, best 17.486 s; greedy stalled
+  gen_s30003_d33_l900_bk2: 8 of 11 finished, best 21.868 s; greedy off track
+  gen_s30004_d44_l1000_j3: 2 of 11 finished, best 22.066 s; greedy off track
+  gen_s30005_d56_l1100_ws2_bk1_j2: 6 of 11 finished, best 21.784 s; greedy 22.096 s
+  gen_s30006_d67_l1200: 6 of 11 finished, best 23.925 s; greedy 23.925 s
+  gen_s32007_d78_l600_bk2: 4 of 11 finished, best 14.714 s; greedy 15.607 s
+  gen_s30008_d89_l700_j3: 1 of 11 finished, best 22.528 s; greedy off line
+  gen_s30009_d100_l800_ws2_bk1_j2: 4 of 11 finished, best 28.885 s; greedy 32.762 s
+
+## rl/checkpoints\g1-6-iqn-routegen.s4.pt (53750784 training decisions, tested in 86 s)
+training: 24 of 140 with randomness, greedy 0 of 14
+  desert1: 9 of 11 finished, best 30.657 s; greedy stalled
+  desert2: 0 of 11 finished; greedy stalled
+  desert4: 5 of 11 finished, best 25.845 s; greedy stalled
+  desert5: 0 of 11 finished; greedy stalled
+  summer1: 3 of 11 finished, best 24.723 s; greedy off track
+  summer2: 3 of 11 finished, best 21.772 s; greedy stalled
+  summer4: 0 of 11 finished; greedy stalled
+  summer5: 0 of 11 finished; greedy stalled
+  summer6: 0 of 11 finished; greedy stalled
+  summer7: 0 of 11 finished; greedy stalled
+  winter1: 3 of 11 finished, best 21.748 s; greedy stalled
+  winter2: 1 of 11 finished, best 30.074 s; greedy stalled
+  winter3: 0 of 11 finished; greedy stalled
+  winter5: 0 of 11 finished; greedy stalled
+held out: 0 of 30 with randomness, greedy 0 of 3
+  desert3: 0 of 11 finished; greedy off track
+  summer3: 0 of 11 finished; greedy stalled
+  winter4: 0 of 11 finished; greedy stalled
+generated unseen: 57 of 100 with randomness, greedy 4 of 10
+  gen_s30000_d0_l600: 1 of 11 finished, best 14.711 s; greedy off line
+  gen_s30001_d11_l700_w: 9 of 11 finished, best 14.496 s; greedy 15.872 s
+  gen_s30002_d22_l800_ws3: 8 of 11 finished, best 16.759 s; greedy 20.242 s
+  gen_s30003_d33_l900_bk2: 7 of 11 finished, best 21.654 s; greedy off track
+  gen_s30004_d44_l1000_j3: 7 of 11 finished, best 21.992 s; greedy off track
+  gen_s30005_d56_l1100_ws2_bk1_j2: 6 of 11 finished, best 21.517 s; greedy 22.224 s
+  gen_s30006_d67_l1200: 10 of 11 finished, best 23.380 s; greedy 23.551 s
+  gen_s32007_d78_l600_bk2: 5 of 11 finished, best 14.781 s; greedy stalled
+  gen_s30008_d89_l700_j3: 8 of 11 finished, best 16.322 s; greedy off track
+  gen_s30009_d100_l800_ws2_bk1_j2: 0 of 11 finished; greedy off track
+

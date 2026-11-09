@@ -34,17 +34,23 @@ def _decode(text: str, dtype) -> np.ndarray:
 
 
 class IqnServers:
-    def __init__(self, num_envs: int, track: str, seed: int = 0, show_stderr: bool = False, **options):
+    def __init__(self, num_envs: int, track: str, seed: int = 0, show_stderr: bool = False,
+                 track_sets: list[list[str]] | None = None, switch_every: int = 20, **options):
         """Start `num_envs` servers on `track` and wait for their simulators
         (1 to 2 s each). Environment k gets seed + k so they do not all pick
-        the same start positions. `options`: any key=value iqn_server.mjs takes."""
+        the same start positions. `options`: any key=value iqn_server.mjs takes.
+        `track_sets` (one list per server): each server rotates through its
+        own list, switching every `switch_every` episodes (TRACK ROTATION in
+        iqn_server.mjs); `track` is then ignored."""
         node = shutil.which("node")
         if node is None:
             raise RuntimeError("Node.js was not found on PATH; the simulator needs Node 20+")
         self.procs, self._replies = [], []
         try:
             for k in range(num_envs):
-                args = [node, SERVER_SCRIPT, f"track={track}", f"seed={seed + k}"] + [f"{key}={value}" for key, value in options.items()]
+                where = ([f"trackSet={','.join(track_sets[k])}", f"switchEvery={switch_every}"]
+                         if track_sets else [f"track={track}"])
+                args = [node, SERVER_SCRIPT, *where, f"seed={seed + k}"] + [f"{key}={value}" for key, value in options.items()]
                 # stderr to DEVNULL, not a pipe: a pipe nobody reads fills up and freezes the server.
                 proc = subprocess.Popen(args, cwd=PROJECT_ROOT, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                         stderr=None if show_stderr else subprocess.DEVNULL)
@@ -109,13 +115,20 @@ class IqnServers:
             "step_ms": sum(r["stepMs"] for r in replies),
         }
 
-    def evaluate(self, weights_file: str, save: str | None = None, server: int = 0) -> dict:
+    def evaluate(self, weights_file: str, save: str | None = None, server: int = 0,
+                 track: str | None = None, epsilon: float = 0.0) -> dict:
         """One lap from the start line on one server, best-valued action
-        throughout. Returns the server's reply: info (reason, finishFrames,
-        fraction, ...), ret, decisions, saved, and `actions` as an array."""
+        throughout (or random with probability `epsilon`). `track` (rotating
+        servers only): drive it on that track. Returns the server's reply:
+        info (reason, finishFrames, fraction, track, ...), ret, decisions,
+        saved, and `actions` as an array."""
         request = {"cmd": "eval", "weights": str(weights_file)}
         if save:
             request["save"] = save
+        if track:
+            request["track"] = track
+        if epsilon:
+            request["epsilon"] = float(epsilon)
         self._send(server, **request)
         reply = self._read(server)
         reply["actions"] = _decode(reply["actions"], np.uint8)
