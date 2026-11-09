@@ -145,22 +145,39 @@ message traffic is not the main cost. The physics wasm
 Five ideas, cheapest first. Any change to the physics itself needs a check
 that recorded laps still Verify on the same tick.
 
-1. **Profile one simulator before changing anything.** `node --cpu-prof`
-   on one server for 30 s, and on a bare loop of physics steps. Split the
-   time into wasm (Bullet), the bundle's JS per tick (building and posting
-   the car state every tick, though a block needs only the last), and the
-   message hops. Removing the per-tick state copies inside a block could
-   give 1.1 to 1.5 times. No risk to Verify. Do this first: it says where
-   ideas 2 to 5 should aim.
+1. **Profile one simulator before changing anything.** Done 8 November
+   (one IQN server on desert4, route inputs, the network driving;
+   `node --cpu-prof`, which writes one profile per thread):
+   - The two threads take turns: while the physics worker steps, the main
+     thread waits, and the other way round (each about half idle).
+   - Main thread (environment and network): the network's forward pass
+     (`greedy()`) 55% of its busy time, the road-edge raycasts of the
+     observation (`sim/trackmesh.mjs` `raycast`, `raycastFar`) 21%, the
+     rest small.
+   - Physics worker: the WebAssembly 55% of its busy time; **one clock
+     import, `() => Date.now()` in polytrack_physics.js, 27%**; the
+     bundle's JS, message posting and save-state page compares under 10%.
+   - Fix for the clock: the physics now gets a constant clock
+     (`sim/worker_entry.mjs`, on by default; `PT_FIXED_CLOCK=0` turns it
+     off). The physics step went from 1.71 to 1.48
+     ms per decision and one server from 395 to 434 decisions a second, then
+     410 to 454 on a rerun (about 1.1 times). With it, all 27 recordings
+     verify on their claimed tick, and the hash of all 22,279 states of a
+     lap is identical with and without it. Made the default the same day.
+   - Per decision for one server with the fixed clock: about 2.2 ms, of
+     which 0.70 ms is the network, so idea 2 is now the largest single gain.
 2. **Take the network out of the simulator processes.** About a third of
    each decision is the forward pass in JS. Batch it for all simulators on
    the GPU, as PPO does, or use a typed-array/SIMD kernel. Up to about 1.45
    times per process, more when processes contend for cores. No risk to
    Verify. First: time `greedy()` alone on a recorded input, 10,000 calls.
-3. **Fit processes to cores, and Node flags.** Sweep 6, 8, 10, 12 and 14
-   simulators for 30 s each, with and without `--no-liftoff` (compile the
-   wasm with the optimising tier from the start), and leave cores for the
-   learner. 1.1 to 1.3 times. No risk.
+3. **Fit processes to cores, and Node flags.** Measured 8 November (fixed
+   clock, network driving, no learner running; the CPU is a Ryzen 9 7940HS,
+   8 cores, 16 threads): 4 servers 1,483 decisions a second, 8 2,665, 12
+   3,148, 16 3,335. Past the 8 cores each extra server adds little, so 12
+   is about right and 16 gains 6%. `--no-liftoff` made no measurable
+   difference (458 against 434 to 454 a second for one server). With the
+   GPU learner also running, the overnight run reached 2,100 to 2,500.
 4. **Rebuild the physics as native code.** Translate the wasm to C with
    `wasm2c` (or optimise it with `wasm-opt -O3`), compile with full
    optimisation but no fast-maths so floating point stays exact, and load

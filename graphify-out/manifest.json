@@ -258,9 +258,9 @@
     "semantic_hash": "31cb5d35b71e2afbef06d14f4d4ca8ee"
   },
   "sim/worker_entry.mjs": {
-    "mtime": 1792291987.650452,
-    "seen": 1792293543.6105466,
-    "ast_hash": "5cc20b13ee1bd35a44ad135fc3a1d9f9",
+    "mtime": 1794190191.574844,
+    "seen": 1794190296.0934298,
+    "ast_hash": "63e219032db8d35ba612fb4c877d0b32",
     "semantic_hash": ""
   },
   "README.md": {
@@ -2952,9 +2952,9 @@
     "semantic_hash": ""
   },
   "docs/ideas-to-try.md": {
-    "mtime": 1794183104.8201241,
-    "seen": 1794183288.5490437,
-    "ast_hash": "60a09cf4524047bb98c2b3197e08de41",
+    "mtime": 1794190192.659777,
+    "seen": 1794190296.0934298,
+    "ast_hash": "a9a3d16e7b990e34def039a5ceaac3b9",
     "semantic_hash": ""
   },
   "ideas/g1-6-offpolicy-rl/g1-6-eval_routegen.py": {

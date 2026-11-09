@@ -12,6 +12,9 @@
 // 3. Key schedules (see the block further down): several runs of held keys
 // in one message, so a 50 ms block decision of five 10 ms slices costs one
 // message and one wait instead of five.
+//
+// 4. Fixed clock, on by default (PT_FIXED_CLOCK=0 turns it off; see the
+// block further down): about 1.1 times faster, same states bit for bit.
 import { parentPort } from 'node:worker_threads';
 import { Buffer } from 'node:buffer';
 
@@ -36,7 +39,32 @@ globalThis.setInterval = (fn, ms, ...rest) => {
 // "the largest memory" picks it out.
 const memories = [];
 const realInstantiate = WebAssembly.instantiate;
+
+// --- fixed clock (default; environment variable PT_FIXED_CLOCK=0 turns it off) --
+// The physics module imports one clock, `() => Date.now()` in
+// polytrack_physics.js, and calls it many times per tick. A profile of the
+// IQN server on 8 November 2026 put 15% of the simulation thread's time in
+// that one function, half as much as all the WebAssembly together. Laps
+// replay and Verify identically on any machine at any speed, so the physics
+// cannot depend on the wall clock's value; this hands it a constant instead.
+// Checked: all 27 recordings verify on their claimed tick with it, and the
+// hash of all 22,279 states of a lap is the same with and without it. On by
+// default since 8 November 2026; PT_FIXED_CLOCK=0 gives back the real clock.
+const FIXED_CLOCK = !(typeof process !== 'undefined' && process.env?.PT_FIXED_CLOCK === '0');
+function fixClock(imports) {
+  if (!FIXED_CLOCK || !imports) return imports;
+  const out = {};
+  for (const [mod, fns] of Object.entries(imports)) {
+    out[mod] = { ...fns };
+    for (const [name, fn] of Object.entries(fns)) {
+      if (typeof fn === 'function' && String(fn).replace(/\s/g, '') === '()=>Date.now()') out[mod][name] = () => 0;
+    }
+  }
+  return out;
+}
+
 WebAssembly.instantiate = async (...args) => {
+  if (args.length > 1) args[1] = fixClock(args[1]);
   const result = await realInstantiate(...args);
   // instantiate(bytes) resolves to { module, instance }; instantiate(module)
   // resolves to the instance itself.
